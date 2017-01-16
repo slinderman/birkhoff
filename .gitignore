@@ -1,0 +1,14 @@
+/build
+/dist
+/pylds/*.c
+/pylds/*.so
+MANIFEST
+*.pyc
+*~
+*.aux
+*.bbl
+*.blg
+*.fls
+*.log
+*.out
+*.fdb_latexmk
