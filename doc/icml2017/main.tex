@@ -1,0 +1,305 @@
+\documentclass{article}
+
+\input{preamble/preamble.tex}
+\input{preamble/preamble_math.tex}
+\input{preamble/preamble_acronyms.tex}
+
+\usepackage{blindtext}
+
+\usepackage{icml2016}
+% \usepackage[accepted]{icml2016}
+
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Short Title}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Long Title}
+
+\icmlauthor{Your Name}{email@yourdomain.edu}
+\icmladdress{Your Fantastic Institute,
+            314159 Pi St., Palo Alto, CA 94306 USA}
+\icmlauthor{Your CoAuthor's Name}{email@coauthordomain.edu}
+\icmladdress{Their Fantastic Institute,
+            27182 Exp St., Toronto, ON M6H 2T1 CANADA}
+
+\vskip 0.3in
+]
+
+\begin{abstract}
+How to perform inference over the space of permutation matrices?  By
+definition, with~$n$ nodes, there are~$n!$ such matrices.  Clearly,
+searching or optimizing over this space quickly becomes intractable
+as~$n$ grows. Our goal is to derive a tractable algorithm for
+performing approximate inference over this challenging discrete space.
+To that end, we
+propose a continuous relaxation of permutation matrices to doubly
+stochastic matrices, i.e. to points in the Birkhoff polytope.  We then
+derive an invertible and differentiable map from densities on
+unconstrained space to densities on the Birkhoff polytope. This
+transformation is parameterized by a ``temperature'' that controls how
+concentrated the resulting density is at the extrema of the Birkhoff
+polytope; i.e. at permutation matrices.  This relaxation admits
+variational inference via stochastic gradient ascent over the
+distributions on doubly stochastic matrices (and in the zero-temperature
+limit, on permutation matrices) using Monte Carlo estimates of the
+reparameterized gradient.
+\end{abstract}
+
+\section{Continuous relaxations for discrete inference}
+
+In Bayesian inference problems, we have a prior distribution~$p(x)$
+and a likelihood~$p(y \mid x)$, and
+we seek the posterior distribution,~${p(x \mid y) = p(x) p(y \mid x) / p(y)}$.
+%The output a distribution over vertices of the simplex.
+In general, this problem is intractable since the normalizing constant
+in Bayes' rule, $p(y)$, involves a high dimensional integral or sum.
+Variational inference algorithms avoid this problem by limiting their
+search to a tractable family of distributions,~$q(x; \theta)$,
+parameterized by~$\theta$, and searching for the member of this family
+that best approximates the true posterior. Most commonly, the
+approximation quality is measured by the Kullback-Leibler (KL)
+divergence between the variational posterior,~$q(x; \theta)$, and the
+true posterior,~$p(x \mid y)$. That is, the optimal variational
+parameters are given by,
+\begin{align}
+  \theta^* &= \argmax_\theta -\KL{q(x; \theta)}{p(x \mid y)},
+\end{align}
+where
+\begin{align}
+  -\KL{q(x; \theta)}{p(x \mid y)} &= \E_{x \sim q(x; \theta)}
+  \left[ \log p(x \mid y) - \log q(x; \theta) \right] \\
+  &\geq \E_{x \sim q(x; \theta)}
+  \left[ \log p(x, \, y) - \log q(x; \theta) \right] \\
+  &= \cL(\theta).
+\end{align}
+The objective function,~$\cL(\theta)$, is known as the evidence lower bound, or ELBO.
+Stochastic gradient ascent is
+perhaps the simplest method of optimizing the ELBO with respect to
+the parameters~$\theta$.
+However, computing~$\nabla_\theta \cL(\theta)$ requires some care,
+since the ELBO contains an expectation with respect to a distribution
+that depends on these parameters.
+
+When~$x$ is a continuous random variable, we can often go one step
+further and leverage the ``reparameterization trick''  \citep{Salimans2013,Kingma2014,Price1958,Bonnet1964}.  Specifically,
+in some cases we can simulate from~$q$ via the following procedure,
+\begin{align}
+\xi &\sim p(\xi),  \\
+x &= g(\theta, \xi),
+\end{align}
+where~$g(\theta, \xi)$ is a deterministic and differentiable
+transformation (which is only possible if~$x$ is continuous). Thus, we
+can effectively ``factor out'' the randomness of~$q$. With this
+transformation, we can bring the gradient inside the expectation as
+follows,
+\begin{align}
+%  \nabla_\theta \E_{q(x \mid \theta)} \left[ \log p(x \mid y) - \log q(x; \theta) \right]
+  \nabla_\theta \cL(\theta) 
+  &= \E_{p(\xi)} \left[ \nabla_\theta \left[\log p(g(\theta, \xi) \mid y) - \log q(g(\theta, \xi); \theta) \right] \right].
+  %\\
+%  &\approx \frac{1}{M} \sum_{m=1}^M \nabla_\theta \log p(g(\theta, \xi^{(m)}) \mid y) - \log q(g(\theta, \xi^{(m)}); \theta) & & & \xi^{(m)} &\sim p(\xi).
+\end{align}
+This gradient can be estimated with Monte Carlo, and, in practice,
+this leads to lower variance estimates of the gradient than, for
+example, the score function estimator \citep{Williams1992,Glynn1990}.
+
+
+
+
+Recently, there have been a number of proposals for extending these
+reparameterization tricks to high dimensional discrete
+problems\footnote{Discrete inference is only problematic in the high
+dimensional case, since in low dimensional problems we can enumerate
+the possible values of~$x$ and compute the normalizing constant~$p(y)
+= \sum_x p(y, x)$.} by relaxing them to analogous continuous
+problems \citep{maddison2016concrete, jang2016categorical,
+kusner2016gans}.  These approaches are based on the following
+observation: if~$x \in \{0,1\}^k$ is a one-hot vector drawn from a
+categorical distribution, then the support of~$p(x)$ is the set of
+vertices of the~$k-1$ dimensional simplex.  Thus, we can represent the
+distribution of~$x$ as an atomic density on the simplex.  Sampling~$x$
+is equivalent to sampling this atomic measure. That is,
+\begin{align}
+  x &\sim \distCategorical( x \mid \theta) &\iff& & {\pi} &\sim p({\pi} \mid \theta) \nonumber \\
+  & & & & x &\triangleq {\pi},
+\end{align}
+where~$p({\pi} \mid \theta)$ is a density on the simplex with atoms at
+the~$k$ vertices.
+
+Viewing~$x$ as a vertex of the simplex motivates a natural relaxation:
+let us set~$x={\pi}$ as above, but 
+rather than restricting~$p({\pi} \mid \theta)$ to be an atomic measure,
+let it be a continuous density on the simplex. To be concrete, suppose
+the density of~${\pi}$ is defined by the transformation,
+\begin{align}
+  \xi &\sim p(\xi), \\
+  {\pi} &= g(\theta, \xi) \\
+  g(\theta, \xi) &= \text{softmax}(\log \theta + \xi).
+\end{align}
+The output~$x$ is now a point on the simplex, and the parameters~$\theta$ can
+be optimized via stochastic gradient ascent with the reparameterization trick,
+as discussed above.
+
+In the aforementioned papers,~$p(\xi)$ is taken to be the Gumbel distribution.
+This choice leads to a nicely interpretable model: adding
+Gumbel noise and taking the argmax yields an exact sample from~$\theta$;
+setting~$g$ to the softmax is a natural relaxation. Ultimately, however, this
+is just a continuous relaxation of an atomic density to a continuous
+density. 
+
+\section{An alternative continuous relaxation}
+While the Gumbel-softmax has some nice properties, as we will see, it does
+not lend itself as naturally to more complicated generalizations. 
+Consider the following alternative model for~${\pi}$:
+\begin{align}
+  \psi_k &\sim \distNormal(\mu_k, \tau^{-1} \eta_k^2) & &  \text{for } k=1, \ldots, K-1\\
+  {\pi}_1 &= \sigma(\psi_1) \\
+%  {\pi}_k &= \sigma(\psi_k) \prod_{j=1}^{k-1} (1-\sigma(\psi_j)) & &  \text{for } k=2, \ldots, K-1\\
+  {\pi}_k &= \sigma(\psi_k) (1- \sum_{j=1}^{k-1} {\pi}_j) & &  \text{for } k=2, \ldots, K-1\\
+%  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
+{\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j
+\end{align}
+This is known as a logistic stick breaking transformation since
+~$\sigma(\cdot)$ is the logistic function and~$\sigma(\psi_k)$ can be
+seen as the fraction of the remaining ``stick'' of probability mass
+assigned to~${\pi}_k$ \citep{linderman2015dependent}. Moreover,
+the density of~${\pi}$ can be expressed in closed form as a
+function of~$\mu_k$ and~$\eta_k^2$.  Finally, as with the relaxations
+above, the temperature~$\tau$ controls how
+concentrated~$p_\tau({\pi} \mid \{\mu_k, \eta_k^2\})$ is at the
+vertices of the simplex. As~$\tau \to 0$, the density becomes
+concentrated on atoms at the~$K$ vertices, and as~$\tau \to \infty$,
+the density concentrates on a point in the interior of the simplex
+determined by~$\{\mu_k\}$. For intermediate values, the density is
+continuous on the simplex.
+
+
+\section{Continuous relaxations for permutation matrices}
+Just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
+theorem states that permutation matrices are vertices of the convex
+hull of doubly stochastic matrices.
+For permutations of size~$n$, a permutation matrix,~$X \in \{0,1\}^{n \times n}$,
+is a binary matrix such that every row and every column sums to one.
+An analogous relaxation to the one above is to consider~$X \approx {\Pi}$,
+where~${\Pi} \in [0,1]^{n \times n}$ is a doubly stochastic matrix,
+i.e. the rows and columns both sum to one. This set is known as the Birkhoff
+polytope, which we denote by~$\cB_n$. Due to these constraints, the Birkhoff
+polytope lies within a~$(n-1)^2$ dimensional subspace of all $[0,1]^{n \times n}$ matrices. 
+
+We now derive an invertible and differentiable transformation,~$f: \reals^{(n-1) \times (n-1)} \to \cB_n$,
+which can be used to define a density on~$\cB_n$. Our approach is an
+extension of the stick-breaking transformation described above, with minor
+modifications to accomodate the additional constraints of doubly stochastic
+matrices. Imagine transforming a real-valued matrix~$\Psi \in \reals^{(n-1) \times (n-1)}$
+into a doubly stochastic matrix,~${\Pi} \in [0,1]^{n \times n}$.
+We work entry by entry, starting in the top left
+and raster scanning left to right then top to bottom. Denote the~$(i,j)$-th entries
+of~$\Psi$ and~${\Pi}$ by~$\psi_{ij}$ and~${\pi}_{ij}$, respectively.
+
+The first entry is given by, ${\pi}_{11} = \sigma(\psi_{11})$.
+As we work left to right in the first row, the ``remaining stick'' length
+decreases as we add new entries. This reflects the row normalization constraints.
+Thus,
+\begin{align}
+%  {\pi}_{1j} &= \sigma(\psi_{1j}) \prod_{k=1}^{j-1} (1-\sigma(\psi_{1k})) & &  \text{for } j=2, \ldots, n-1\\
+  {\pi}_{1j} &= \sigma(\psi_{1j}) (1 - \sum_{k=1}^{j-1} {\pi}_{1k})  & &  \text{for } j=2, \ldots, n-1\\
+  {\pi}_{1n} &= 1 - \sum_{k=1}^{n-1} {\pi}_{1k}
+\end{align}
+So far, this is exactly as above. However, the remaining rows must now
+conform to both row- and column-constraints. That is,
+\begin{align}
+{\pi}_{ij} &\leq 1- \sum_{k=1}^{j-1} {\pi}_{ik} & & \text{(row sum)} \\
+{\pi}_{ij} &\leq 1- \sum_{k=1}^{i-1} {\pi}_{kj} & & \text{(column sum)}.
+\end{align}
+Moreover, there is also a lower bound on~${\pi}_{ij}$. This entry must
+claim enough of the stick such that what is leftover ``fits'' within the confines
+imposed by subsequent column sums. That is, each column sum places an upper
+bound on the amount that may be attributed to any subsequent entry. If the remaining
+stick exceeds the sum of these upper bounds, the matrix will not be doubly stochastic.
+Thus,
+\begin{align}
+\underbrace{1 - \sum_{k=1}^j \pi_{ik}}_{\text{remaining stick}}
+&\leq \underbrace{\sum_{m=j+1}^n (1- \sum_{k=1}^{i-1} {\pi}_{km})}_{\text{remaining upper bounds}}.
+\end{align}
+Rearranging terms, we have,
+\begin{align}
+\pi_{ij} &\geq 1- \sum_{k=1}^{j-1} \pi_{ik} - \sum_{m=j+1}^n (1- \sum_{k=1}^{i-1} {\pi}_{km}) \\
+&= 1 - n + j - \sum_{k=1}^{j-1} \pi_{ik}  +  \sum_{k=1}^{i-1} \sum_{m=j+1}^n {\pi}_{km}
+\end{align}
+Of course, this bound is only relevant if the right hand side is greater than zero.
+Taken together,~${\pi}_{ij}$ is bounded by,
+\begin{align}
+\ell_{ij} &\leq
+{\pi}_{ij}
+\leq
+u_{ij}
+\\
+\ell_{ij} &\triangleq \max \left \{0, \, 1 - n + j - \sum_{k=1}^{j-1} {\pi}_{ik}  +  \sum_{k=1}^{i-1} \sum_{m=j+1}^n {\pi}_{km} \right \}
+\\
+u_{ij} &\triangleq 
+\min \left \{1- \sum_{k=1}^{j-1} {\pi}_{ik}, \,
+1- \sum_{k=1}^{i-1} {\pi}_{kj} \right\}.
+\end{align}
+Thus, we define,
+\begin{align}
+  {\pi}_{ij} &= \ell_{ij} + \sigma(\psi_{ij}) (u_{ij} - \ell_{ij}).
+\end{align}
+
+The inverse transformation from~${\Pi}$ to $\Psi$ is analogous.
+We start by computing~$\psi_{11}$ and then progressively compute
+upper and lower bounds and set,
+\begin{align}
+\psi_{ij} &= \sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ).
+\end{align}
+
+
+Notice that these bounds only depend on values of~${\Pi}$ that
+have already been computed; i.e., those that are above or to the left of
+the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~${\Pi}$
+is feed-forward according to this ordering.  Consequently, the
+Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} \Pi$,
+is lower triangular, and its determinant is the product of its diagonal,
+\begin{align}
+\left| \frac{\mathrm{d} \Psi } {\mathrm{d} \Pi} \right|
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
+\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\left( \frac{1}{u_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
+\end{align}
+
+With these two ingredients, we can write the density of~${\Pi}$,
+\begin{align}
+  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
+  \\
+  {\Pi} &= f(\Psi) \\
+  \implies
+  p(\Pi \mid \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {\Pi}} \right|
+  \distNormal(f^{-1}({\Pi}) \mid \mu, \diag(\eta^2))
+\end{align}
+
+Given the density and a differentiable mapping we can perform
+variational inference with stochastic optimization of the ELBO.
+We define a distribution over doubly stochastic matrices as a
+reparameterization of a multivariate Gaussian distribution
+over~$\Psi$. We can estimate gradients via the reparameterization
+trick.
+
+It is important to note that the transformation is only piecewise
+continuous: the function is not differentiable at the points where
+the bounds change; for example, when changing~$\Psi$ causes the
+active upper bound to switch from the row to the column constraint
+or vice versa.  I think we can argue that these discontinuities
+will not have a severe effect on our stochastic gradient algorithm.
+
+\bibliography{refs}
+\bibliographystyle{icml2016}
+
+\end{document}

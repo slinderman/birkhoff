@@ -1,0 +1,264 @@
+% !TEX program = pdflatex
+\input{preamble/preamble.tex}
+\input{preamble/preamble_math.tex}
+
+% \linenumbers
+
+\title{Marginal Matching for the \\ Neural ``Permutation Problem''}
+\author{Scott W Linderman}
+\date{October 17, 2016}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+The nematode \textit{C. Elegans} is a unique model organism for
+neuroscientists in that its connectome, or neural wiring diagram,
+has been known for at least three decades \citep{white1986structure}.
+Despite this knowledge, an understanding of the functional significance
+of these synaptic connections has remained elusive.
+Recently, \citet{kato2015global} measured the simultaneous activity of hundreds of
+neurons in head-fixed \textit{C. Elegans}, providing an exciting
+opportunity to tackle this problem.  With this data, we can attempt to infer
+how the one neuron influences its post-synaptic neighbors
+based on patterns of pre- and post-synaptic activity. However,
+these attempts are stifled by a major obstacle: the identity of the
+neurons, and hence the set of synaptic partners, is only partially
+known. Before we can infer the functional weights of the connections,
+we must first infer the neuron identities. To tackle this problem,
+we propose to find a labeling of neurons that approximately
+maximizes the marginal likelihood of the data, integrating over possible
+values of the functional connection weights. 
+
+\section{Problem Statement}
+The adult hermaphrodite \textit{C. Elegans} has~${N=302}$ neurons, each of
+which is given a unique name, like \texttt{AAVL} or \texttt{BWM}.
+The ``connectome'' corresponds to a list of known synaptic connections
+that are present in every individual, which we may represent as a
+binary adjacency matrix,~${\bA \in \{0,1\}^{N \times N}}$,
+where the entry~$a_{n,n'} \triangleq a_{n \to n'}$ is 1 if there exists a directed
+synapse from neuron~$n$ to neuron~$n'$ and 0 otherwise. Since the
+synapses in~\textit{C. Elegans} are all gap junctions, these
+connections are undirected, making~$\bA$ symmetric. 
+
+While the connectome has been known for decades \citep{white1986structure},
+the \emph{weight}, or functional signficance, of those connections
+remains largely a mystery. We will represent the collection of
+functional weights as a matrix~${\bW \in \reals^{N \times N}}$,
+where~$w_{n,n'} \triangleq w_{n \to n'}$ denotes the strength
+of the connection from neuron~$n$ to neuron~$n'$. First, note
+that this matrix is not necessarily symmetric since the influence
+of a gap junction depends on the input resistance of the pre-
+and post-synaptic neurons. Second, note that this is overparameterized:
+the weighted adjacency matrix is actually given by the elementwise
+product~$\bA \odot \bW$, rendering the values of~$w_{n \to n'}$
+meaningless where~$a_{n \to n'}=0$. Nevertheless, this parameterization
+will prove notationally convenient.
+
+Our goal is to infer~$\bW$ from measurements of neural activity. 
+First, consider the setting in which we record from a single worm
+and observe the matrix~$\bY \in \reals^{T \times M}$,
+where~$T$ is the number of time bins and~$M \leq N$ is the number of
+observed neurons. For example, the entry~$y_{t,m}$ may denote the relative change in
+fluorescence, i.e. the~${\Delta F/F}$, of neuron~$m$ at time~$t$.
+
+We map these~$M$ neurons onto the complete list of~$N$ neurons
+via a partial permutation,
+\begin{align*}
+\pi: \{1, \ldots, M\} \to \{1, \ldots, N\},
+\end{align*}
+where~$\pi$ is an injective mapping from observed neurons to known
+neuron identities. In other words, a neuron identity can be assigned to at most one of
+the~$M$ observed neurons.
+We then define the partial permutation matrix,~$\bP \in \{0,1\}^{M \times N}$,
+where~${P_{m,n} = \bbI[\pi(m)=n]}$, and~$\bbI[\cdot]$ is an indicator
+function that evaluates to one if its argument is true and to zero otherwise.
+Thus,~$\bP \bA \bP^\trans$ is the~$M \times M$ submatrix
+of~$\bA$ corresponding to the~$M$ observed neurons.
+
+In general, the mapping~$\pi$ is not known \emph{a priori}. We are typically
+only certain about the labels of, say, twenty or thirty of the neurons.
+Thus, to infer~$\bW$, we also need to infer~$\pi$. The next section
+derives the marginal probability of a given permutation, a
+natural objective for empirical Bayesian optimization.
+
+\section{Marginal Probability of a Permutation}
+We begin by formulating a prior distribution on both~$\bW$ and~$\pi$
+(which determines~$\bP$).
+The former will be taken to be a weak Gaussian distribution,
+\begin{align*}
+ \bw_n \sim \distNormal(\bmu, \bSigma), 
+\end{align*}
+where~$\bw_n$ is the~$n$-th column of~$\bW$. For example, we could
+set~$\bmu = \boldsymbol{0}$ and~$\bSigma = \sigma^2 \bI$.
+We do not specify the prior on~$\pi$ in detail here, but note that
+it should depend on known and measured locations of the cells.
+
+Next we specify an autoregressive model for the observed activity,
+\begin{align*}
+%  y_{t,m} &= \bx_t^\trans \bP (\bW \odot \bA) \bp_m^\trans  + \epsilon_{t,m}, \\
+%          &= \bx_t^\trans \bP \bW \bp_m \odot \bx_t^\trans \bP \bA \bp_m^\trans  + \epsilon_{t,m}, \\
+  y_{t,m} &= \bx_t^\trans \bP (\bw_{\pi(m)} \odot \ba_{\pi(m)})  + \epsilon_{t,m}, \\
+  \epsilon_{t,m} &\sim \distNormal(0, \eta_{\pi(m)}^2),
+\end{align*}
+where~$\bw_{\pi(m)} \in \reals^N$ and~$\ba_{\pi(m)} \in \{0,1\}^N$ are the~$\pi(m)$-th
+columns of~$\bW$ and~$\bA$, respectively,
+and~$\bx_t \in \reals^M$ is a deterministic function of the
+preceding activity,
+\begin{align*}
+  x_{t,m} &= f(y_{1,m}, \ldots, y_{t-1,m}).
+\end{align*}
+Note that this model ignores the activity of the~$(N-M)$ unobserved
+neurons. 
+
+Now we can write the joint probability of the model,
+\begin{align*}
+  p(\bY, \bW, \pi \given \bA) &=
+    p(\bW) \, p(\pi) \prod_{t=1}^T \prod_{m=1}^M p(y_{t,m} \given \bx_t, \bW, \pi, \bA).
+\end{align*}
+Since both the prior on~$\bw_n$ and the likelihood for~$y_{t,m}$ are
+linear and Gaussian in~$\bw_n$, the conditional distribution of~$\bw_n$
+is Gaussian as well. Let~$\bX \in \reals^{T \times M}$ be a matrix with
+rows given by~$\bx_t^\trans$. Fixing~$\pi$, we have,
+\begin{align*}
+  p(\bw_{\pi(m)} \given \bY, \pi, \bA) &\propto \distNormal(\bw_{\pi(m)} \given \bmu, \bSigma) \prod_{t=1}^T \distNormal(y_{t,m} \given \bx_t^\trans \bP (\bw_{\pi(m)} \odot \ba_{\pi(m)}), \eta_{\pi(m)}^2) \\
+  &\propto \distNormal(\bw_{\pi(m)} \given \widetilde{\bmu}_{\pi(m)}, \widetilde{\bSigma}_{\pi(m)}),
+\end{align*}
+where
+\begin{align*}
+  \widetilde{\bSigma}_{\pi(m)} &= \left[ \bSigma^{-1} + \eta_{\pi(m)}^{-2} (\bP^\trans \bX^\trans \bX \bP) \odot (\ba_{\pi(m)} \ba_{\pi(m)}^\trans ) \right]^{-1}, \\
+  \widetilde{\bmu}_{\pi(m)} &= \widetilde{\bSigma}_{\pi(m)} \left[\bSigma^{-1} \bmu + \eta_{\pi(m)}^{-2} (\bP^\trans \bX^\trans \by_{:,m}) \odot \ba_{\pi(m)} \right].
+\end{align*}
+
+Moreover, since the model is conditionally conjugate,
+we can evaluate the \emph{marginal} probability of the observed data
+and a permutation, integrating over the corresponding weights of the
+network. We have,
+\begin{align*}
+  p(\bY, \pi \given \bA) &= \int p(\bY, \bW, \pi \given \bA) \, \mathrm{d}\bW \\
+  &\propto p(\pi) \prod_{m=1}^M \int p(\by_m \given \bw_{\pi(m)}, \ba_{\pi(m)}) \, p(\bw_{\pi(m)})  \, \mathrm{d}\bW \\
+  &= p(\pi) \prod_{m=1}^M \frac{ \left| \bSigma \right|^{-1/2} \exp \left\{ -\frac{1}{2} \bmu^\trans \bSigma^{-1} \bmu \right\}}
+  { \left| \widetilde{\bSigma}_{\pi(m)} \right|^{-1/2} \exp \left\{ -\frac{1}{2} \widetilde{\bmu}_{\pi(m)}^\trans \widetilde{\bSigma}_{\pi(m)}^{-1} \widetilde{\bmu}_{\pi(m)} \right\}} \\
+  &= p(\pi) \prod_{m=1}^M p(\by_m \given \pi, \bA).
+\end{align*}
+
+This provides a ``score'' that we can attempt to optimize over the
+space of permutations. In the recordings of \citet{kato2015global},
+a subset of~$L < M$ neurons have already been labeled, making the
+problem slightly easier. Still, the number of such permutations is~$(M-L)!$,
+and, to our knowledge, this poses an intractable optimization problem.
+Instead, we propose a simplified version of this problem that can
+be solved exactly.
+
+\section{An Approximate Solution via Weighted Bipartite Matching}
+We will attempt to find a permutation by solving a relaxed version
+of the maximum marginal likelihood problem above. Specifically,
+we will formulate the permutation inference problem as a
+weighted bipartite matching problem, for which the Hungarian
+algorithm \citep{kuhn1955hungarian} provides an exact solution
+in cubic time.
+
+We construct a bipartite graph with~$M-L$ nodes on the left
+and~$N-L$ nodes on the right. The left nodes correspond to the
+neurons for which we seek labels, and the right nodes correspond
+to the possible neuron identities. For each pair of nodes~$m$ on the left
+and~$n$ on the right, connect them with an edge of weight,~$e_{m,n}$.
+The Hungarian algorithm provides a matching (a subset of~$M-L$ edges such that
+each left node is connected to exactly one right node and each right
+node has at most one edge) such that the sum of edge weights is
+maximized.  Furthermore, it does so in~$O((M-L)^2 (N-L)^2)$ time.
+The question is, how should we set the edge weights?
+
+It is not clear how to set the edge weights to correspond to the
+objective function above since the marginal probability depends
+on an entire assignment,~$\pi(1), \ldots, \pi(M)$. For the matching
+problem, we want an objective function that just depends on a single
+assignment,~$\pi(m)$. A simple approximation is to set,
+\begin{align*}
+  e_{m,n} &= p(\pi(m)=n) \, p(\by_m \given \pi(m)=n, \widetilde{\bA}(m,n)) \prod_{\ell = 1}^L p(\by_\ell \given \pi(m)=n, \widetilde{\bA}(m,n)),
+\end{align*}
+excusing the abuse of notation.
+Here, we assume the prior,~$p(\pi)$ factorizes such that we can evaluate
+the marginal,~$p(\pi(m)=n)$. There are two approximations:
+\begin{enumerate}
+\item We only consider the marginal probability of only the \emph{labeled}
+neurons,~$\ell=1, \ldots, L$, and one unlabeled neuron,~$m$.
+
+\item We define a ``pseudo-adjacency matrix''~$\widetilde{\bA}(m,n)$
+that zeros out all entries except for the~$(L+1) \times (L+1)$ submatrix
+corresponding to the labeled neurons and observed neuron~$m$, which we
+are assigning to label~$\pi(m)=n$. More formally, we define~$\widetilde{\bA}(m,n)$
+with entries~$\widetilde{a}_{i \to j}(m,n)$ as follows,
+\begin{align*}
+  \widetilde{a}_{i \to j}(m,n) &=
+  \begin{cases}
+    a_{i \to j}  & \text{both $i$ and~$j$ are either labeled or equal to~$n$} \\ 
+    0 & \text{o.w.}
+  \end{cases}
+\end{align*}
+\end{enumerate}
+
+This pseudo-adjacency matrix leads to the following interpretation of the edge
+weight:~$e_{m,n}$ is the marginal probability of the activity of the labeled neurons
+after including a single extra neuron,~$m$, with label~$\pi(m)=n$. While this
+ignores a significant amount of information (i.e. the~$M-L-1$ other neurons, it
+successfully renders the edge weights independent of one another. Alternatively,
+we could set the other edges of~$\widetilde{\bA}(m,n)$ to one rather than
+zero in order to include all other possible interactions, even though many
+would truly be zero.
+
+\section{A Greedy Approach}
+For this problem, the~$O(M^2 N^2)$ complexity of the Hungarian algorithm
+may be unacceptable. A simpler approach is to just do a greedy fit. Using
+the same edge weights as above, we could iterate over each unlabeled
+neuron,~$m$, and each possible assignment,~$n$, evaluate the weight
+of the corresponding edges, and add the assignment~$\pi(m)=n$ for the
+highest weighted edge. After making this assignment, we add~$m$ to the
+set of labeled neurons and repeat. The complexity of this algorithm
+is only~$O(M^2 N)$. However, note that evaluating the edge weights
+is, in the worst case,~$O(M^3)$ as well. Yikes! 
+
+\bibliographystyle{apa}
+\bibliography{refs.bib}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
