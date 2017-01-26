@@ -1,12 +1,15 @@
-import autograd.numpy as np  # Thinly-wrapped numpy
-from autograd import grad    # The only autograd function you may ever need
 import autograd.numpy as np
 import autograd.numpy.random as npr
-import autograd.scipy.stats.norm as norm
-from copy import deepcopy
-from autograd import jacobian
+from autograd import grad, jacobian
+
+import matplotlib.pyplot as plt
+import seaborn
+seaborn.set_style("white")
+seaborn.set_context("talk")
 
 def sigmoid(x): return 1 / (1 + np.exp(-x))
+
+def logit(pi): return np.log(pi / (1-pi))
 
 def unpack_gaussian_params(params):
     # Params of a diagonal Gaussian.
@@ -39,35 +42,71 @@ def diag_kumaraswamy(params):
     a, b = unpack_kumaraswamy_params(params)
     return sample_diag_kumaraswamy(a, b)
 
-def sample_diag_gaussian(mean, log_std,temp):
-    #seed = npr.RandomState(0)
-    return np.random.randn(mean.shape[0]) * np.exp(log_std)/temp + mean
+# Categorical distributions
+def psi_to_pi(psi):
+    pi = []
+    # We could also write this with loops
+    for i in range(psi.shape[0]):
+        pi.append(psi[i] * (1 - np.sum(np.array(pi))))
+    pi.append(1-np.sum(np.array(pi)))
+    return np.array(pi)
 
-def diag_gaussian(params,temp):
+def sample_pi_gaussian(params, noise, temp):
     mean, log_std = unpack_gaussian_params(params)
-    return sample_diag_gaussian(mean,log_std,temp)
+    sample = noise * np.exp(log_std) / temp + mean
+    psi = sigmoid(sample)
+    return psi_to_pi(psi)
 
+def sample_pi_kumaraswamy(params, temp):
+    psi = diag_kumaraswamy(params)
+    return psi_to_pi(psi)
 
-
-def proportionsBreaking(Psi):
-    propstrue =[]
-    for i in range(Psi.shape[0]):
-        propstrue.append(Psi[i]*(1-np.sum(np.array(propstrue))))
-    propstrue.append(1-np.sum(np.array(propstrue)))
-    return np.array(propstrue)
-
-def sample_proportions_gaussian(params,temp):
-    sample=diag_gaussian(params,temp)
-    Psi=sigmoid(sample)
-    return proportionsBreaking(Psi)
-
-def sample_proportions_kumaraswamy(params,temp):
-    Psi = diag_kumaraswamy(params)
-    return proportionsBreaking(Psi)
-
-def sample_proportions_gumbell(params,temp):
+def sample_pi_gumbell(params, temp):
     sample = diag_gumbell(params,temp)
     return np.exp(sample)/np.sum(np.exp(sample))
+
+### Computing the density of p(pi | params)
+def density_pi_gaussian(pi, params, temp):
+    assert pi.ndim == 1
+    K = pi.shape[0]
+    mean, log_std = unpack_gaussian_params(params)
+    std = np.exp(log_std) / temp
+
+    p_pi = 0
+    # We could also write this with loops
+    for i in range(K-1):
+        ub = 1 - np.sum(pi[:i])
+
+        # Computing the determinant of the inverse tranformation
+        p_pi *= ub / (pi[i] * (ub - pi[i]))
+
+        # Compute p(psi[i] | mu, sigma)
+        psi_i = logit(pi[i] / ub)
+        p_pi *= 1./np.sqrt(2 * np.pi * std[i]**2) \
+                * np.exp(-0.5 * (psi_i - mean[i])**2 / std[i]**2)
+
+    return p_pi
+
+def log_density_pi_gaussian(pi, params, temp):
+    assert pi.ndim == 1
+    K = pi.shape[0]
+    mean, log_std = unpack_gaussian_params(params)
+    std = np.exp(log_std) / temp
+
+    log_p = 0
+    # We could also write this with loops
+    for i in range(K-1):
+        ub = 1 - np.sum(pi[:i])
+
+        # Computing the determinant of the inverse tranformation
+        log_p += np.log(ub) - np.log(pi[i]) - np.log(ub - pi[i])
+
+        # Compute p(psi[i] | mu, sigma)
+        psi_i = logit(pi[i] / ub)
+        log_p += -0.5 * np.log(2 * np.pi) - np.log(std[i]) \
+                 -0.5 * (psi_i - mean[i])**2 / std[i]**2
+
+    return log_p
 
 
 def doublystochastic_breaking(Psi):
@@ -160,23 +199,37 @@ def sample_doubly_stochastic(Psi, verbose=False):
 
     #return [item for sublist in P for item in sublist]
 
-#g= jacobian(doublystochastic_breaking)
-#g(np.ones((5,5)))
-#grad_diag_gaussian=elementwise_grad(diag_gaussian)
-proportions1 = lambda y: proportionsKumaraswamy(y, 0.1)
-proportions2 = lambda y: proportionsGumbell(y,0.1)
-proportions2 = lambda y: proportionsGaussian(y,0.1)
+K = 10
+mu = np.zeros(K-1)
+logsigma = np.zeros(K-1)
+noise = npr.randn(K-1)
+params = np.concatenate((mu, logsigma))
+pi = sample_pi_gaussian(params, noise, 1.0)
 
-#print proportions2(np.ones(8))
+# print(pi)
+# print(pi.sum())
 
-#print g(np.ones(8))
-Psi=np.ones((3,3))
-P=[[1,2,3,4,5],[1,2,3,4]]
+print(log_density_pi_gaussian(pi, params, 1.0))
+print(np.sum(-0.5*np.log(2*np.pi) - 0.5*noise**2))
 
+# plt.bar(np.arange(K), pi)
+# plt.show()
 
-#print sum(Psi[0:0,0])
-print doublystochastic_breaking(Psi)
-print sample_doubly_stochastic(Psi)
-g=jacobian(doublystochastic_breaking)
-print g(Psi)
+# jac = jacobian(sample_pi_gaussian, argnum=0)
+# plt.imshow(jac(params, noise, 1.0), interpolation="none")
+# plt.colorbar()
+
+g = grad(log_density_pi_gaussian, argnum=1)
+print(g(pi, params, 1.0))
+
+# Psi = np.ones((3,3))
+# P = [[1,2,3,4,5],[1,2,3,4]]
+#
+#
+# #print sum(Psi[0:0,0])
+# print(doublystochastic_breaking(Psi))
+# print(sample_doubly_stochastic(Psi))
+#
+# g = jacobian(doublystochastic_breaking)
+# print(g(Psi))
 
