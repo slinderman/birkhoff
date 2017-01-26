@@ -108,6 +108,40 @@ def log_density_pi_gaussian(pi, params, temp):
 
     return log_p
 
+def log_probability_gmm(x, pi, model_params):
+    N, D = x.shape
+    ll = 0
+    for n in range(N):
+        ll += local_log_probability_gmm(x[n], pi[n], model_params)
+    return ll
+
+def local_log_probability_gmm(x_n, pi_n, model_params):
+    assert x_n.ndim == 1
+    D = x_n.shape[0]
+    mu, sigma, alpha = model_params
+
+    E_x = np.dot(pi_n, mu.T)
+    ll  = -0.5 * np.log(2 * np.pi * sigma**2) *  D
+    ll += -0.5 * np.sum((x_n - E_x)**2 / sigma**2)
+    ll += np.sum(np.log(np.dot(pi_n, alpha)))
+    return ll
+
+def elbo_gmm(x, var_params, model_params, epsilon, temp):
+    elbo = 0
+
+    assert epsilon.ndim == 3
+    N_samples = epsilon.shape[0]
+    N, D = x.shape
+
+    for s in range(N_samples):
+        for n in range(N):
+            pi_n = sample_pi_gaussian(var_params, epsilon[s, n], temp)
+            elbo += local_log_probability_gmm(x[n], pi_n, model_params)
+            elbo -= log_density_pi_gaussian(pi_n, var_params, temp)
+
+    elbo /= N_samples
+
+    return elbo
 
 def doublystochastic_breaking(Psi):
     """
@@ -199,18 +233,16 @@ def sample_doubly_stochastic(Psi, verbose=False):
 
     #return [item for sublist in P for item in sublist]
 
-K = 10
+K = 4
 mu = np.zeros(K-1)
 logsigma = np.zeros(K-1)
-noise = npr.randn(K-1)
-params = np.concatenate((mu, logsigma))
-pi = sample_pi_gaussian(params, noise, 1.0)
+epsilon = npr.randn(K - 1)
+var_params = np.concatenate((mu, logsigma))
+pi = sample_pi_gaussian(var_params, epsilon, 1.0)
 
-# print(pi)
-# print(pi.sum())
+print(log_density_pi_gaussian(pi, var_params, 10.0))
+print(np.sum(-0.5 * np.log(2*np.pi) - 0.5 * epsilon ** 2))
 
-print(log_density_pi_gaussian(pi, params, 1.0))
-print(np.sum(-0.5*np.log(2*np.pi) - 0.5*noise**2))
 
 # plt.bar(np.arange(K), pi)
 # plt.show()
@@ -220,16 +252,63 @@ print(np.sum(-0.5*np.log(2*np.pi) - 0.5*noise**2))
 # plt.colorbar()
 
 g = grad(log_density_pi_gaussian, argnum=1)
-print(g(pi, params, 1.0))
+print(g(pi, var_params, 1000.0))
 
-# Psi = np.ones((3,3))
-# P = [[1,2,3,4,5],[1,2,3,4]]
-#
-#
-# #print sum(Psi[0:0,0])
-# print(doublystochastic_breaking(Psi))
-# print(sample_doubly_stochastic(Psi))
-#
-# g = jacobian(doublystochastic_breaking)
-# print(g(Psi))
 
+# Simulate some data
+N = 1
+D = 2
+
+# Set mixture model parameters
+mu = npr.randn(D, K)
+sigma = 0.1
+alpha = np.ones(K)/K
+model_params = (mu, sigma, alpha)
+
+# Set latent variables
+i_true = npr.randint(K, size=N)
+z_true = np.zeros((N,K))
+z_true[np.arange(N), i_true] = 1
+
+# Generate noisy data
+x_true = z_true.dot(mu.T)
+x_true += sigma * npr.randn(N, D)
+#print log_probability_gmm(x_true, z_true, model_params)
+
+# Monte Carlo estimate of the ELBO
+N_samples = 10
+epsilon = npr.randn(N_samples, N, K - 1)
+elbo_gmm(x_true, var_params, model_params, epsilon, temp=1)
+
+# Compute gradient of the ELBO wrt var_params
+g_elbo = grad(elbo_gmm, argnum=1)
+
+# Stochastic gradient ascent of the ELBO
+n_iter = 200
+stepsize = 0.01
+elbo_iterations= np.zeros(n_iter)
+for n in range(n_iter):
+    if n % 10 == 0:
+        print("Iteration ", n)
+    epsilon = npr.randn(N_samples, N, K - 1)
+    var_params += stepsize*g_elbo(x_true, var_params, model_params, epsilon, temp=1)
+    elbo_iterations[n] = elbo_gmm(x_true, var_params, model_params, epsilon, temp=1)
+
+
+pi_samples = np.array([sample_pi_gaussian(var_params, npr.randn(K - 1), temp=1)
+                       for _ in range(N_samples)])
+
+posterior = np.zeros(K)
+for k in range(K):
+    ek = np.zeros(K)
+    ek[k] = 1
+    posterior[k] = local_log_probability_gmm(x_true[0], ek, model_params)
+
+from scipy.misc import logsumexp
+posterior = np.exp(posterior - logsumexp(posterior))
+
+print("posterior: ", np.round(posterior, 3))
+print("var. mean: ", np.round(pi_samples.mean(axis=0), 3))
+
+plt.plot(elbo_iterations)
+plt.show()
