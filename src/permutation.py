@@ -43,11 +43,15 @@ def gaussian_logp(x, mu, sigma):
 
 def psi_to_pi_assignment(Psi, tol=TOL, verbose=False):
     """
-    Same as above but with a sample on the interval (lb, ub).
-    If (ub - lb < tol) then sample the entry from (lb=0, ub=tol).
-    This deterministic transformation will result in matrices that
-    like outside the Birkhoff polytope (by up to N*tol) but should
-    be more stable to sample and invert.
+    Transform a (K-1) x (K-1) matrix Psi into a KxK doubly
+    stochastic matrix Pi.  I've introduced some tolerance to
+    make it more stable, but I'm not convinced of this approach yet.
+
+    Note that this version uses direct assignment to the matrix P,
+    but this is not amenable to automatic differentiation with
+    autograd. The next version below uses list comprehension to
+    perform the same psi -> pi conversion in an automatically
+    differentiable way.
     """
     N = Psi.shape[0] + 1
     assert Psi.shape == (N - 1, N - 1)
@@ -166,7 +170,6 @@ def check_doubly_stochastic_stable(P, tol=TOL):
     assert np.max(P) <= 1 + N * tol
     print("P min: {0:.5f} max {1:.5f}".format(P.min(), P.max()))
 
-
 ### Compute the density of p(P | mu, sigma)
 def pi_to_psi_list(P, tol=TOL, verbose=False):
     """
@@ -264,8 +267,6 @@ def log_density_pi(P, mu, sigma, tol=TOL, verbose=False):
            np.sum(gaussian_logp(Psi, mu, sigma))
 
 ### Simple tests/debugging helpers
-
-# Simple test
 def sanity_check():
     """
     Make sure everything runs
@@ -434,3 +435,4 @@ if __name__ == "__main__":
     plt.plot(elbos)
     plt.xlabel("Iteration")
     plt.ylabel("ELBO")
+    
