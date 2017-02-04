@@ -21,8 +21,9 @@ color_names = ["red",
                "pastel purple",
                "mint",
                "salmon"]
-
 colors = sns.xkcd_palette(color_names)
+
+from scipy.optimize import linear_sum_assignment
 
 import autograd.numpy as np
 import autograd.numpy.random as npr
@@ -58,6 +59,7 @@ def log_dlogit(p):
 def gaussian_logp(x, mu, sigma):
     return -0.5 * np.log(2 * np.pi * sigma**2) -0.5 * (x - mu)**2 / sigma**2
 
+### Convert between real valued matrix and doubly stochatic matrix
 def psi_to_pi_assignment(Psi, tol=TOL, verbose=False):
     """
     Transform a (K-1) x (K-1) matrix Psi into a KxK doubly
@@ -187,7 +189,7 @@ def check_doubly_stochastic_stable(P, tol=TOL):
     assert np.max(P) <= 1 + N * tol
     print("P min: {0:.5f} max {1:.5f}".format(P.min(), P.max()))
 
-### Compute the density of p(P | mu, sigma)
+### Invert the transformation
 def pi_to_psi_list(P, tol=TOL, verbose=False):
     """
     Invert Pi to get Psi, assuming Pi was sampled using
@@ -230,7 +232,7 @@ def pi_to_psi_list(P, tol=TOL, verbose=False):
         Psi.append(Psi_i)
     return np.array(Psi)
 
-
+### Compute the density of p(P | mu, sigma)
 def log_det_jacobian(P, tol=TOL, verbose=False):
     """
     Compute log det of the jacobian of the inverse transformation.
@@ -283,7 +285,24 @@ def log_density_pi(P, mu, sigma, tol=TOL, verbose=False):
     return log_det_jacobian(P, tol=tol, verbose=verbose) + \
            np.sum(gaussian_logp(Psi, mu, sigma))
 
-### Simple tests/debugging helpers
+### Helpers
+def sinkhorn(P, n_iter=100):
+    """
+    `Project' a nonnegative matrix P onto the Birkhoff polytope
+    by iterative row/column normalization.
+    """
+    assert np.all(P >= 0)
+    K = P.shape[0]
+    assert P.shape == (K,K)
+    P_ds = P.copy()
+    for itr in range(n_iter):
+        P_ds /= P_ds.sum(axis=1)[:,None]
+        P_ds /= P_ds.sum(axis=0)[None,:]
+    return P_ds
+
+
+
+### Simple tests
 def sanity_check():
     """
     Make sure everything runs
@@ -335,7 +354,7 @@ if __name__ == "__main__":
     # sanity_check()
 
     ### Set up a simple matching problem
-    K = 10
+    K = 20
     D = 2
     eta = 0.2
     mus = 2 * npr.randn(K, D)
@@ -399,7 +418,7 @@ if __name__ == "__main__":
     elbos = []
 
     ### Plotting
-    fig = plt.figure(figsize=(8, 8), facecolor='white')
+    fig = plt.figure(figsize=(8, 4), facecolor='white')
     ax1 = fig.add_subplot(121, frameon=True)
     ax2 = fig.add_subplot(122, frameon=True)
     plt.ion()
@@ -407,9 +426,9 @@ if __name__ == "__main__":
 
     def plot_permutation(ax1, ax2, P):
         ax1.imshow(P_true, interpolation="none", vmin=0, vmax=1)
-        ax1.set_title("True")
+        ax1.set_title("True $\Pi$")
         ax2.imshow(P, interpolation="none", vmin=0, vmax=1)
-        ax2.set_title("Inferred")
+        ax2.set_title("Inferred $g(\mu)$")
 
 
     def callback(params, t, g):
@@ -443,42 +462,48 @@ if __name__ == "__main__":
     init_log_std = np.zeros((K - 1) ** 2)
     init_var_params = np.concatenate([init_mean, init_log_std])
     variational_params = adam(gradient, init_var_params, step_size=0.1, num_iters=100, callback=callback)
+    fig.savefig("permutation_K20.png")
 
     # Plot the elbo
-    plt.figure()
+    plt.figure(figsize=(6,4))
     plt.plot(elbos)
+    plt.xlim(0, 100)
     plt.xlabel("Iteration")
     plt.ylabel("ELBO")
+    plt.tight_layout()
+    plt.savefig("permutation_K20_elbo.png")
+
 
     # Sample from the posterior and show samples
-    # Set up figure.
-    fig = plt.figure(figsize=(8, 8), facecolor='white')
-    ax = fig.add_subplot(111, frameon=False)
-    plt.ion()
-    plt.show(block=False)
-    def plot_matching(ax, P, xlimits=[-5, 5], ylimits=[-5, 5]):
-        # Plot the true mus and the inferred labels
-        inv_matching = np.argmax(P, axis=0)  # which datapoint gets output k
-        for k in range(K):
-            plt.plot(xs[k, 0], xs[k, 1], 'sk', markersize=10)
-            plt.plot(mus[k, 0], mus[k, 1], 'ok', markersize=10)
+    mu_post, log_sigma_post, sigma_post = unpack_params(variational_params)
 
-        for k in range(K):
-            plt.plot(mus[k, 0], mus[k, 1], 'o',
-                     color=colors[k],  markersize=8)
-            plt.plot(xs[inv_matching[k], 0], xs[inv_matching[k], 1], 's',
-                     markersize=8, color=colors[k])
+    fig = plt.figure(figsize=(10, 10), facecolor='white')
+    for i in range(4):
+        for j in range(4):
+            Psi_sample = mu_post + npr.randn(K - 1, K - 1) * sigma_post
+            P_sample = psi_to_pi_list(Psi_sample)
+            # Round doubly stochastic matrix P to the nearest permutation matrix
+            row, col = linear_sum_assignment(-P_sample.T)
 
-        ax.set_xlim(xlimits)
-        ax.set_ylim(ylimits)
+            ax = fig.add_subplot(4, 4, i*4 + j +1, frameon=True)
+            for k in range(K):
+                plt.plot(xs[k, 0], xs[k, 1], 'sk', markersize=8)
+                plt.plot(mus[k, 0], mus[k, 1], 'ok', markersize=8)
 
-    N_samples = 50
-    mu_post, log_sigma_post ,sigma_post= unpack_params(variational_params)
-    Psi_samples = mu_post + npr.randn(N_samples, K - 1, K - 1) * sigma_post
-    P_samples = [psi_to_pi_list(Psi) for Psi in Psi_samples]
+            for k in range(K):
+                plt.plot(mus[k, 0], mus[k, 1], 'o',
+                         color=colors[k % len(colors)],  markersize=6)
+                plt.plot(xs[col[k], 0], xs[col[k], 1], 's',
+                         markersize=6, color=colors[k % len(colors)])
 
-    for s in range(N_samples):
-        plot_matching(ax, P_samples[s])
-        ax.set_title("Sample {}".format(s))
-        plt.pause(0.01)
+            # Scale bar
+            plt.plot([-5,-5+2*eta], [5,5], '-k', lw=3)
 
+            ax.set_xlim([-5.5, 5.5])
+            ax.set_ylim([-5.5, 5.5])
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_title("Sample {}".format(i*4+j+1))
+
+    plt.tight_layout()
+    plt.savefig("permutation_K20_xy.png")
