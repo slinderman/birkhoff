@@ -7,6 +7,23 @@ import seaborn as sns
 sns.set_context("talk")
 sns.set_style("white")
 
+color_names = ["red",
+               "windows blue",
+               "amber",
+               "faded green",
+               "dusty purple",
+               "orange",
+               "clay",
+               "pink",
+               "greyish",
+               "light cyan",
+               "steel blue",
+               "pastel purple",
+               "mint",
+               "salmon"]
+
+colors = sns.xkcd_palette(color_names)
+
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd import grad, jacobian
@@ -15,7 +32,7 @@ from autograd.optimizers import adam
 npr.seed(0)
 
 # Set a global tolerance...
-TOL = 1e-8
+TOL = 1e-16
 
 # First consider sampling a random doubly stochastic matrix
 def logistic(psi):
@@ -339,7 +356,7 @@ if __name__ == "__main__":
         mu = np.reshape((params[:(K-1)**2]), (K-1, K-1))
         log_sigma = np.reshape((params[(K-1)**2:]), (K-1, K-1))
         sigma = np.exp(log_sigma)
-        return mu, sigma
+        return mu, log_sigma, sigma
 
     # Set up the log probability objective
     # Assume a uniform prior on P?
@@ -349,14 +366,31 @@ if __name__ == "__main__":
 
     def variational_objective(params, t):
         """Provides a stochastic estimate of the variational lower bound."""
-        mu, sigma = unpack_params(params)
+        mu, log_sigma, sigma = unpack_params(params)
         Psi_samples = mu + npr.randn(num_mcmc_samples, K-1, K-1) * sigma
         P_samples = [psi_to_pi_list(Psi) for Psi in Psi_samples]
 
         elbo = 0
-        for P in P_samples:
-            # elbo = elbo + (log_prob(P, t) - log_density_pi(P, mu, sigma)) / num_mcmc_samples
+        # 1. Ignore the entropy term
+        # for P, Psi in zip(P_samples, Psi_samples):
+        #     elbo = elbo + log_prob(P, t) / num_mcmc_samples
+
+
+        # 2. Do the inverse transformation
+        # for P, Psi in zip(P_samples, Psi_samples):
+        #     elbo = elbo + (log_prob(P, t) - log_density_pi(P, mu, sigma)) / num_mcmc_samples
+
+        # 3. Use Psi to prevent inverse
+        # for P, Psi in zip(P_samples, Psi_samples):
+        #     elbo = elbo + log_prob(P, t) / num_mcmc_samples
+        #     elbo = elbo - log_det_jacobian(P) / num_mcmc_samples
+        #     elbo = elbo - np.sum(gaussian_logp(Psi, mu, sigma)) / num_mcmc_samples
+
+        # 4. Explicitly compute gaussian entropy
+        for P, Psi in zip(P_samples, Psi_samples):
             elbo = elbo + log_prob(P, t) / num_mcmc_samples
+            elbo = elbo - log_det_jacobian(P) / num_mcmc_samples
+        elbo = elbo + 0.5 * (K-1)**2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
 
         # Minimize the negative elbo
         return -elbo
@@ -364,27 +398,7 @@ if __name__ == "__main__":
     gradient = grad(variational_objective)
     elbos = []
 
-    ### Plotting code
-    # Set up figure.
-    # fig = plt.figure(figsize=(8, 8), facecolor='white')
-    # ax = fig.add_subplot(111, frameon=False)
-    # plt.ion()
-    # plt.show(block=False)
-    # def plot_matching(ax, P, xlimits=[-5, 5], ylimits=[-5, 5]):
-    #     # Plot the true mus and the inferred labels
-    #     inv_matching = np.argmax(P, axis=1)  # which datapoint gets output k
-    #     for k in range(K):
-    #         plt.plot(xs[k, 0], xs[k, 1], 'sk', markersize=10)
-    #         plt.plot(mus[k, 0], mus[k, 1], 'ok', markersize=10)
-    #
-    #     for k in range(K):
-    #         ln = plt.plot(mus[k, 0], mus[k, 1], 'o', markersize=8)[0]
-    #         plt.plot(xs[inv_matching[k], 0], xs[inv_matching[k], 1], 's',
-    #                  markersize=8, color=ln.get_color())
-    #
-    #     ax.set_xlim(xlimits)
-    #     ax.set_ylim(ylimits)
-
+    ### Plotting
     fig = plt.figure(figsize=(8, 8), facecolor='white')
     ax1 = fig.add_subplot(121, frameon=True)
     ax2 = fig.add_subplot(122, frameon=True)
@@ -403,7 +417,7 @@ if __name__ == "__main__":
         print("Iteration {} lower bound {}".format(t, elbos[-1]))
 
         plt.cla()
-        mu, sigma = unpack_params(params)
+        mu, log_sigma, sigma = unpack_params(params)
         Psi = mu + sigma * npr.randn(K - 1, K - 1)
         P = psi_to_pi_list(Psi)
         # plot_matching(ax, P)
@@ -435,4 +449,36 @@ if __name__ == "__main__":
     plt.plot(elbos)
     plt.xlabel("Iteration")
     plt.ylabel("ELBO")
-    
+
+    # Sample from the posterior and show samples
+    # Set up figure.
+    fig = plt.figure(figsize=(8, 8), facecolor='white')
+    ax = fig.add_subplot(111, frameon=False)
+    plt.ion()
+    plt.show(block=False)
+    def plot_matching(ax, P, xlimits=[-5, 5], ylimits=[-5, 5]):
+        # Plot the true mus and the inferred labels
+        inv_matching = np.argmax(P, axis=0)  # which datapoint gets output k
+        for k in range(K):
+            plt.plot(xs[k, 0], xs[k, 1], 'sk', markersize=10)
+            plt.plot(mus[k, 0], mus[k, 1], 'ok', markersize=10)
+
+        for k in range(K):
+            plt.plot(mus[k, 0], mus[k, 1], 'o',
+                     color=colors[k],  markersize=8)
+            plt.plot(xs[inv_matching[k], 0], xs[inv_matching[k], 1], 's',
+                     markersize=8, color=colors[k])
+
+        ax.set_xlim(xlimits)
+        ax.set_ylim(ylimits)
+
+    N_samples = 50
+    mu_post, log_sigma_post ,sigma_post= unpack_params(variational_params)
+    Psi_samples = mu_post + npr.randn(N_samples, K - 1, K - 1) * sigma_post
+    P_samples = [psi_to_pi_list(Psi) for Psi in Psi_samples]
+
+    for s in range(N_samples):
+        plot_matching(ax, P_samples[s])
+        ax.set_title("Sample {}".format(s))
+        plt.pause(0.01)
+
