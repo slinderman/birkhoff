@@ -16,7 +16,7 @@
 \begin{document}
 
 \twocolumn[
-\icmltitle{Long Title}
+\icmltitle{Reparameterizing the Birkhoff Polytope for Variational Permutation Inference}
 
 \icmlauthor{Your Name}{email@yourdomain.edu}
 \icmladdress{Your Fantastic Institute,
@@ -69,9 +69,10 @@ parameters are given by,
 \end{align}
 where
 \begin{align}
-  -\KL{q(x; \theta)}{p(x \mid y)} &= \E_{x \sim q(x; \theta)}
+  -\KL{q(x; \theta)}{p(x \mid y)} 
+  &= \E_{q}
   \left[ \log p(x \mid y) - \log q(x; \theta) \right] \\
-  &\geq \E_{x \sim q(x; \theta)}
+  &\geq \E_{q}
   \left[ \log p(x, \, y) - \log q(x; \theta) \right] \\
   &= \cL(\theta).
 \end{align}
@@ -345,5 +346,43 @@ will not have a severe effect on our stochastic gradient algorithm.
 
 \bibliography{refs}
 \bibliographystyle{icml2016}
+
+\appendix
+
+\section{Analytical Gradients}
+What is~$\partial \pi_{ij} / \partial \psi_{kl}$?
+
+\begin{itemize}
+\item If~$(i,j) \prec (k,l)$, then~$\psi_{k,l}$ does not influence~$\pi_{i,j}$ and the partial derivative is zero.
+
+\item If~$(i,j) = (k,l)$, then
+  \begin{align}
+    \frac{\partial \pi_{i,j}}{\partial \psi_{i,j}}
+    &= \frac{\partial}{\partial \psi_{ij}} \left\{ \ell_{ij} + \sigma(\psi_{ij}) ( u_{ij} - \ell_{ij}) \right\} \\
+    &= \sigma(\psi_{ij}) \sigma(-\psi_{ij}) (u_{ij} - \ell_{ij}) 
+  \end{align}
+
+\item If~$(i,j) \succ (k,l)$ then the~$\psi_{k,l}$ influences~$\pi_{i,j}$ through the bounds. That is, we need to compute:
+  \begin{align}
+    \frac{\partial \pi_{i,j}}{\partial \psi_{k,l}}
+    &=
+    \frac{\partial \pi_{i,j}}{\partial \ell_{i,j}} \frac{\partial \ell_{i,j}}{\partial \psi_{k,j}}
+    +
+    \frac{\partial \pi_{i,j}}{\partial u_{i,j}} \frac{\partial u_{i,j}}{\partial \psi_{k,j}} \\
+    &= 
+    \sigma(-\psi_{ij}) \frac{\partial \ell_{i,j}}{\partial \psi_{k,j}}
+    +
+    \sigma(\psi_{ij}) \frac{\partial u_{i,j}}{\partial \psi_{k,j}}
+  \end{align}
+
+  The upper bounds are easier. There are two cases:
+  \begin{enumerate}
+  \item If~$1-\sum_{k=1}^{i-1} \pi_{k,j} < 1-\sum_{l=1}^{j-1} \pi_{il}$, then the column sum is tight and the partial derivative is only non-zero for~$psi_{kl}$ such that~$l=j$. In this case, 
+    \begin{align}
+    \frac{\partial u_{i,j}}{\partial \psi_{k,j}}
+    &= - \frac{\partial \pi_{k,j}}{\partial \psi_{k,j}}
+    \end{align}
+  \end{enumerate}
+\end{itemize}
 
 \end{document}

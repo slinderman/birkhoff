@@ -30,6 +30,8 @@ import autograd.numpy.random as npr
 from autograd import grad, jacobian
 from autograd.optimizers import adam
 
+from birkhoff.stickbreaking_primitives import psi_to_birkhoff
+
 npr.seed(0)
 
 # Set a global tolerance...
@@ -58,6 +60,9 @@ def log_dlogit(p):
 
 def gaussian_logp(x, mu, sigma):
     return -0.5 * np.log(2 * np.pi * sigma**2) -0.5 * (x - mu)**2 / sigma**2
+
+def gaussian_entropy(log_sigma):
+    return 0.5 * (K - 1) ** 2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
 
 ### Convert between real valued matrix and doubly stochatic matrix
 def psi_to_pi_assignment(Psi, tol=TOL, verbose=False):
@@ -387,7 +392,8 @@ if __name__ == "__main__":
         """Provides a stochastic estimate of the variational lower bound."""
         mu, log_sigma, sigma = unpack_params(params)
         Psi_samples = mu + npr.randn(num_mcmc_samples, K-1, K-1) * sigma
-        P_samples = [psi_to_pi_list(Psi) for Psi in Psi_samples]
+        # P_samples = [psi_to_pi_list(Psi) for Psi in Psi_samples]
+        P_samples = [psi_to_birkhoff(logistic(Psi)) for Psi in Psi_samples]
 
         elbo = 0
         # 1. Ignore the entropy term
@@ -409,7 +415,7 @@ if __name__ == "__main__":
         for P, Psi in zip(P_samples, Psi_samples):
             elbo = elbo + log_prob(P, t) / num_mcmc_samples
             elbo = elbo - log_det_jacobian(P) / num_mcmc_samples
-        elbo = elbo + 0.5 * (K-1)**2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
+        elbo = elbo + gaussian_entropy(log_sigma)
 
         # Minimize the negative elbo
         return -elbo
