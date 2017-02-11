@@ -4,6 +4,7 @@ from autograd import grad, jacobian
 from scipy.misc import logsumexp
 from scipy.special import gammaln
 from scipy.linalg import norm
+from scipy.stats import dirichlet
 import matplotlib.pyplot as plt
 import seaborn
 seaborn.set_style("white")
@@ -14,57 +15,59 @@ import math
 
 def hellinger(p, q):
     return norm(np.sqrt(p) - np.sqrt(q)) / np.sqrt(2)
+def dirichlet_logpdf(x,alpha):
+    return np.dot(np.log(x),alpha-1)-np.sum(gammaln(alpha))+gammaln(np.sum(alpha))
 
 def sigmoid(x): return 1 / (1 + np.exp(-x))
 
-def logit(pi): return np.log(pi / (1-pi))
+def logit(pi): return np.log(pi) - np.log(1-pi)
 
 def pack_gaussian_params(mean, log_std):
     return np.concatenate((np.reshape(mean, mean.shape[0] * mean.shape[1]), np.reshape(log_std, log_std.shape[0] * log_std.shape[1])))
 
-def pack_gumbell_params(loga):
-    return np.reshape(loga, loga.shape[0] * loga.shape[1])
+def pack_gumbell_params(loga,log_temp):
+    return np.concatenate((np.reshape(loga, loga.shape[0] * loga.shape[1]),np.reshape(log_temp,1)))
+
 
 def pack_kumaraswamy_params(loga,logb):
     return np.concatenate((np.reshape(loga, loga.shape[0] * loga.shape[1]), np.reshape(logb, logb.shape[0] * logb.shape[1])))
 
 
 def unpack_gumbell_params(params, N):
-    loga = params
-    return np.reshape(loga, (N, -1 ) )
+    D=len(params)
+    loga = params[:D-1]
+    log_temp = params[D-1]
+    return np.reshape(loga, (N, -1 ) ),np.reshape(log_temp,1)
 
 def unpack_gaussian_params(params, N):
     # Params of a diagonal Gaussian.
     D = np.shape(params)[-1] // 2
-
     means, log_stds = params[:,:D], params[:,D:]
-
     return np.reshape(means, (N, -1)), np.reshape(log_stds, (N, -1))
 
 
-def sample_pi_gaussian(params, noise, temp):
+def sample_pi_gaussian(params, noise, temp,epsilon):
+    #epsilon = 1e-9
     mean, log_std = unpack_gaussian_params(params, noise.shape[0])
     sample = noise * np.exp(log_std) / np.sqrt(temp) + mean
     psi = sigmoid(sample)
+    psi = np.minimum(1-epsilon,psi)
     return psi_to_pi(psi)
 
 def unpack_kumaraswamy_params(params, N):
     # Params of a kumaraswamy.
 
     D = np.shape(params)[-1] // 2
-
     loga, logb = params[:,:D], params[:,D:]
 
     return np.reshape(loga, (N, -1)), np.reshape(logb, (N, -1))
 
 
-def sample_pi_gumbell(params, noise, temp):
+def sample_pi_gumbell(params, noise,temp):
     loga = params
 
     sample = (loga-np.log(-np.log(noise)))/temp
-
     sample =(sample.T- np.amax(sample,axis=1)).T
-
     return (np.exp(sample.T)/np.sum(np.exp(sample),axis=1)).T
 
 
@@ -105,7 +108,6 @@ def density_pi_gaussian(pi, params, temp):
         p_pi.append(0)
         for k in range(K-1):
             ub = 1 - np.sum(pi[n,:k])
-
             # Computing the determinant of the inverse tranformation
             p_pi[n] *= ub / (pi[n,k] * (ub - pi[n,k]))
             # Compute p(psi[i] | mu, sigma)
@@ -114,30 +116,33 @@ def density_pi_gaussian(pi, params, temp):
                     * np.exp(-0.5 * (psi_i - mean[n,k])**2 / std[n,k]**2)
     return p_pi
 
-def log_density_pi_concrete(pi, params, temp):
+def log_density_pi_concrete(pi, params,temp):
 
     log_pi = []
     K = pi.shape[1]
     N = pi.shape[0]
 
-    loga = unpack_gumbell_params(params, N)
+    loga = params
 
     for n in range(N):
+
         log_pi.append(0)
         sum = 0
-        log_pi[n] += (K-1) * np.log(temp) + gammaln(K)
+        log_pi[n] = log_pi[n] + (K-1) * np.log(temp) + gammaln(K)
 
         for k in range(K):
-            log_pi[n] += loga[n,k] - (temp + 1) * np.log(pi[n,k])
-            sum += np.exp(loga[n,k])* np.power(pi[n,k], -temp)
 
-        log_pi[n] += -np.log(sum)
+            log_pi[n] = log_pi[n] + loga[n,k] - (temp + 1) * np.log(pi[n,k])
+            sum = sum + np.exp(loga[n,k])* np.power(pi[n,k], - temp)
 
+        log_pi[n] = log_pi[n] -np.log(sum)* K
+        #print ((K-1) * np.log(temp) + gammaln(K), np.log(sum), log_pi[n]+np.log(sum) -((K-1) * np.log(temp) + gammaln(K)),log_pi[n])
+        #print pi[n,:]
     return np.array(log_pi)
 
 def log_density_pi_gaussian(pi, params, temp):
     K = pi.shape[1]
-
+    epsilon = 0
     mean, log_std = unpack_gaussian_params(params, pi.shape[0])
 
     std = np.exp(log_std) / np.sqrt(temp)
@@ -147,12 +152,14 @@ def log_density_pi_gaussian(pi, params, temp):
         logp_pi.append(0)
         for i in range(K - 1):
             ub = 1 - np.sum(pi[n, :i])
+            ub = np.maximum(np.minimum(ub,1-epsilon),epsilon)
             # Computing the determinant of the inverse tranformation
-            logp_pi[n] += np.log(ub) - np.log(pi[n,i]) - np.log(ub - pi[n,i])
+            logp_pi[n] = logp_pi[n] + np.log(ub) - np.log(pi[n,i]) - np.log(np.maximum(ub - pi[n,i],epsilon))
             # Compute p(psi[i] | mu, sigma)
-            psi_i = logit(pi[n, i] / ub)
 
-            logp_pi[n] += -0.5 * np.log(2 * np.pi) - np.log(std[n,i]) \
+            psi_i = np.log(pi[n, i]) - np.log(np.maximum(ub - pi[n,i],epsilon))
+
+            logp_pi[n] =  logp_pi[n] -0.5 * np.log(2 * np.pi) - log_std[n,i] \
                  -0.5 * (psi_i - mean[n,i])**2 / std[n,i]**2
 
     return np.array(logp_pi)
@@ -168,10 +175,10 @@ def log_density_pi_kumaraswamy(pi, params, temp):
         for i in range(K - 1):
             ub = 1 - np.sum(pi[n, :i])
             # Computing the determinant of the inverse tranformation
-            logp_pi[n] += -np.log(ub)
+            logp_pi[n] = logp_pi[n] -np.log(ub)
             # Compute p(psi[i] | mu, sigma)
             psi_i = pi[n, i] / ub
-            logp_pi[n] += loga[n,i] + logb[n,i] + (np.exp(loga[n,i])-1) * np.log(psi_i) + (np.exp(logb[n,i])-1) * np.log(1-np.power(psi_i,np.exp(loga[n,i])))
+            logp_pi[n] = logp_pi[n] + loga[n,i] + logb[n,i] + (np.exp(loga[n,i])-1) * np.log(psi_i) + (np.exp(logb[n,i])-1) * np.log(1-np.power(psi_i,np.exp(loga[n,i])))
     return np.array(logp_pi)
 
 
@@ -179,7 +186,7 @@ def log_probability_gmm(x, pi, model_params):
     N, D = x.shape
     ll = 0
     for n in range(N):
-        ll += local_log_probability_gmm(x[n], pi[n], model_params)
+        ll = ll + local_log_probability_gmm(x[n], pi[n], model_params)
     return ll
 
 def local_log_probability_gmm(x_n, pi_n, model_params):
@@ -190,7 +197,7 @@ def local_log_probability_gmm(x_n, pi_n, model_params):
     E_x = np.dot(pi_n, mu.T)
     #print E_x.shape
     ll  = -0.5 * np.log(2 * np.pi * sigma**2) *  D
-    ll += -0.5 * np.sum((x_n - E_x)**2 / sigma**2,axis =1)
+    ll = ll -0.5 * np.sum((x_n - E_x)**2 / sigma**2,axis =1)
 
     #ll += np.sum(np.log(np.dot(pi_n, alpha)))
 
@@ -199,11 +206,10 @@ def local_log_probability_gmm(x_n, pi_n, model_params):
 def log_evidence_discrete(x_n,model_params):
     assert x_n.ndim ==1
     mu, sigma, alpha = model_params
-
     K = mu.shape[1]
 
     ll  = -0.5 * np.log(2 * np.pi * sigma**2) *  D
-    ll += -0.5 * np.sum((x_n - mu.T)**2 / sigma**2, axis=1)
+    ll = ll -0.5 * np.sum((x_n - mu.T)**2 / sigma**2, axis=1)
 
     #ll += np.log(1./K)
     assert ll.shape == (K,)
@@ -215,63 +221,79 @@ def log_evidence_cont(x_n,model_params,N_samples):
     K = mu.shape[1]
 
     epsilon = npr.uniform(0, 1, (N_samples, K))
+    D = len(x_n)
     pi=np.zeros((N_samples,K))
 
     for n in range(N_samples):
         pi[n,:]=np.random.dirichlet(np.ones(K))
 
     ll = -0.5 * np.log(2 * np.pi * sigma ** 2) * D
-    ll += -0.5 * np.sum((x_n - mu.dot(pi[:,:].T).T)**2 / sigma**2, axis=1)
+    ll = ll -0.5 * np.sum((x_n - mu.dot(pi[:,:].T).T)**2 / sigma**2, axis=1)
     return logsumexp(ll)-np.log(len(ll))
 
-def elbo_gmm_gaussian(x, var_params, model_params, temp,N_samples):
+def elbo_gmm_gaussian(x, var_params, model_params, temp_prior,N_samples,eps):
 
     elbo = 0
 
     N, D = x.shape
-    K= var_params.shape[0]/2+1
+    K= model_params[0].shape[1]
 
     epsilon=npr.randn(N_samples, N, K -1 )
 
     for n in range(N):
-        pi_n = sample_pi_gaussian(np.tile(var_params,(N_samples,1)),np.reshape(epsilon[:,n,:],(N_samples,K-1)), temp)
-        elbo += local_log_probability_gmm(x[n], pi_n, model_params) -N_samples*np.log(math.factorial(pi_n.shape[1]-1))
-        elbo -= np.sum(log_density_pi_gaussian(pi_n, np.tile(var_params,(N_samples,1)), temp))
+        pi_n = sample_pi_gaussian(np.tile(var_params,(N_samples,1)),np.reshape(epsilon[:,n,:],(N_samples,K-1)), 1,eps)
+        #pi_n = np.maximum(pi_n, 0)
+        #pi_n = (pi_n.T / np.sum(pi_n, axis=1)).T
+
+        #print pi_n
+        print (local_log_probability_gmm(x[n], pi_n, model_params), np.sum(dirichlet_logpdf(pi_n,np.ones(K)*temp_prior)),- np.sum(log_density_pi_gaussian(pi_n, np.tile(var_params,(N_samples,1)), 1)))
+        elbo = elbo + local_log_probability_gmm(x[n], pi_n, model_params) + np.sum(dirichlet_logpdf(pi_n,np.ones(K)*temp_prior))
+        elbo = elbo - np.sum(log_density_pi_gaussian(pi_n, np.tile(var_params,(N_samples,1)), 1))
 
     elbo /= N_samples
 
     return elbo
 
+def pi_to_psi(pi):
+    sum=0
+    psi=np.zeros(len(pi)-1)
+    for i in range(len(pi)-1):
+        psi[i]=pi[i]/(1-sum)
+        sum=sum+pi[i]
+    return psi
 
 
-def elbo_gmm_gumbell(x, var_params, model_params, temp,N_samples):
+def elbo_gmm_gumbell(x, var_params, model_params, temp_prior, N_samples):
 
     elbo = 0
-
-
     N, D = x.shape
+    K = model_params[0].shape[1]
     epsilon = npr.uniform(0, 1, (N_samples, N, K))
+    temp = np.exp(var_params[len(var_params) - 1])
 
     for n in range(N):
-        pi_n = sample_pi_gumbell(np.tile(var_params,(N_samples,1)), np.reshape(epsilon[:,n,:],(N_samples,-1)), temp)
-        elbo += local_log_probability_gmm(x[n], pi_n, model_params)  -N_samples*np.log(math.factorial(pi_n.shape[1]-1))
-        elbo -= np.sum(log_density_pi_concrete(pi_n, np.tile(var_params,(N_samples,1)), temp))
+        pi_n = sample_pi_gumbell(np.tile(var_params[:len(var_params)-1],(N_samples,1)), np.reshape(epsilon[:,n,:], (N_samples,-1)),temp)
+        elbo = elbo + local_log_probability_gmm(x[n], pi_n, model_params)  +np.sum(dirichlet_logpdf(pi_n,np.ones(K)*temp_prior))
+        #print (local_log_probability_gmm(x[n], pi_n, model_params)/N_samples,-1*np.sum(log_density_pi_concrete(pi_n, np.tile(var_params[:len(var_params)-1],(N_samples,1)),temp))/N_samples,
+               #np.log(math.factorial(pi_n.shape[1] - 1)))
+
+        elbo = elbo - np.sum(log_density_pi_concrete(pi_n, np.tile(var_params[:len(var_params)-1],(N_samples,1)),temp))
 
     elbo /= N_samples
-
     return elbo
 
-def elbo_gmm_kumaraswamy(x, var_params, model_params, temp,N_samples):
+
+
+def elbo_gmm_kumaraswamy(x, var_params, model_params, temp_prior,N_samples):
 
     elbo = 0
-
-
+    K =model_params[0].shape[1]
     N, D = x.shape
     epsilon = npr.uniform(0.0, 1.0, (N_samples, N, K - 1))
     for n in range(N):
-        pi_n  = sample_pi_kumaraswamy(np.tile(var_params,(N_samples,1)),np.reshape(epsilon[:,n,:],(N_samples,-1)), temp)
-        elbo += local_log_probability_gmm(x[n], pi_n, model_params)  -np.log(math.factorial(pi_n.shape[1]-1))*N_samples
-        elbo -= np.sum(log_density_pi_kumaraswamy(pi_n, np.tile(var_params,(N_samples,1)), temp))
+        pi_n  = sample_pi_kumaraswamy(np.tile(var_params,(N_samples,1)),np.reshape(epsilon[:,n,:],(N_samples,-1)), 1)
+        elbo += local_log_probability_gmm(x[n], pi_n, model_params)  + np.sum(dirichlet_logpdf(pi_n,np.ones(K)*temp_prior))
+        elbo -= np.sum(log_density_pi_kumaraswamy(pi_n, np.tile(var_params,(N_samples,1)), 1))
 
     elbo /= N_samples
 
@@ -369,7 +391,7 @@ def sample_doubly_stochastic(Psi, verbose=False):
     #return [item for sublist in P for item in sublist]
 
 
-#Number of simulations
+
 N_simulations=100 #Number of simulations for a single temperature
 temps = np.array([0.5, 1, 5, 10]) #temperatures
 N_temps = len(temps) #Number of temperatures
@@ -408,168 +430,229 @@ posterior_all = np.zeros((N_simulations,N_temps,  K))
 log_evidence_all=np.zeros((N_simulations,N_temps))
 #simulate data now
 
-
-
-for s in range(N_simulations):
-    for t in range(N_temps):
-
-        print("Iteration ", (t, s))
-
-        # Set mixture model parameters
-        mu_gmm = npr.randn(D, K)
-        sigma_gmm = 0.05
-        alpha_gmm = np.ones(K)/K
-        model_params = (mu_gmm, sigma_gmm, alpha_gmm)
-
-        mu_gmm_all[s,t]=mu_gmm
-
-        # Set latent variables
-        i_true = npr.randint(K, size=N)
-        z_true = np.zeros((N,K))
-        z_true[np.arange(N), i_true] = 1
-
-        z_true_all[s,t]=z_true
-
-        # Generate noisy data
-        x_true = z_true.dot(mu_gmm.T)
-        x_true += sigma_gmm * npr.randn(N, D)
-        x_true_all[s,t]=x_true.T
-
-        log_evidence_all[s,t]=log_evidence_cont(x_true[0],model_params,1000)
-
-        #Compute actual posterior probability
-
-        posterior = np.zeros(K)
-        for k in range(K):
-            ek = np.zeros((1,K))
-            ek[0,k] = 1
-            posterior[k] = local_log_probability_gmm(x_true[0], ek, model_params)
-
-        posterior = np.exp(posterior - logsumexp(posterior))
-        posterior_all[s,t]=posterior
-
-        #set recognition model (initial) params: Gaussian case
-
-        mu = np.zeros((N,K-1))
-        logsigma = np.zeros((N,K-1))
-        var_params_gaussian = pack_gaussian_params(mu,logsigma)
-
-        #set recognition model (initial) params: Gumbell case
-
-        loga = np.zeros((N,K))
-        var_params_gumbell = pack_gumbell_params(loga)
-
-        loga = np.zeros((N,K-1))
-        logb = np.zeros((N,K-1))
-        var_params_kumaraswamy = pack_kumaraswamy_params(loga,logb)
-
-
-
-        # Monte Carlo number of samples samples (per data point) estimate of the ELBO
-        N_samples = 10
-        elbo_gaussian = lambda x,t: -1*elbo_gmm_gaussian(x_true,x,model_params,temps[0],N_samples)
-        elbo_gumbell = lambda x, t: -1 * elbo_gmm_gumbell(x_true, x, model_params, temps[0],N_samples)
-        elbo_kumaraswamy = lambda x, t: -1 * elbo_gmm_kumaraswamy(x_true, x, model_params, temps[0],N_samples)
-        #print elbo_gaussian_2(var_params_gaussian,1)
-        # Compute gradient of the ELBO wrt var_params
-        g_elbo_gaussian = grad(elbo_gmm_gaussian,argnum=1)
-        g_elbo_gumbell = grad(elbo_gmm_gumbell, argnum=1)
-        g_elbo_kumaraswamy = grad(elbo_gmm_kumaraswamy, argnum=1)
-
-        #Gradient ascent
-        stepsize = 0.01
-
-        tol=0.001
-
-        variational_params,varseq = adam(grad(elbo_gaussian), var_params_gaussian, step_size=0.1, num_iters=N_iters)
-        var_params_gaussian_all[s, t, :] = varseq
-        print 'Gaussian Done'
-        variational_params, varseq = adam(grad(elbo_gumbell), var_params_gumbell, step_size=0.1, num_iters=N_iters)
-        var_params_gumbell_all[s, t, :] = varseq
-        print 'Gumbel Done'
-        variational_params, varseq = adam(grad(elbo_kumaraswamy), var_params_kumaraswamy, step_size=0.1, num_iters=N_iters)
-        print 'Kuma done'
-        var_params_kumaraswamy_all[s, t, :] = varseq
-        for i in range(N_iters):
-
-
-            elbo_iterations_gaussian[s,t,i] = elbo_gmm_gaussian(x_true, var_params_gaussian_all[s,t,i], model_params, temps[t],N_samples)
-            elbo_iterations_gumbell[s,t,i] = elbo_gmm_gumbell(x_true, var_params_gumbell_all[s,t,i], model_params,  temps[t],N_samples)
-            elbo_iterations_kumaraswamy[s,t,i] = elbo_gmm_kumaraswamy(x_true, var_params_kumaraswamy_all[s,t,i], model_params, temps[t],N_samples)
-
-            N_samples_test=1000
-            pi_samples_gaussian = np.reshape(np.asarray([sample_pi_gaussian(np.reshape(var_params_gaussian_all[s,t,i],(1,-1)), npr.randn(N,K - 1), temp=temps[t])
-                               for _ in range(N_samples_test)]),(N_samples_test,K))
-            pi_samples_gumbell = np.reshape(np.asarray([sample_pi_gumbell(var_params_gumbell_all[s,t,i], npr.uniform(0,1,(N,K)), temp=temps[t])
-                               for _ in range(N_samples_test)]),(N_samples_test,K))
-
-            pi_samples_kumaraswamy = np.reshape(np.asarray([sample_pi_kumaraswamy(np.reshape(var_params_kumaraswamy_all[s,t,i],(1,-1)), npr.uniform(0,1,(N,K - 1)), temp=temps[t])
-                               for _ in range(N_samples_test)]),(N_samples_test,K))
-
-            one_hot_gaussian=np.zeros((N_samples_test,K))
-            one_hot_gaussian[range(N_samples_test),np.argmax(pi_samples_gaussian,axis=1)]=1
-
-            one_hot_gumbell=np.zeros((N_samples_test,K))
-            one_hot_gumbell[range(N_samples_test),np.argmax(pi_samples_gumbell,axis=1)]=1
-
-            one_hot_kumaraswamy=np.zeros((N_samples_test,K))
-            one_hot_kumaraswamy[range(N_samples_test),np.argmax(pi_samples_kumaraswamy,axis=1)]=1
-
-            approx_z_gaussian[s,t,i,:] = np.mean(one_hot_gaussian,axis=0)
-            approx_z_gumbell[s,t,i,:] = np.mean(one_hot_gumbell,axis=0)
-            approx_z_kumaraswamy[s,t,i,:] = np.mean(one_hot_kumaraswamy,axis=0)
-
-            dist_gaussian[s,t,i]=max(abs(posterior-np.mean(one_hot_gaussian,axis=0)))
-            dist_gumbell[s,t,i]=max(abs(posterior-np.mean(one_hot_gumbell,axis=0)))
-            dist_kumaraswamy[s,t,i]=max(abs(posterior-np.mean(one_hot_kumaraswamy,axis=0)))
-
-        dict={'dists':[dist_gaussian,dist_gumbell,dist_kumaraswamy],'var_params':[var_params_gaussian_all,var_params_gumbell_all,var_params_kumaraswamy_all], \
-     'elbos':[elbo_iterations_gaussian,elbo_iterations_gumbell,elbo_iterations_kumaraswamy],'x_true_all':x_true_all,'z_true_all':z_true_all,\
-      'posteriors':posterior_all,'mu_gmm_all':mu_gmm_all,'log_evidences':log_evidence_all,'approx_z':[approx_z_gaussian,approx_z_gumbell,approx_z_kumaraswamy]}
-        cPickle.dump( dict, open( "save_k10.p", "wb" ) )
 #
-# print("posterior : ", np.round(posterior, 3))
-# print("var. mean (gaussian): ", np.round(pi_samples_gaussian.mean(axis=0), 3))
-# print("var. round mean (gaussian): ", np.round(np.mean(one_hot_gaussian,axis=0), 3))
+# dict=cPickle.load( open( "save_example.p", "rb" ) )
+# #
+# # mu_gmm = npr.randn(D, K)
+# #
+# # sigma_gmm = 0.05
+# # alpha_gmm = np.ones(K)/K
+# # model_params = (mu_gmm, sigma_gmm, alpha_gmm)
+# #
+# #
+# # # Set latent variables
+# # i_true = npr.randint(K, size=N)
+# # z_true = np.zeros((N,K))
+# # z_true[np.arange(N), i_true] = 1
+# #
+# #
+# # # Generate noisy data
+# # x_true = z_true.dot(mu_gmm.T).T
+# # x_true += sigma_gmm * npr.randn(N, D).T
+# #
+# # log_evidence=log_evidence_cont(x_true[0],model_params,1000)
+# # posterior = np.zeros(K)
+# # for k in range(K):
+# #     ek = np.zeros((1,K))
+# #     ek[0,k] = 1
+# #     posterior[k] = local_log_probability_gmm(x_true[0], ek, model_params)
+# #
+# # posterior = np.exp(posterior - logsumexp(posterior))
+# #
+# # dict={'mu':mu_gmm,'z_true':z_true,'x_true':x_true, 'ev':log_evidence,'post':posterior}
+# # cPickle.dump( dict, open( "save_example.p", "wb" ))
+# temp=1
+#
+# mu_gmm=dict['mu']
+# z_true = dict['z_true']
+# x_true = dict['x_true']
+# log_ev = dict['ev']
+# post = dict['post']
+# model_params = (mu_gmm, 0.05, np.ones(K)/K)
+# #print ('z true is',z_true)
+# prob=np.zeros(10)
+# for i in range(10):
+#     z=np.zeros((1,K))
+#     z[0,i]=1
+#     z[0,:]=z+npr.randn(10)/200
+#     z[0,:]=z[0,:]-np.amin(z[0,:])+0.001
+#     z[0,:]=z[0,:]/np.sum(z[0,:])
+#     #print (z)
+#     prob[i]=local_log_probability_gmm(x_true[0], z, model_params) + dirichlet_logpdf(z[0,:],np.ones(10)*temp)
+# prob2 =np.zeros(1000)
+# zall=np.zeros((100,10))
+# for i in range(100):
+#     z = np.random.dirichlet(np.ones(K))
+#     zall[i,:]=z
+#     prob2[i] = local_log_probability_gmm(x_true[0], np.reshape(z,(1,-1)), model_params) +dirichlet_logpdf(z,np.ones(10)*temp)
+#     #print (dirichlet.logpdf(z,np.ones(10)*temp),dirichlet_logpdf(z,np.ones(10)*temp))
+# ind=[i[0] for i in sorted(enumerate(-prob2), key=lambda x:x[1])]
+# #print prob
+
+#print  sorted(-1* prob2)
+#Compute actual posterior probability
+#print zall[ind[0:10],:]
+#print np.sum(dirichlet_logpdf(zall,np.ones(10)*temp))
+# for s in range(N_simulations):
+#     for t in range(N_temps):
+#
+#         print("Iteration ", (t, s))
+#
+#         # Set mixture model parameters
+#         mu_gmm = npr.randn(D, K)
+#         sigma_gmm = 0.05
+#         alpha_gmm = np.ones(K)/K
+#         model_params = (mu_gmm, sigma_gmm, alpha_gmm)
+#
+#         mu_gmm_all[s,t]=mu_gmm
+#
+#         # Set latent variables
+#         i_true = npr.randint(K, size=N)
+#         z_true = np.zeros((N,K))
+#         z_true[np.arange(N), i_true] = 1
+#
+#         z_true_all[s,t]=z_true
+#
+#         # Generate noisy data
+#         x_true = z_true.dot(mu_gmm.T)
+#         x_true += sigma_gmm * npr.randn(N, D)
+#         x_true_all[s,t]=x_true.T
+#
+#         log_evidence_all[s,t]=log_evidence_cont(x_true[0],model_params,1000)
+#
+#         #Compute actual posterior probability
+#
+#         posterior = np.zeros(K)
+#         for k in range(K):
+#             ek = np.zeros((1,K))
+#             ek[0,k] = 1
+#             posterior[k] = local_log_probability_gmm(x_true[0], ek, model_params)
+#
+#         posterior = np.exp(posterior - logsumexp(posterior))
+#         posterior_all[s,t]=posterior
+#
+#         #set recognition model (initial) params: Gaussian case
+#
+#         mu = np.zeros((N,K-1))
+#         logsigma = np.zeros((N,K-1))
+#         var_params_gaussian = pack_gaussian_params(mu,logsigma)
+#
+#         #set recognition model (initial) params: Gumbell case
+#
+#         loga = np.zeros((N,K))
+#         var_params_gumbell = pack_gumbell_params(loga)
+#
+#         loga = np.zeros((N,K-1))
+#         logb = np.zeros((N,K-1))
+#         var_params_kumaraswamy = pack_kumaraswamy_params(loga,logb)
 #
 #
-# print("posterior: ", np.round(posterior, 3))
-# print("var. mean (gumbell): ", np.round(pi_samples_gumbell.mean(axis=0), 3))
-# print("var. round mean (gumbell): ", np.round(np.mean(one_hot_gumbell,axis=0), 3))
 #
-# print("posterior: ", np.round(posterior, 3))
-# print("var. mean (kumaraswamy): ", np.round(pi_samples_kumaraswamy.mean(axis=0), 3))
-# print("var. round mean (kumaraswamy): ", np.round(np.mean(one_hot_kumaraswamy,axis=0), 3))
-
-
-#plt.plot(elbo_iterations_gaussian[:,0,:].T,'r')
-#plt.plot(elbo_iterations_gumbell[:,0,:].T,'b')
-#plt.plot(elbo_iterations_kumaraswamy[:,0,:].T,'g')
-#plt.show()
-
-#plt.plot(elbo_iterations_gaussian[:,1,:].T,'r')
-#plt.plot(elbo_iterations_gumbell[:,1,:].T,'b')
-#plt.plot(elbo_iterations_kumaraswamy[:,1,:].T,'g')
-#plt.show()
-
-#plt.plot(dist_gaussian[:,0,:].T,'r')
-#plt.plot(dist_gumbell[:,0,:].T,'b')
-#plt.plot(dist_kumaraswamy[:,0,:].T,'g')
-
-plt.show()
-
-#plt.plot(dist_gaussian[:,1,:].T,'r')
-#plt.plot(dist_gumbell[:,1,:].T,'b')
-#plt.plot(dist_kumaraswamy[:,1,:].T,'g')
-
-plt.show()
-
-#plt.show()
-
-
-#plt.bar(np.arange(K), pi)
-#plt.show()
-
-# jac = jacobian(sample_pi_gaussian, argnum=0)
-# plt.imshow(jac(params, noise, 1.0), interpolation="none")
-# plt.colorbar()
+#         # Monte Carlo number of samples samples (per data point) estimate of the ELBO
+#         N_samples = 10
+#         elbo_gaussian = lambda x,t: -1*elbo_gmm_gaussian(x_true,x,model_params,temps[0],N_samples)
+#         elbo_gumbell = lambda x, t: -1 * elbo_gmm_gumbell(x_true, x, model_params, temps[0],N_samples)
+#         elbo_kumaraswamy = lambda x, t: -1 * elbo_gmm_kumaraswamy(x_true, x, model_params, temps[0],N_samples)
+#         #print elbo_gaussian_2(var_params_gaussian,1)
+#         # Compute gradient of the ELBO wrt var_params
+#         g_elbo_gaussian = grad(elbo_gmm_gaussian,argnum=1)
+#         g_elbo_gumbell = grad(elbo_gmm_gumbell, argnum=1)
+#         g_elbo_kumaraswamy = grad(elbo_gmm_kumaraswamy, argnum=1)
+#
+#         #Gradient ascent
+#         stepsize = 0.01
+#
+#         tol=0.001
+#
+#         variational_params,varseq = adam(grad(elbo_gaussian), var_params_gaussian, step_size=0.1, num_iters=N_iters)
+#         var_params_gaussian_all[s, t, :] = varseq
+#         print 'Gaussian Done'
+#         variational_params, varseq = adam(grad(elbo_gumbell), var_params_gumbell, step_size=0.1, num_iters=N_iters)
+#         var_params_gumbell_all[s, t, :] = varseq
+#         print 'Gumbel Done'
+#         variational_params, varseq = adam(grad(elbo_kumaraswamy), var_params_kumaraswamy, step_size=0.1, num_iters=N_iters)
+#         print 'Kuma done'
+#         var_params_kumaraswamy_all[s, t, :] = varseq
+#         for i in range(N_iters):
+#
+#
+#             elbo_iterations_gaussian[s,t,i] = elbo_gmm_gaussian(x_true, var_params_gaussian_all[s,t,i], model_params, temps[t],N_samples)
+#             elbo_iterations_gumbell[s,t,i] = elbo_gmm_gumbell(x_true, var_params_gumbell_all[s,t,i], model_params,  temps[t],N_samples)
+#             elbo_iterations_kumaraswamy[s,t,i] = elbo_gmm_kumaraswamy(x_true, var_params_kumaraswamy_all[s,t,i], model_params, temps[t],N_samples)
+#
+#             N_samples_test=1000
+#             pi_samples_gaussian = np.reshape(np.asarray([sample_pi_gaussian(np.reshape(var_params_gaussian_all[s,t,i],(1,-1)), npr.randn(N,K - 1), temp=temps[t])
+#                                for _ in range(N_samples_test)]),(N_samples_test,K))
+#             pi_samples_gumbell = np.reshape(np.asarray([sample_pi_gumbell(var_params_gumbell_all[s,t,i], npr.uniform(0,1,(N,K)), temp=temps[t])
+#                                for _ in range(N_samples_test)]),(N_samples_test,K))
+#
+#             pi_samples_kumaraswamy = np.reshape(np.asarray([sample_pi_kumaraswamy(np.reshape(var_params_kumaraswamy_all[s,t,i],(1,-1)), npr.uniform(0,1,(N,K - 1)), temp=temps[t])
+#                                for _ in range(N_samples_test)]),(N_samples_test,K))
+#
+#             one_hot_gaussian=np.zeros((N_samples_test,K))
+#             one_hot_gaussian[range(N_samples_test),np.argmax(pi_samples_gaussian,axis=1)]=1
+#
+#             one_hot_gumbell=np.zeros((N_samples_test,K))
+#             one_hot_gumbell[range(N_samples_test),np.argmax(pi_samples_gumbell,axis=1)]=1
+#
+#             one_hot_kumaraswamy=np.zeros((N_samples_test,K))
+#             one_hot_kumaraswamy[range(N_samples_test),np.argmax(pi_samples_kumaraswamy,axis=1)]=1
+#
+#             approx_z_gaussian[s,t,i,:] = np.mean(one_hot_gaussian,axis=0)
+#             approx_z_gumbell[s,t,i,:] = np.mean(one_hot_gumbell,axis=0)
+#             approx_z_kumaraswamy[s,t,i,:] = np.mean(one_hot_kumaraswamy,axis=0)
+#
+#             dist_gaussian[s,t,i]=max(abs(posterior-np.mean(one_hot_gaussian,axis=0)))
+#             dist_gumbell[s,t,i]=max(abs(posterior-np.mean(one_hot_gumbell,axis=0)))
+#             dist_kumaraswamy[s,t,i]=max(abs(posterior-np.mean(one_hot_kumaraswamy,axis=0)))
+#
+#         dict={'dists':[dist_gaussian,dist_gumbell,dist_kumaraswamy],'var_params':[var_params_gaussian_all,var_params_gumbell_all,var_params_kumaraswamy_all], \
+#      'elbos':[elbo_iterations_gaussian,elbo_iterations_gumbell,elbo_iterations_kumaraswamy],'x_true_all':x_true_all,'z_true_all':z_true_all,\
+#       'posteriors':posterior_all,'mu_gmm_all':mu_gmm_all,'log_evidences':log_evidence_all,'approx_z':[approx_z_gaussian,approx_z_gumbell,approx_z_kumaraswamy]}
+#         cPickle.dump( dict, open( "save_k10.p", "wb" ) )
+# #
+# # print("posterior : ", np.round(posterior, 3))
+# # print("var. mean (gaussian): ", np.round(pi_samples_gaussian.mean(axis=0), 3))
+# # print("var. round mean (gaussian): ", np.round(np.mean(one_hot_gaussian,axis=0), 3))
+# #
+# #
+# # print("posterior: ", np.round(posterior, 3))
+# # print("var. mean (gumbell): ", np.round(pi_samples_gumbell.mean(axis=0), 3))
+# # print("var. round mean (gumbell): ", np.round(np.mean(one_hot_gumbell,axis=0), 3))
+# #
+# # print("posterior: ", np.round(posterior, 3))
+# # print("var. mean (kumaraswamy): ", np.round(pi_samples_kumaraswamy.mean(axis=0), 3))
+# # print("var. round mean (kumaraswamy): ", np.round(np.mean(one_hot_kumaraswamy,axis=0), 3))
+#
+#
+# #plt.plot(elbo_iterations_gaussian[:,0,:].T,'r')
+# #plt.plot(elbo_iterations_gumbell[:,0,:].T,'b')
+# #plt.plot(elbo_iterations_kumaraswamy[:,0,:].T,'g')
+# #plt.show()
+#
+# #plt.plot(elbo_iterations_gaussian[:,1,:].T,'r')
+# #plt.plot(elbo_iterations_gumbell[:,1,:].T,'b')
+# #plt.plot(elbo_iterations_kumaraswamy[:,1,:].T,'g')
+# #plt.show()
+#
+# #plt.plot(dist_gaussian[:,0,:].T,'r')
+# #plt.plot(dist_gumbell[:,0,:].T,'b')
+# #plt.plot(dist_kumaraswamy[:,0,:].T,'g')
+#
+# plt.show()
+#
+# #plt.plot(dist_gaussian[:,1,:].T,'r')
+# #plt.plot(dist_gumbell[:,1,:].T,'b')
+# #plt.plot(dist_kumaraswamy[:,1,:].T,'g')
+#
+# plt.show()
+#
+# #plt.show()
+#
+#
+# #plt.bar(np.arange(K), pi)
+# #plt.show()
+#
+# # jac = jacobian(sample_pi_gaussian, argnum=0)
+# # plt.imshow(jac(params, noise, 1.0), interpolation="none")
+# # plt.colorbar()
