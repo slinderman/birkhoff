@@ -8,8 +8,6 @@ import autograd.numpy as np
 from autograd import jacobian
 from autograd.core import primitive
 
-# from birkhoff.permutation import psi_to_pi_assignment
-# from birkhoff.permutation import psi_to_pi_list as psi_to_birkhoff_list
 from birkhoff.utils import psi_to_pi as psi_to_pi_old
 from birkhoff.utils import logistic
 
@@ -108,9 +106,6 @@ def psi_to_birkhoff(Psi, return_intermediates=False):
         for j in range(K - 1):
             # Compute lower bound
             lbs[i, j] = ub_rows[i, j] - ub_cols[i, j + 1:].sum()
-            # lbs[i, j] = ub_rows[i, j]
-            # for k in range(j + 1, K):
-            #     lbs[i, j] -= ub_cols[i, k]
 
             # Four cases
             if ub_rows[i, j] < ub_cols[i, j]:
@@ -211,7 +206,6 @@ def jacobian_psi_to_birkhoff(Psi):
     return J
 
 def grad_psi_to_pi_birkhoff(g, ans, vs, gvs, psi, return_intermediates=False):
-    print("grad_psi_to_pi_birkhoff")
     return np.tensordot(g, jacobian_psi_to_birkhoff(psi), ((0, 1), (0, 1)))
 psi_to_birkhoff.defvjp(grad_psi_to_pi_birkhoff)
 
@@ -318,6 +312,7 @@ def test_psi_to_birkhoff():
     Psi = mu + sigma * np.random.randn(K - 1, K - 1)
 
     # Convert Psi to P via stick breaking raster scan
+    from birkhoff.permutation import psi_to_pi_assignment
     P1 = psi_to_pi_assignment(Psi, tol=0)
     P2 = _psi_to_birkhoff_list(logistic(Psi))
     P3 = psi_to_birkhoff(logistic(Psi))
