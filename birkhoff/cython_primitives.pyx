@@ -1,4 +1,4 @@
-# Cythonized updates for the parent variables
+# Cythonized primitives
 #
 # distutils: extra_compile_args = -O3
 # cython: wraparound=False
