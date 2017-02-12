@@ -10,7 +10,7 @@ from autograd.core import primitive, Node
 import birkhoff.cython_primitives as cython_primitives
 
 
-# First consider sampling a random doubly stochastic matrix
+### Helpers
 def logistic(psi):
     return 1. / (1 + np.exp(-psi))
 
@@ -29,7 +29,7 @@ def gaussian_logp(x, mu, sigma):
 def gaussian_entropy(log_sigma):
     return 0.5 * log_sigma.size ** 2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
 
-# Categorical distributions
+### 1D stick breaking for categoricals
 def python_psi_to_pi(psi, return_intermediates=False):
     """
     Convert psi to a probability vector pi
@@ -113,8 +113,7 @@ psi_to_pi.defvjp(lambda g, ans, vs, gvs, psi, **kwargs:
                  np.dot(g, cython_jacobian_psi_to_pi(psi)))
 
 
-### Now do the same for the permutation
-@primitive
+### Stick breaking transformations for permutations
 def python_psi_to_birkhoff(Psi, return_intermediates=False):
     """
     Transform a (K-1) x (K-1) matrix Psi into a KxK doubly
@@ -389,7 +388,7 @@ log_det_jacobian.defvjp(lambda g, ans, vs, gvs, P, **kwargs:
                         np.full(P.shape, g) * cython_grad_log_det_jacobian(P))
 
 ### Invert the transformation
-def pi_to_psi(P, verbose=False):
+def birkhoff_to_psi(P, verbose=False):
     """
     Invert Pi to get Psi, assuming Pi was sampled using
     sample_doubly_stochastic_stable() with the same tolerance.
@@ -403,8 +402,8 @@ def pi_to_psi(P, verbose=False):
         Psi_i = []
         for j in range(N - 1):
             # Upper bounded by partial row sum
-            ub_row = 1 - np.sum(P[i, :j])
             # Upper bounded by partial column sum
+            ub_row = 1 - np.sum(P[i, :j])
             ub_col = 1 - np.sum(P[:i, j])
 
             # Lower bounded (see notes)
@@ -418,10 +417,7 @@ def pi_to_psi(P, verbose=False):
                 print("({0}, {1}): lb_rem: {2} lb: {3}  ub: {4}".format(i, j, lb_rem, lb, ub))
 
             # Check if difference is less than allowable tolerance
-            # Psi[i, j] = logit((P[i, j] - lb) / (ub - lb))
             Psi_i.append((P[i, j] - lb) / (ub - lb))
-
-            # assert np.isfinite(Psi[i, j])
 
         Psi.append(Psi_i)
     return np.array(Psi)
@@ -436,7 +432,7 @@ def log_density_pi(P, mu, sigma, verbose=False):
     assert mu.shape == (N-1, N-1)
     assert sigma.shape == (N-1, N-1)
 
-    Psi = pi_to_psi(P[:-1, :-1], verbose=verbose)
+    Psi = birkhoff_to_psi(P[:-1, :-1], verbose=verbose)
     Psi = logit(Psi)
     return log_det_jacobian(P) + \
            np.sum(gaussian_logp(Psi, mu, sigma))

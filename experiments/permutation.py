@@ -32,7 +32,7 @@ from autograd.optimizers import adam
 
 from birkhoff.primitives import \
     logit, logistic, gaussian_logp, gaussian_entropy, \
-    psi_to_birkhoff, log_det_jacobian, pi_to_psi
+    psi_to_birkhoff, log_det_jacobian, birkhoff_to_psi
 
 npr.seed(0)
 
@@ -40,7 +40,7 @@ DO_PLOT = False
 
 if __name__ == "__main__":
     # Set up a simple matching problem
-    K = 30
+    K = 50
     D = 2
     eta = 0.2
     mus = 2 * npr.randn(K, D)
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         elbo = elbo + gaussian_entropy(log_sigma)
 
         # Minimize the negative elbo
-        return -elbo
+        return -elbo / K
 
     gradient = grad(variational_objective)
     elbos = []
@@ -131,10 +131,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, ctrlc_handler)
 
     print("Variational inference for matching...")
-    init_mean = pi_to_psi(1. / K * np.ones((K - 1, K - 1))).ravel()
+    init_mean = birkhoff_to_psi(1. / K * np.ones((K - 1, K - 1))).ravel()
     init_mean = logit(init_mean)
-    init_log_std = np.zeros((K - 1) ** 2)
-    init_var_params = np.concatenate([init_mean, init_log_std])
+    init_logit_std = -3 * np.ones((K - 1) ** 2)
+    init_var_params = np.concatenate([init_mean, init_logit_std])
     variational_params = adam(gradient, init_var_params, step_size=0.1, num_iters=100, callback=callback)
     # fig.savefig("permutation_K20.png")
 
