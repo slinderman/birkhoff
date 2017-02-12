@@ -32,7 +32,7 @@ from autograd.optimizers import adam
 
 from birkhoff.primitives import \
     logit, logistic, gaussian_logp, gaussian_entropy, \
-    psi_to_birkhoff, log_det_jacobian, pi_to_psi_list
+    psi_to_birkhoff, log_det_jacobian, pi_to_psi
 
 npr.seed(0)
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, ctrlc_handler)
 
     print("Variational inference for matching...")
-    init_mean = pi_to_psi_list(1./K * np.ones((K-1, K-1))).ravel()
+    init_mean = pi_to_psi(1. / K * np.ones((K - 1, K - 1))).ravel()
     init_mean = logit(init_mean)
     init_log_std = np.zeros((K - 1) ** 2)
     init_var_params = np.concatenate([init_mean, init_log_std])

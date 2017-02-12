@@ -108,11 +108,6 @@ def cython_jacobian_psi_to_pi(psi):
     cython_primitives.cython_jacobian_psi_to_pi(psi, ubs, pi, J)
     return J
 
-# Make an autograd gradient
-# def grad_psi_to_pi(g, ans, vs, gvs, psi, return_intermediates=False):
-#     return np.dot(g, jacobian_psi_to_pi(psi))
-# psi_to_pi.defvjp(grad_psi_to_pi)
-
 psi_to_pi = primitive(cython_psi_to_pi)
 psi_to_pi.defvjp(lambda g, ans, vs, gvs, psi, **kwargs:
                  np.dot(g, cython_jacobian_psi_to_pi(psi)))
@@ -394,7 +389,7 @@ log_det_jacobian.defvjp(lambda g, ans, vs, gvs, P, **kwargs:
                         np.full(P.shape, g) * cython_grad_log_det_jacobian(P))
 
 ### Invert the transformation
-def pi_to_psi_list(P, verbose=False):
+def pi_to_psi(P, verbose=False):
     """
     Invert Pi to get Psi, assuming Pi was sampled using
     sample_doubly_stochastic_stable() with the same tolerance.
@@ -441,7 +436,7 @@ def log_density_pi(P, mu, sigma, verbose=False):
     assert mu.shape == (N-1, N-1)
     assert sigma.shape == (N-1, N-1)
 
-    Psi = pi_to_psi_list(P[:-1, :-1], verbose=verbose)
+    Psi = pi_to_psi(P[:-1, :-1], verbose=verbose)
     Psi = logit(Psi)
-    return log_det_jacobian(P, tol=tol, verbose=verbose) + \
+    return log_det_jacobian(P) + \
            np.sum(gaussian_logp(Psi, mu, sigma))
