@@ -17,6 +17,13 @@ def hellinger(p, q):
     return norm(np.sqrt(p) - np.sqrt(q)) / np.sqrt(2)
 def dirichlet_logpdf(x,alpha):
     return np.dot(np.log(x),alpha-1)-np.sum(gammaln(alpha))+gammaln(np.sum(alpha))
+def dirichlet_logpfd(psi,alpha):
+    vec = []
+    sum = 0
+    for i in len(psi):
+        sum = sum + np.log(1-psi[i])
+        vec.append(sum)
+    np.dot(np.dot(np.log(psi)+np.array(vec)), alpha - 1) - np.sum(gammaln(alpha)) + gammaln(np.sum(alpha))
 
 def sigmoid(x): return 1 / (1 + np.exp(-x))
 
@@ -94,27 +101,6 @@ def psi_to_pi(psi):
 
 
 ### Computing the density of p(pi | params)
-def density_pi_gaussian(pi, params, temp):
-
-    K = pi.shape[1]
-    N = pi.shape[0]
-    mean, log_std = unpack_gaussian_params(params, N)
-    std = np.exp(log_std) / np.sqrt(temp)
-
-    p_pi = []
-
-    # We could also write this with loops
-    for n in range(N):
-        p_pi.append(0)
-        for k in range(K-1):
-            ub = 1 - np.sum(pi[n,:k])
-            # Computing the determinant of the inverse tranformation
-            p_pi[n] *= ub / (pi[n,k] * (ub - pi[n,k]))
-            # Compute p(psi[i] | mu, sigma)
-            psi_i = logit(pi[n,k] / ub)
-            p_pi[n] *= 1./np.sqrt(2 * np.pi * std[n,k]**2) \
-                    * np.exp(-0.5 * (psi_i - mean[n,k])**2 / std[n,k]**2)
-    return p_pi
 
 def log_density_pi_concrete(pi, params,temp):
 
@@ -180,6 +166,30 @@ def log_density_pi_kumaraswamy(pi, params, temp):
             psi_i = pi[n, i] / ub
             logp_pi[n] = logp_pi[n] + loga[n,i] + logb[n,i] + (np.exp(loga[n,i])-1) * np.log(psi_i) + (np.exp(logb[n,i])-1) * np.log(1-np.power(psi_i,np.exp(loga[n,i])))
     return np.array(logp_pi)
+K=5
+print np.flipud(np.arange(K-1)+1)
+def log_density_pi_kumaraswamy(psi, params, temp):
+    K = psi.shape[1]+1
+    loga[n, i] + logb[n, i] + (np.exp(loga[n, i]) - 1) * np.log(psi_i) + (np.exp(logb[n, i]) - 1) * np.log(
+        1 - np.power(psi_i, np.exp(loga[n, i])))
+
+    seq = np.flipud(np.arange(K-1)+1)
+    sum = -np.dot(seq,np.log(1-psi))
+    loga, logb = unpack_kumaraswamy_params(params, pi.shape[0])
+
+    logp_pi = []
+    # We could also write this with loops
+    for n in range(loga.shape[0]):
+        logp_pi.append(0)
+        for i in range(K - 1):
+            ub = 1 - np.sum(pi[n, :i])
+            # Computing the determinant of the inverse tranformation
+            logp_pi[n] = logp_pi[n] -np.log(ub)
+            # Compute p(psi[i] | mu, sigma)
+            psi_i = pi[n, i] / ub
+            logp_pi[n] = logp_pi[n] + loga[n,i] + logb[n,i] + (np.exp(loga[n,i])-1) * np.log(psi_i) + (np.exp(logb[n,i])-1) * np.log(1-np.power(psi_i,np.exp(loga[n,i])))
+    return np.array(logp_pi)
+
 
 
 def log_probability_gmm(x, pi, model_params):
@@ -230,6 +240,7 @@ def log_evidence_cont(x_n,model_params,N_samples):
     ll = -0.5 * np.log(2 * np.pi * sigma ** 2) * D
     ll = ll -0.5 * np.sum((x_n - mu.dot(pi[:,:].T).T)**2 / sigma**2, axis=1)
     return logsumexp(ll)-np.log(len(ll))
+
 
 def elbo_gmm_gaussian(x, var_params, model_params, temp_prior,N_samples,eps):
 
