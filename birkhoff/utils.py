@@ -292,3 +292,19 @@ def dirichlet_to_psi_meanvar(alphas,psigrid=np.linspace(-10,10,1000)):
         return mean, s - mean**2
 
     return list(map(np.array, list(zip(*[meanvar(k) for k in range(K-1)]))))
+
+
+def sinkhorn(P, n_iter=100):
+    """
+    `Project' a nonnegative matrix P onto the Birkhoff polytope
+    by iterative row/column normalization.
+    """
+    assert np.all(P >= 0)
+    K = P.shape[0]
+    assert P.shape == (K,K)
+    P_ds = P.copy()
+    for itr in range(n_iter):
+        P_ds /= P_ds.sum(axis=1)[:,None]
+        P_ds /= P_ds.sum(axis=0)[None,:]
+    return P_ds
+
