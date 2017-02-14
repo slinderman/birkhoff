@@ -95,7 +95,7 @@ def unpack_gumbell_params(params, N):
 def sample_pi_gaussian(params, noise,  eps, max_sigma):
 
     mean, log_std = unpack_gaussian_params(params, noise.shape[0])
-    log_std = np.minimum(log_std, max_sigma)
+    log_std = np.maximum(np.minimum(log_std, max_sigma[1]),max_sigma[0])
     sample = noise * np.exp(log_std)  + mean
     psi = logistic(sample)
     psi = np.maximum(eps,np.minimum(1-eps,psi))
