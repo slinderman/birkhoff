@@ -50,6 +50,16 @@ reparameterized gradient.
 
 \section{Continuous relaxations for discrete inference}
 
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=5.in]{../figures/figure1.pdf} 
+  \caption{
+  }
+\label{fig:transforms}
+\end{figure*}
+
+
+
 In Bayesian inference problems, we have a prior distribution~$p(x)$
 and a likelihood~$p(y \mid x)$, and
 we seek the posterior distribution,~${p(x \mid y) = p(x) p(y \mid x) / p(y)}$.
@@ -222,6 +232,9 @@ Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$
 
 
 \textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
+
+
+
 \section{Continuous relaxations for permutation matrices}
 Just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
@@ -349,40 +362,5 @@ will not have a severe effect on our stochastic gradient algorithm.
 
 \appendix
 
-\section{Analytical Gradients}
-What is~$\partial \pi_{ij} / \partial \psi_{kl}$?
-
-\begin{itemize}
-\item If~$(i,j) \prec (k,l)$, then~$\psi_{k,l}$ does not influence~$\pi_{i,j}$ and the partial derivative is zero.
-
-\item If~$(i,j) = (k,l)$, then
-  \begin{align}
-    \frac{\partial \pi_{i,j}}{\partial \psi_{i,j}}
-    &= \frac{\partial}{\partial \psi_{ij}} \left\{ \ell_{ij} + \sigma(\psi_{ij}) ( u_{ij} - \ell_{ij}) \right\} \\
-    &= \sigma(\psi_{ij}) \sigma(-\psi_{ij}) (u_{ij} - \ell_{ij}) 
-  \end{align}
-
-\item If~$(i,j) \succ (k,l)$ then the~$\psi_{k,l}$ influences~$\pi_{i,j}$ through the bounds. That is, we need to compute:
-  \begin{align}
-    \frac{\partial \pi_{i,j}}{\partial \psi_{k,l}}
-    &=
-    \frac{\partial \pi_{i,j}}{\partial \ell_{i,j}} \frac{\partial \ell_{i,j}}{\partial \psi_{k,j}}
-    +
-    \frac{\partial \pi_{i,j}}{\partial u_{i,j}} \frac{\partial u_{i,j}}{\partial \psi_{k,j}} \\
-    &= 
-    \sigma(-\psi_{ij}) \frac{\partial \ell_{i,j}}{\partial \psi_{k,j}}
-    +
-    \sigma(\psi_{ij}) \frac{\partial u_{i,j}}{\partial \psi_{k,j}}
-  \end{align}
-
-  The upper bounds are easier. There are two cases:
-  \begin{enumerate}
-  \item If~$1-\sum_{k=1}^{i-1} \pi_{k,j} < 1-\sum_{l=1}^{j-1} \pi_{il}$, then the column sum is tight and the partial derivative is only non-zero for~$psi_{kl}$ such that~$l=j$. In this case, 
-    \begin{align}
-    \frac{\partial u_{i,j}}{\partial \psi_{k,j}}
-    &= - \frac{\partial \pi_{k,j}}{\partial \psi_{k,j}}
-    \end{align}
-  \end{enumerate}
-\end{itemize}
 
 \end{document}

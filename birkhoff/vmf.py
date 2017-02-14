@@ -62,4 +62,3 @@ def _sample_orthonormal_to(mu):
     proj_mu_v = mu * np.dot(mu, v) / np.linalg.norm(mu)
     orthto = v - proj_mu_v
     return orthto / np.linalg.norm(orthto)
-

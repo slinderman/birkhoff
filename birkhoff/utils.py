@@ -299,7 +299,6 @@ def sinkhorn(P, n_iter=100):
     `Project' a nonnegative matrix P onto the Birkhoff polytope
     by iterative row/column normalization.
     """
-    assert np.all(P >= 0)
     K = P.shape[0]
     assert P.shape == (K,K)
     P_ds = P.copy()
@@ -308,3 +307,98 @@ def sinkhorn(P, n_iter=100):
         P_ds /= P_ds.sum(axis=0)[None,:]
     return P_ds
 
+
+### Construct a low dimensional parameterization
+def get_birkhoff_basis(K):
+    # Construct a basis for the orthogonal complement
+    # of the all-ones rows and all-ones columns
+    Ws = []
+    for n in range(K):
+        # row
+        Wnr = np.zeros((K, K))
+        Wnr[n, :] = 1
+        Ws.append(Wnr.ravel())
+
+        # column
+        Wnc = np.zeros((K, K))
+        Wnc[:, n] = 1
+        Ws.append(Wnc.ravel())
+    Ws = np.column_stack(Ws)
+
+    # We want the orthogonal complement of the columns of Ws
+    U, R = np.linalg.qr(Ws, mode='complete')
+
+    # Ws.shape = (N^2 x 2N) so U.shape = (N^2 x N^2)
+    # We expect the rank of U to be (N-1)^2 since that
+    # is the dimension of the hypersphere.
+    #
+    # print("bases of Ws")
+    # for i in range(2 * K - 1):
+    #     ui = U[:, i]
+    #     print(abs(ui.dot(Ws)).sum())
+    #
+    # print("")
+    # print("bases of \perp(Ws)")
+    # for i in range(2 * K - 1, K ** 2):
+    #     ui = U[:, i]
+    #     print(ui.dot(Ws).sum())
+
+    # Get the basis of the complement
+    # Shape = N^2 x (N-1)^2
+    U_compl = U[:, 2 * K - 1:]
+    assert U_compl.shape == (K ** 2, (K - 1) ** 2)
+    return U_compl
+
+# Sweeeeeeeet... now let's project permutations onto the sphere
+def project_perm_to_sphere(P, U_compl):
+    N = P.shape[0]
+    assert P.shape == (N, N)
+
+    # Vectorize, center, project, reshape
+    P = P.ravel()
+    P = P - 1.0 / N * np.ones(N ** 2)
+    Psi = U_compl.T.dot(P)
+    return Psi
+
+
+def project_sphere_to_perm(Psi, U_compl):
+    assert Psi.ndim == 1
+    K = np.sqrt(Psi.size) + 1
+    assert np.allclose(K % 1.0, 0.0)
+
+    P = U_compl.dot(Psi)
+    P = P + 1.0 / K * np.ones(K ** 2)
+    P = P.reshape((K, K))
+    return P
+
+
+def random_permutation(K):
+    perm = np.random.permutation(K)
+    P = np.zeros((K, K))
+    P[np.arange(K), perm] = 1
+    return P
+
+
+# Get a projection matrix
+def get_birkhoff_projection(K):
+    # Find a projection of permutations onto 2
+    N = np.prod(np.arange(1, K+1))
+    D_in = K**2
+    D_out = 2
+    ths = np.linspace(0, 2*np.pi, N, endpoint=False)
+    Y = np.column_stack((np.cos(ths), np.sin(ths)))
+
+    # Compute set of permutation matrices
+    import itertools as it
+    Ps = []
+    for perm in it.permutations(np.arange(K)):
+        P = np.zeros((K, K))
+        P[np.arange(K), np.array(perm)] = 1
+        Ps.append(P)
+    Ps = np.array(Ps)
+    X = Ps.reshape((N, D_in))
+
+    # Solve least squares
+    Q = np.linalg.solve(X.T.dot(X) + 0.1 * np.eye(D_in), X.T.dot(Y))
+    Q, _ = np.linalg.qr(Q)
+    return Q

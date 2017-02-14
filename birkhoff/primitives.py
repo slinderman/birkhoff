@@ -393,8 +393,8 @@ def birkhoff_to_psi(P, verbose=False):
     Invert Pi to get Psi, assuming Pi was sampled using
     sample_doubly_stochastic_stable() with the same tolerance.
     """
-    N = P.shape[0] + 1
-    assert P.shape == (N-1, N-1)
+    N = P.shape[0]
+    assert P.shape == (N, N)
 
     # Psi = np.zeros((N - 1, N - 1), dtype=float)
     Psi = []
