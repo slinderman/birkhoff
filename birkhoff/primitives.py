@@ -24,7 +24,7 @@ def log_dlogit(p):
     return -np.log(p) - np.log(1-p)
 
 def gaussian_logp(x, mu, sigma):
-    return -0.5 * np.log(2 * np.pi * sigma**2) -0.5 * (x - mu)**2 / sigma**2
+    return np.sum(-0.5 * np.log(2 * np.pi * sigma**2) -0.5 * (x - mu)**2 / sigma**2)
 
 def gaussian_entropy(log_sigma):
     return 0.5 * log_sigma.size ** 2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
