@@ -402,3 +402,31 @@ def get_birkhoff_projection(K):
     Q = np.linalg.solve(X.T.dot(X) + 0.1 * np.eye(D_in), X.T.dot(Y))
     Q, _ = np.linalg.qr(Q)
     return Q
+
+def get_b3_projection():
+    # Let's set the points in 2D and then try to figure out the projection
+    K = 3
+    Kfac = np.prod(np.arange(1, K + 1))
+    ths = np.linspace(0, 2 * np.pi, Kfac, endpoint=False)
+    Y = np.column_stack((np.cos(ths), np.sin(ths)))
+
+    perms = [(2, 1, 0),
+             (1, 2, 0),
+             (0, 2, 1),
+             (0, 1, 2),
+             (1, 0, 2),
+             (2, 0, 1)]
+
+    Ps = []
+    for perm in perms:
+        P = np.zeros((K, K))
+        P[np.arange(K), np.array(perm)] = 1
+        Ps.append(P)
+    Ps = np.array(Ps)
+    X = Ps.reshape((Kfac, K ** 2))
+
+    # Solve least squares
+    Q = np.linalg.solve(X.T.dot(X) + 0.1 * np.eye(K**2), X.T.dot(Y))
+    Q, _ = np.linalg.qr(Q)
+
+    return Q

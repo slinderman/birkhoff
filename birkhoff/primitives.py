@@ -436,3 +436,12 @@ def log_density_pi(P, mu, sigma, verbose=False):
     Psi = logit(Psi)
     return log_det_jacobian(P) + \
            np.sum(gaussian_logp(Psi, mu, sigma))
+
+def birkhoff_to_perm(B):
+    from scipy.optimize import linear_sum_assignment
+    K = B.shape[0]
+    assert B.shape == (K, K)
+    row, col = linear_sum_assignment(-B)
+    P = np.zeros((K, K))
+    P[row, col] = 1.0
+    return P

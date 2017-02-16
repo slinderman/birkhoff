@@ -3,27 +3,27 @@ import autograd.numpy.random as npr
 from autograd import grad, jacobian
 from scipy.misc import logsumexp
 from scipy.special import gammaln
-from scipy.stats import dirichlet
+from scipy.linalg import norm
 from scipy.stats import dirichlet
 import matplotlib.pyplot as plt
 import seaborn
 seaborn.set_style("white")
 seaborn.set_context("talk")
-from birkhoff.primitives import logit, logistic, gaussian_logp, gaussian_entropy, psi_to_pi, log_det_jacobian
-import cPickle
+#from birkhoff.primitives import logit, logistic, gaussian_logp, gaussian_entropy, psi_to_pi, log_det_jacobian
+# import pickle
 from autograd.optimizers import adam,rmsprop
 import math
 
-# def psi_to_pi(psi):
-#     pi = []
-#     # We could also write this with loops
-#
-#     for n in range(psi.shape[0]):
-#         pi.append([])
-#         for i in range(psi.shape[1]):
-#             pi[n].append(psi[n,i] * (1 - np.sum(np.array(pi[n]),0)))
-#         pi[n].append(1-np.sum(np.array(pi[n])))
-#     return np.array(pi)
+def psi_to_pi(psi):
+    pi = []
+    # We could also write this with loops
+
+    for n in range(psi.shape[0]):
+        pi.append([])
+        for i in range(psi.shape[1]):
+            pi[n].append(psi[n,i] * (1 - np.sum(np.array(pi[n]),0)))
+        pi[n].append(1-np.sum(np.array(pi[n])))
+    return np.array(pi)
 
 def pi_to_psi(pi):
     sum=0
@@ -50,13 +50,15 @@ def dirichlet_logpdf_psi(psi,alpha):
         logs1.append(sum)
 
     logs1 = np.array(logs1).T
+    #logs2 = np.hstack((np.zeros((psi.shape[0],1)), np.cumsum(np.log(1-psi),axis=1)))
 
     return np.dot(logs1+logs2, alpha - 1)  - np.sum(gammaln(alpha)) + gammaln(np.sum(alpha))
+    #return np.dot(logs1+logs2, alpha - 1) - np.sum(gammaln(alpha)) + gammaln(np.sum(alpha))
 
 
 def logit(pi): return np.log(pi) - np.log(1-pi)
 
-#def logistic(psi): return np.exp(psi)/(1+np.exp(psi))
+def logistic(psi): return np.exp(psi)/(1+np.exp(psi))
 
 
 def pack_gaussian_params(mean, log_std):
@@ -66,55 +68,52 @@ def pack_gaussian_params(mean, log_std):
 def pack_kumaraswamy_params(loga,logb):
     return np.concatenate((np.reshape(loga, loga.shape[0] * loga.shape[1]), np.reshape(logb, logb.shape[0] * logb.shape[1])))
 
-def pack_gumbell_params(loga):
-    return (np.reshape(loga, loga.shape[0] * loga.shape[1]))
+def pack_gumbell_params(loga,log_temp):
+    return np.concatenate((np.reshape(loga, loga.shape[0] * loga.shape[1]),np.reshape(log_temp,1)))
 
 def unpack_gaussian_params(params, N):
     # Params of a diagonal Gaussian.
     D = np.shape(params)[-1] // 2
-    logistic_mu, logistic_sigma= params[:,:D], params[:,D:]
-    return np.reshape(logistic_mu, (N, -1)), np.reshape(logistic_sigma, (N, -1))
+    means, log_stds = params[:,:D], params[:,D:]
+    return np.reshape(means, (N, -1)), np.reshape(log_stds, (N, -1))
 
 def unpack_kumaraswamy_params(params, N):
     # Params of a kumaraswamy.
 
     D = np.shape(params)[-1] // 2
-    logistic_a, logistic_b = params[:,:D], params[:,D:]
+    loga, logb = params[:,:D], params[:,D:]
 
-    return np.reshape(logistic_a, (N, -1)), np.reshape(logistic_b, (N, -1))
+    return np.reshape(loga, (N, -1)), np.reshape(logb, (N, -1))
 
 def unpack_gumbell_params(params, N):
-
-    loga = params
-
-    return np.reshape(loga, (N, -1) )
-
-
-def sample_pi_gaussian(params, noise,  eps, limits, temp):
-
-    logit_mu, logit_sigma = unpack_gaussian_params(params, noise.shape[0])
-    sigma =  limits[1,0] + (limits[1,1]-limits[1,0]) * (logistic(logit_sigma))
-    mu    =  limits[0,0] + (limits[0,1]-limits[0,0]) * (logistic(logit_mu))
-    sample = (noise * sigma  + mu) / temp
-    psi = eps + (1 - 2 * eps) * logistic(sample)
-
-    return (sample, psi, np.array([psi_to_pi(p) for p in psi]))
+    D=len(params)
+    loga = params[:D-1]
+    log_temp = params[D-1]
+    return np.reshape(loga, (N, -1 ) ),np.reshape(log_temp,1)
 
 
-def sample_pi_kumaraswamy(params, noise, eps, limits):
+def sample_pi_gaussian(params, noise,  eps, max_sigma):
+
+    mean, log_std = unpack_gaussian_params(params, noise.shape[0])
+    log_std = np.maximum(np.minimum(log_std, max_sigma[1]),max_sigma[0])
+    sample = noise * np.exp(log_std)  + mean
+    psi = logistic(sample)
+    psi = np.maximum(eps,np.minimum(1-eps,psi))
+    return (sample,psi,np.array([psi_to_pi(p) for p in psi]))
+
+
+def sample_pi_kumaraswamy(params,noise,eps,lim):
     N = noise.shape[0]
 
-    logistic_a, logistic_b = unpack_kumaraswamy_params(params, N)
-    a = limits[1, 0] + (limits[1, 1] - limits[1, 0]) * (logistic(logistic_a))
-    b = limits[0, 0] + (limits[0, 1] - limits[0, 0]) * (logistic(logistic_b))
-
-
-    psi = np.power(1-np.power(1-noise, 1/b), 1/a)
-    psi = eps + (1 - 2 * eps) * psi
+    loga, logb = unpack_kumaraswamy_params(params, N)
+    loga= np.maximum(np.minimum(loga,lim),-lim)
+    logb = np.maximum(np.minimum(logb, lim), -lim)
+    psi = np.power(1-np.power(1-noise, np.exp(-logb)), np.exp(-loga))
+    psi = np.maximum(eps, np.minimum(1 - eps, psi))
 
     return (psi,np.array([psi_to_pi(p) for p in psi]))
 
-def sample_pi_gumbell(params, noise, temp):
+def sample_pi_gumbell(params, noise,temp):
     loga = params
     sample = (loga-np.log(-np.log(noise)))/temp
     sample =(sample.T- np.amax(sample,axis=1)).T
@@ -134,7 +133,7 @@ def log_density_gaussian_pi(pi, params, temp):
         for i in range(K - 1):
             ub = 1 - np.sum(pi[n, :i])
 
-            ub = np.maximum(np.minimum(ub, 1-epsilon), epsilon)
+            ub = np.maximum(np.minimum(ub,1-epsilon),epsilon)
 
             # Computing the determinant of the inverse tranformation
             logp_pi[n] = logp_pi[n] + np.log(ub) - np.log(pi[n,i]) - np.log(np.maximum(ub - pi[n,i],epsilon))
@@ -155,15 +154,14 @@ def log_density_gaussian_pi(pi, params, temp):
 
     return np.array(logp_pi)
 
-def log_density_gaussian_psi(sample, params, eps, limits, temp):
+def log_density_gaussian_psi(sample, params, eps,max_sigma):
     K = sample.shape[1] + 1
-    logit_mu, logit_sigma = unpack_gaussian_params(params, sample.shape[0])
-    sigma = limits[1, 0] + (limits[1, 1] - limits[1, 0]) * (logistic(logit_sigma))
-    mu = limits[0, 0] + (limits[0, 1] - limits[0, 0]) * (logistic(logit_mu))
-    var = ((sigma /temp ) ** 2)
-    psi = eps + (1-2*eps) *logistic(sample)
+    mean, log_std = unpack_gaussian_params(params, sample.shape[0])
+    log_std = np.minimum(log_std,max_sigma)
+    var = np.exp(log_std) ** 2
+    psi = np.maximum(np.minimum(logistic(sample),1-eps),eps)
     seq = np.flipud(np.arange(K - 2) + 1)
-    return -np.dot(seq, np.log(1 - psi[:,:K-2]).T).T +np.sum(-np.log(psi) -np.log(1-psi),axis=1) + np.sum(-0.5 * ((sample-mu/temp) ** 2) / var  - 0.5 * np.log(2*np.pi) - 0.5 * np.log(var),axis=1)
+    return -np.dot(seq, np.log(1 - psi[:,:K-2]).T).T +np.sum(-np.log(psi) -np.log(1-psi),axis=1) + np.sum(-0.5 * ((sample-mean) ** 2) / var  - 0.5 * np.log(2*np.pi) - log_std,axis=1)
 
 def log_density_kumaraswamy_pi(pi, params,eps):
     K = pi.shape[1]
@@ -183,24 +181,34 @@ def log_density_kumaraswamy_pi(pi, params,eps):
             logp_pi[n] = logp_pi[n] + loga[n,i] + logb[n,i] + (np.exp(loga[n,i])-1) * np.log(psi_i) + (np.exp(logb[n,i])-1) * np.log(1-np.power(psi_i,np.exp(loga[n,i])))
             return np.array(logp_pi)
 
-def log_density_kumaraswamy_psi(psi, params, limits):
+def log_density_kumaraswamy_psi(psi, params,lim):
     K = psi.shape[1]+1
-
-    logistic_a, logistic_b = unpack_kumaraswamy_params(params, psi.shape[0])
-    a = limits[1, 0] + (limits[1, 1] - limits[1, 0]) * (logistic(logistic_a))
-    b = limits[0, 0] + (limits[0, 1] - limits[0, 0]) * (logistic(logistic_b))
+    loga, logb = unpack_kumaraswamy_params(params, psi.shape[0])
+    loga = np.maximum(np.minimum(loga, lim), -lim)
+    logb = np.maximum(np.minimum(logb, lim), -lim)
+    a = np.exp(loga)
+    b = np.exp(logb)
     seq = np.flipud(np.arange(K-2)+1)
-    return -np.dot(seq, np.log1p(- psi[:,:K-2]).T).T +  np.sum(np.log(a)+ np.log(b) + (a - 1) * np.log(psi) + (b - 1) * np.log1p( - np.power(psi, a)),axis=1)
+    return -np.dot(seq, np.log(1 - psi[:,:K-2]).T).T +  np.sum(loga + logb + (a - 1) * np.log(psi) + (b - 1) * np.log( 1 - np.power(psi, a)),axis=1)
 
 def log_density_pi_concrete(pi, params,temp):
 
-    log_pi = []
     K = pi.shape[1]
-    N = pi.shape[0]
 
     loga = params
 
-    return -np.log(np.sum(np.power(pi, -temp) * np.exp(loga), axis=1)) * K + np.sum(loga + (-temp - 1) * np.log(pi), axis=1) + (K - 1) * np.log(temp) + gammaln(K)
+    return gammaln(K) + (K - 1) * np.log(temp) \
+           + np.sum(loga + (-temp - 1) * np.log(pi), axis=1) \
+           - np.log(np.sum(np.power(pi, -temp) * np.exp(loga), axis=1)) * K \
+
+def log_density_pi_concrete2(pi, params, temp):
+    K = pi.shape[1]
+
+    loga = params
+
+    return gammaln(K) + (K - 1) * np.log(temp) \
+           + np.sum(loga + (-temp - 1) * np.log(pi), axis=1) \
+           - logsumexp(-temp * np.log(pi) + loga, axis=1) * K
 
 def log_probability_gmm(x_n, pi_n, model_params):
     assert x_n.ndim == 1
@@ -214,7 +222,7 @@ def log_probability_gmm(x_n, pi_n, model_params):
 
     return np.sum(ll)
 
-def elbo_gmm_gaussian(x, var_params, model_params, temp_prior, N_samples, eps, limits, temp):
+def elbo_gmm_gaussian(x, var_params, model_params, temp_prior,N_samples,eps,max_sigma):
 
     elbo = 0
 
@@ -223,16 +231,17 @@ def elbo_gmm_gaussian(x, var_params, model_params, temp_prior, N_samples, eps, l
     noise=npr.randn(N_samples, N, K -1 )
 
     for n in range(N):
-        (sample,psi,pi) = sample_pi_gaussian(np.tile(var_params, (N_samples,1)), np.reshape(noise[:,n,:], (N_samples,K-1)), eps, limits, temp)
+        (sample,psi,pi) = sample_pi_gaussian(np.tile(var_params,(N_samples,1)),np.reshape(noise[:,n,:],(N_samples,K-1)), eps,max_sigma)
+
         elbo = elbo + log_probability_gmm(x[n], pi, model_params)
-        elbo = elbo + np.sum(dirichlet_logpdf_psi(psi, np.ones(K)*temp_prior))
-        elbo = elbo - np.sum(log_density_gaussian_psi(sample, np.tile(var_params,(N_samples,1)), eps, limits, temp))
+        elbo = elbo + np.sum(dirichlet_logpdf_psi(psi,np.ones(K)*temp_prior))
+        elbo = elbo - np.sum(log_density_gaussian_psi(sample, np.tile(var_params,(N_samples,1)), eps,max_sigma))
 
     elbo /= N_samples
 
     return elbo
 
-def elbo_gmm_kumaraswamy(x, var_params, model_params, temp_prior, N_samples, eps, limits):
+def elbo_gmm_kumaraswamy(x, var_params, model_params, temp_prior, N_samples, eps, lim):
 
     elbo = 0
     K = model_params[0].shape[1]
@@ -241,26 +250,28 @@ def elbo_gmm_kumaraswamy(x, var_params, model_params, temp_prior, N_samples, eps
 
     for n in range(N):
 
-        (psi, pi)  = sample_pi_kumaraswamy(np.tile(var_params,(N_samples,1)), np.reshape(noise[:,n,:], (N_samples,K-1)), eps, limits)
+        (psi, pi)  = sample_pi_kumaraswamy(np.tile(var_params,(N_samples,1)), np.reshape(noise[:,n,:], (N_samples,K-1)), eps, lim)
         elbo = elbo + log_probability_gmm(x[n], pi, model_params)
         elbo = elbo + np.sum(dirichlet_logpdf_psi(psi, np.ones(K)*temp_prior))
-        elbo = elbo - np.sum(log_density_kumaraswamy_psi(psi, np.tile(var_params, (N_samples,1)), limits))
+        elbo = elbo - np.sum(log_density_kumaraswamy_psi(psi, np.tile(var_params, (N_samples,1)), lim))
 
     elbo /= N_samples
 
     return elbo
 
-def elbo_gmm_gumbell(x, var_params, model_params, temp_prior, N_samples, temp):
+def elbo_gmm_gumbell(x, var_params, model_params, temp_prior, N_samples):
 
     elbo = 0
     N, D = x.shape
     K = model_params[0].shape[1]
     noise = npr.uniform(0, 1, (N_samples, N, K))
+    temp = np.exp(var_params[len(var_params) - 1])
+    temp = 0.1
     for n in range(N):
-        pi = sample_pi_gumbell(np.tile(var_params,(N_samples,1)), np.reshape(noise[:,n,:], (N_samples,-1)),temp)
+        pi = sample_pi_gumbell(np.tile(var_params[:len(var_params)-1],(N_samples,1)), np.reshape(noise[:,n,:], (N_samples,-1)),temp)
         elbo = elbo + log_probability_gmm(x[n], pi, model_params)
-        elbo = elbo + np.sum(dirichlet_logpdf_pi(pi, np.ones(K) * temp_prior))
-        elbo = elbo - np.sum(log_density_pi_concrete(pi, np.tile(var_params, (N_samples, 1)), temp))
+        elbo = elbo + np.sum(dirichlet_logpdf_pi(pi, np.ones(K)*temp_prior))
+        elbo = elbo - np.sum(log_density_pi_concrete(pi, np.tile(var_params[:len(var_params) - 1], (N_samples, 1)), temp))
 
     elbo /= N_samples
     return elbo
@@ -275,19 +286,21 @@ def log_evidence_discrete(x_n,model_params):
     ll  = -0.5 * np.log(2 * np.pi * sigma**2) *  D
     ll = ll -0.5 * np.sum((x_n - mu.T)**2 / sigma**2, axis=1)
 
+    #ll += np.log(1./K)
     assert ll.shape == (K,)
     return logsumexp(ll)+np.log(1./K)
 
-def log_evidence_cont(x_n,model_params,N_samples,alpha_dirichlet,eps=1e-15):
+def log_evidence_cont(x_n,model_params,N_samples):
     assert x_n.ndim ==1
     mu, sigma, alpha = model_params
     K = mu.shape[1]
 
+    epsilon = npr.uniform(0, 1, (N_samples, K))
     D = len(x_n)
     pi=np.zeros((N_samples,K))
 
     for n in range(N_samples):
-        pi[n,:]=np.minimum(1-eps,np.maximum(np.random.dirichlet(np.ones(K)*alpha_dirichlet),eps))
+        pi[n,:]=np.random.dirichlet(np.ones(K))
 
     ll = -0.5 * np.log(2 * np.pi * sigma ** 2) * D
     ll = ll -0.5 * np.sum((x_n - mu.dot(pi[:,:].T).T)**2 / sigma**2, axis=1)
@@ -384,45 +397,44 @@ def sample_doubly_stochastic(Psi, verbose=False):
 
     #return [item for sublist in P for item in sublist]
 
-print np.log(np.minimum(1-1e-9,np.maximum(np.random.dirichlet(np.ones(10)*0.01,10000),1e-9)))
-#
-#
-# N_simulations=100 #Number of simulations for a single temperature
-# temps = np.array([0.5, 1, 5, 10]) #temperatures
-# N_temps = len(temps) #Number of temperatures
-# N_iters = 300# Stochastic gradient ascent of the ELBO
 
-#
-#
-# # Parameters for data simulation
-# N = 1 #Number of samples
-# D = 2 #Dimension
-# K = 10 #Number of classes
-#
-#
-# #define arrays to store results
-# elbo_iterations_kumaraswamy = np.zeros((N_simulations, N_temps,N_iters))
-# elbo_iterations_gaussian = np.zeros((N_simulations, N_temps, N_iters))
-# elbo_iterations_gumbell = np.zeros((N_simulations,N_temps, N_iters))
-# dist_gaussian = np.zeros((N_simulations, N_temps, N_iters))
-# dist_gumbell = np.zeros((N_simulations, N_temps, N_iters))
-# dist_kumaraswamy = np.zeros((N_simulations, N_temps, N_iters))
-#
-# approx_z_gaussian=np.zeros((N_simulations, N_temps, N_iters,K))
-# approx_z_gumbell =np.zeros((N_simulations, N_temps, N_iters,K))
-# approx_z_kumaraswamy = np.zeros((N_simulations, N_temps, N_iters,K))
-#
-# var_params_gaussian_all = np.zeros((N_simulations, N_temps, N_iters, N * (K-1) *2 ))
-# var_params_gumbell_all = np.zeros((N_simulations, N_temps, N_iters, N * (K) ))
-# var_params_kumaraswamy_all = np.zeros((N_simulations, N_temps, N_iters, N * (K-1) *2 ))
-#
-# mu_gmm_all = np.zeros((N_simulations,N_temps, D, K))
-# x_true_all = np.zeros((N_simulations,N_temps, D, N))
-# z_true_all = np.zeros((N_simulations,N_temps, N,K))
-#
-#
-# posterior_all = np.zeros((N_simulations,N_temps,  K))
-# log_evidence_all=np.zeros((N_simulations,N_temps))
+
+N_simulations=100 #Number of simulations for a single temperature
+temps = np.array([0.5, 1, 5, 10]) #temperatures
+N_temps = len(temps) #Number of temperatures
+N_iters = 300# Stochastic gradient ascent of the ELBO
+
+
+
+# Parameters for data simulation
+N = 1 #Number of samples
+D = 2 #Dimension
+K = 10 #Number of classes
+
+
+#define arrays to store results
+elbo_iterations_kumaraswamy = np.zeros((N_simulations, N_temps,N_iters))
+elbo_iterations_gaussian = np.zeros((N_simulations, N_temps, N_iters))
+elbo_iterations_gumbell = np.zeros((N_simulations,N_temps, N_iters))
+dist_gaussian = np.zeros((N_simulations, N_temps, N_iters))
+dist_gumbell = np.zeros((N_simulations, N_temps, N_iters))
+dist_kumaraswamy = np.zeros((N_simulations, N_temps, N_iters))
+
+approx_z_gaussian=np.zeros((N_simulations, N_temps, N_iters,K))
+approx_z_gumbell =np.zeros((N_simulations, N_temps, N_iters,K))
+approx_z_kumaraswamy = np.zeros((N_simulations, N_temps, N_iters,K))
+
+var_params_gaussian_all = np.zeros((N_simulations, N_temps, N_iters, N * (K-1) *2 ))
+var_params_gumbell_all = np.zeros((N_simulations, N_temps, N_iters, N * (K) ))
+var_params_kumaraswamy_all = np.zeros((N_simulations, N_temps, N_iters, N * (K-1) *2 ))
+
+mu_gmm_all = np.zeros((N_simulations,N_temps, D, K))
+x_true_all = np.zeros((N_simulations,N_temps, D, N))
+z_true_all = np.zeros((N_simulations,N_temps,  N,K))
+
+
+posterior_all = np.zeros((N_simulations,N_temps,  K))
+log_evidence_all=np.zeros((N_simulations,N_temps))
 #simulate data now
 
 #

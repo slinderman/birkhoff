@@ -9,6 +9,8 @@
 import numpy as np
 cimport numpy as np
 
+cdef double EPS = 1e-8
+
 cpdef cython_psi_to_pi(double[::1] psi,
                        double[::1] ubs,
                        double[::1] pi):
@@ -238,14 +240,14 @@ cpdef double cython_log_det_jacobian(double[:, ::1] P,
             # Four cases
             if ub_rows[i, j] < ub_cols[i, j]:
                 if lbs[i, j] > 0:
-                    logdet -= np.log(ub_rows[i, j] - lbs[i, j])
+                    logdet -= np.log(ub_rows[i, j] - lbs[i, j] + EPS)
                 else:
-                    logdet -= np.log(ub_rows[i, j])
+                    logdet -= np.log(ub_rows[i, j] + EPS)
             else:
                 if lbs[i, j] > 0:
-                    logdet -= np.log(ub_cols[i, j] - lbs[i, j])
+                    logdet -= np.log(ub_cols[i, j] - lbs[i, j] + EPS)
                 else:
-                    logdet -= np.log(ub_cols[i, j])
+                    logdet -= np.log(ub_cols[i, j] + EPS)
 
             # Update upper bounds
             ub_rows[i, j + 1] = ub_rows[i, j] - P[i, j]
@@ -301,16 +303,16 @@ def cython_grad_log_det_jacobian(double[:, ::1] P,
                     if ub_rows[i, j] < ub_cols[i, j]:
                         if lbs[i, j] > 0:
                             dlogdet[ii, jj] -= (dub_rows[i, j] - dlbs[i, j]) / \
-                                               (ub_rows[i, j] - lbs[i, j])
+                                               (ub_rows[i, j] - lbs[i, j] + EPS)
 
                         else:
-                            dlogdet[ii, jj] -= dub_rows[i, j] / ub_rows[i, j]
+                            dlogdet[ii, jj] -= dub_rows[i, j] / (ub_rows[i, j] + EPS)
                     else:
                         if lbs[i, j] > 0:
                             dlogdet[ii, jj] -= (dub_cols[i, j] - dlbs[i, j]) / \
-                                               (ub_cols[i, j] - lbs[i, j])
+                                               (ub_cols[i, j] - lbs[i, j] + EPS)
                         else:
-                            dlogdet[ii, jj] -= dub_cols[i, j] / ub_cols[i, j]
+                            dlogdet[ii, jj] -= dub_cols[i, j] / (ub_cols[i, j] + EPS)
 
                     # Update upper bounds
                     dub_rows[i, j + 1] = dub_rows[i, j] - dP[i, j]

@@ -181,3 +181,5 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.savefig("permutation_K20_xy.png")
+
+from pybasicbayes.util.text import progprint_xrange
