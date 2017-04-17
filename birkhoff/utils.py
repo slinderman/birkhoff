@@ -430,3 +430,19 @@ def get_b3_projection():
     Q, _ = np.linalg.qr(Q)
 
     return Q
+
+def perm_matrix(perm):
+    K = len(perm)
+    P = np.zeros((K, K))
+    P[np.arange(K), perm] = 1
+    assert np.all(P.sum(0) == 1)
+    assert np.all(P.sum(1) == 1)
+    return P
+
+def check_doubly_stochastic(P):
+    K = P.shape[0]
+    assert P.shape == (K, K)
+    assert np.all(P >= -1e-8)
+    assert np.all(P <= 1+1e-8)
+    assert np.allclose(P.sum(0), 1.0)
+    assert np.allclose(P.sum(1), 1.0)
