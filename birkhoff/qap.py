@@ -43,15 +43,12 @@ def _compute_step_size(P, Q, As, Bs, Cs):
     a2 = 0
     avs = np.array([a0, a1, a2])
 
-    eval = np.zeros(3)
+    costs = np.zeros(3)
     for i in range(3):
         PQ = (1 - avs[i]) * P + avs[i] * Q
-        eval[i] = _trace_product(As,
-                                 PQ,
-                                 np.swapaxes(Bs, 2, 1),
-                                 PQ.T) \
-                  + _trace_product_linear(np.swapaxes(Cs, 2, 1), PQ)
-    return avs[eval.argmin()]
+        costs[i] = _trace_product(As, PQ, np.swapaxes(Bs, 2, 1), PQ.T) + \
+                   _trace_product_linear(np.swapaxes(Cs, 2, 1), PQ)
+    return avs[np.argmin(costs)]
 
 
 ### Approximate QAP solver
