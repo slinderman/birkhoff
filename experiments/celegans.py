@@ -346,7 +346,7 @@ if __name__ == "__main__":
               .format(t, elbos[-1], np.mean((W-W_true)**2), num_correct))
 
     # Run optimizer
-    num_adam_iters = 100
+    num_adam_iters = 200
     stepsize = 0.1
 
     callback(flat_params, -1, None)
