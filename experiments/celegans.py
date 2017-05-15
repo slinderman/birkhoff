@@ -103,6 +103,48 @@ def log_likelihood(Ys, A, W, Ps, etasq):
         ll += -0.5 * np.sum(Yerr**2 / etasq)
     return ll
 
+### Iterative solver
+def iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W, max_iter=100):
+    # Iterate between solving for W | Ps and Ps | W
+    M, T, N = Ys.shape
+    assert A.shape == (N, N)
+
+    W0 = np.sqrt(sigmasq_W) * npr.randn(N,N)
+    Ps = np.array([perm_to_P(npr.permutation(N))])
+
+    # W | Ps is just a linear regression
+    #    y_{mtn} ~ Pm.T (w_n * a_n) Pm y_{m,t-1,:} + eta^2 I
+    # Pm y_{mtn} ~ w_n * a_n Pm y_{m,t-1,:} + eta^2 I
+    # x_{mtn} ~ w_n[a_n] x_{m,t-1,n}[a_n] + eta^2 I
+
+    def _update_W(Ys, A, Ps, etasq):
+        # Collect covariates
+        Xs = []
+        for Y, P in zip(Ys, Ps):
+            Xs.append(np.dot(Y, P.T))
+        X = np.vstack(Xs)
+
+        W = np.zeros((N, N))
+        for n in range(N):
+            xn = X[1:,n]
+            Xpn = X[:-1][:,A[n]]
+            W[n, A[n]] = np.linalg.solve(
+                np.dot(Xpn.T, Xpn) / etasq + sigmasq_W * np.eye(N),
+                np.dot(Xpn.T, xn) / etasq)
+        return W
+
+    # Pm | W should is quadratic assignment problem?
+    #   (y - P.T W P x)^2
+    # = -2 y P.T W P x + x.T P.T W.T P P.T W P x
+    # = -2 y.T P.T W P x + x.T P.T W.T W P x
+    # = -2 Tr(x y.T P.T W P) + Tr(x x.T P.T W.T W P)
+    def _update_Pm(Ym, A, W, etasq):
+        raise NotImplementedError
+
+
+
+
+### Variational inference
 def unconstrained_log_prior(P, sigmasq_P):
     """
     Consider a product (coordinate-wise) of mixtures of
@@ -120,7 +162,7 @@ def unconstrained_log_prior(P, sigmasq_P):
 def perm_to_P(perm):
     K = len(perm)
     P = np.zeros((K, K))
-    P[range(K), perm] = 1
+    P[np.arange(K), perm] = 1
     return P
 
 def round_to_perm(P):
@@ -245,8 +287,8 @@ if __name__ == "__main__":
     M = 5
     T = 1000
     N = 100
-    num_given_neurons = 50
-    num_poss_per_neuron = 10
+    num_given_neurons = 25
+    num_poss_per_neuron = 25
     etasq = 0.1
     Ys, A, W_true, Ps_true, Cs = simulate_data(M, T, N, num_given_neurons, num_poss_per_neuron, etasq=etasq)
 
