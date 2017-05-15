@@ -9,6 +9,7 @@ import autograd.scipy as scipy
 from autograd.scipy.misc import logsumexp
 from scipy.optimize import linear_sum_assignment
 from autograd.util import flatten
+from autograd.core import unbox_if_possible
 from autograd.optimizers import adam, sgd
 from autograd import grad
 
@@ -41,7 +42,7 @@ sns.set_style("white")
 sns.set_context("paper")
 
 
-def simulate_data(M, T, N, num_given, num_poss_per_neuron,
+def simulate_data(M, T, N, num_poss_per_neuron,
                   sigmasq_W=0.08, etasq=0.1, rho=0.1):
 
     # Sample global worm variables
@@ -57,21 +58,14 @@ def simulate_data(M, T, N, num_given, num_poss_per_neuron,
         Ps[m, np.arange(N), perm] = 1
 
     # Make constraint matrices for each worm
-    Cs = np.zeros((M, N, N), dtype=bool)
+    Cs = np.ones((M, N, N), dtype=bool)
     for m in range(M):
-        given_inds = npr.choice(N, num_given, replace=False)
         for n in range(N):
             i = np.where(Ps[m, n, :] == 1)[0]
-            Cs[m,n,i] = True
-            if n in given_inds:
-                continue
-
-            poss = npr.choice(np.arange(N), num_poss_per_neuron, replace=False)
-            for j in poss:
-                Cs[m,n,j] = True
-
-    for C, P in zip(Cs, Ps):
-        assert np.sum(P[C]) == N
+            invalid = npr.choice(np.arange(N), N - num_poss_per_neuron, replace=False)
+            for j in invalid:
+                if j != i:
+                    Cs[m,n,j] = False
 
     # Sample some data!
     Ys = np.zeros((M, T, N))
@@ -157,19 +151,16 @@ def make_map(C):
 
     return unpack_vec, pack_matrix
 
-def initialize_params(A, Cs, map_W=None, map_Ps=None):
+def initialize_params(A, Cs, map_Ps=None):
     N = A.shape[0]
     assert A.shape == (N, N)
     M = Cs.shape[0]
     assert Cs.shape == (M, N, N)
 
-    unpack_W, pack_W = make_map(A)
-    mu_W = np.zeros(A.sum()) if map_W is None else pack_W(map_W)
-    log_sigmasq_W = -4 * np.ones(A.sum())
-
     log_mu_Ps = []
     log_sigmasq_Ps = []
     unpack_Ps = []
+
     for i,C in enumerate(Cs):
         unpack_P, pack_P = make_map(C)
         unpack_Ps.append(unpack_P)
@@ -177,22 +168,18 @@ def initialize_params(A, Cs, map_W=None, map_Ps=None):
             np.zeros(C.sum()) if map_Ps is None else np.log(pack_P(map_Ps[i])+1e-8))
         log_sigmasq_Ps.append(-2 * np.ones(C.sum()))
 
-    return mu_W, log_sigmasq_W, unpack_W, \
-           log_mu_Ps, log_sigmasq_Ps, unpack_Ps
+    return log_mu_Ps, log_sigmasq_Ps, unpack_Ps
 
-def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, temp=0.1):
-    # Sample W
-    mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
-    W_flat = mu_W + np.sqrt(np.exp(log_sigmasq_W)) * npr.randn(*mu_W.shape)
-    W = unpack_W(W_flat)
-
+def sample_q(params, unpack_Ps, Cs, num_sinkhorn, temp=0.1):
     # Sample Ps: run sinkhorn to move mu close to Birkhoff
+    log_mu_Ps, log_sigmasq_Ps = params
     Ps = []
     for log_mu_P, log_sigmasq_P, unpack_P, C in \
             zip(log_mu_Ps, log_sigmasq_Ps, unpack_Ps, Cs):
+
         # Unpack the mean, run sinkhorn, the pack it again
         log_mu_P = unpack_P(log_mu_P)
-        log_mu_P = sinkhorn_logspace(log_mu_P - 1e8 * (1 - C), num_sinkhorn)
+        log_mu_P = sinkhorn_logspace(log_mu_P - 1e8 * (1-C), num_sinkhorn)
         log_mu_P = log_mu_P[C]
 
         log_sigmasq_P = log_sigmasq_P
@@ -206,14 +193,13 @@ def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, temp=0.1):
         P = P * temp + (1 - temp) * Phat
 
         Ps.append(P)
-
     Ps = np.array(Ps)
-    return W, Ps
+    return Ps
 
 def q_entropy(log_sigmasq_P, temp):
     return gaussian_entropy(0.5 * log_sigmasq_P) + log_sigmasq_P.size * np.log(temp)
 
-def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
+def elbo(params, unpack_Ps, Ys, A, W, Cs, etasq, sigmasq_P,
          num_sinkhorn=5, num_mcmc_samples=1, temp=1.0):
     """
     Provides a stochastic estimate of the variational lower bound.
@@ -222,11 +208,11 @@ def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
     assert A.shape == (N, N)
     assert len(unpack_Ps) == M
 
-    mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
+    log_mu_Ps, log_sigmasq_Ps = params
 
     L = 0
     for smpl in range(num_mcmc_samples):
-        W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn)
+        Ps = sample_q(params, unpack_Ps, Cs, num_sinkhorn)
 
         # Compute the ELBO
         L += log_likelihood(Ys, A, W, Ps, etasq) / num_mcmc_samples
@@ -234,7 +220,6 @@ def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
 
     # Add the entropy terms
     L += np.sum([q_entropy(log_sigmasq_P, temp) for log_sigmasq_P in log_sigmasq_Ps])
-    L += gaussian_entropy(0.5 * log_sigmasq_W)
 
     # Normalize objective
     L /= (T * M * N)
@@ -245,54 +230,46 @@ if __name__ == "__main__":
     M = 5
     T = 1000
     N = 100
-    num_given_neurons = 50
     num_poss_per_neuron = 10
     etasq = 0.1
-    Ys, A, W_true, Ps_true, Cs = simulate_data(M, T, N, num_given_neurons, num_poss_per_neuron, etasq=etasq)
+    Ys, A, W, Ps_true, Cs = simulate_data(M, T, N, num_poss_per_neuron, etasq=etasq)
 
     # Make sure the true weights have high probability
-    print("ll true: {:.4f}".format(log_likelihood(Ys, A, W_true, Ps_true, etasq) / (M*T*N)))
-    print("ll tran: {:.4f}".format(log_likelihood(Ys, A, W_true.T, Ps_true, etasq) / (M*T*N)))
-    print("ll rand: {:.4f}".format(log_likelihood(Ys, A, npr.randn(N,N), Ps_true, etasq) / (M*T*N)))
+    print("ll true: {:.4f}".format(log_likelihood(Ys, A, W, Ps_true, etasq) / (M *T * N)))
+    print("ll tran: {:.4f}".format(log_likelihood(Ys, A, W.T, Ps_true, etasq) / (M *T * N)))
+    print("ll rand: {:.4f}".format(log_likelihood(Ys, A, npr.randn(N,N), Ps_true, etasq) / (M *T * N)))
 
     # Initialize variational parameters
-    # mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
-    #     initialize_params(A, Cs, map_W=W_true, map_Ps=0.01 + 0.99 * Ps_true)
-    mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
-        initialize_params(A, Cs)
+    log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
+        initialize_params(A, Cs, map_Ps=0.1 + 0.9 * Ps_true)
 
-    # DEBUG
-    # W_sample, Ps_sample = sample_q((mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps), unpack_W, unpack_Ps, Cs, num_sinkhorn=5)
+    # Debug
+    # Ps_sample = sample_q((log_mu_Ps, log_sigmasq_Ps), unpack_Ps, Cs, num_sinkhorn=5)
     # plt.figure()
     # plt.subplot(121)
     # plt.imshow(Ps_sample[0], interpolation="none", vmin=0, vmax=1)
     # plt.subplot(122)
     # plt.imshow(Ps_true[0], interpolation="none", vmin=0, vmax=1)
-    #
-    # plt.figure()
-    # plt.subplot(121)
-    # plt.imshow(W_sample, interpolation="none", vmin=-.1, vmax=.1)
-    # plt.subplot(122)
-    # plt.imshow(W_true * A, interpolation="none", vmin=-.1, vmax=.1)
     # plt.show()
 
     # Make a function to convert an array of params into
     # a set of parameters mu_W, sigmasq_W, [mu_P1, sigmasq_P1, ... ]
     flat_params, unflatten = \
-        flatten((mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps))
+        flatten((log_mu_Ps, log_sigmasq_Ps))
 
     objective = \
         lambda flat_params, t: \
-            -1 * elbo(unflatten(flat_params), unpack_W, unpack_Ps, Ys, A, Cs, etasq,
+            -1 * elbo(unflatten(flat_params), unpack_Ps, Ys, A, W, Cs, etasq,
                       sigmasq_P=0.1)
 
     # Define a callback to monitor optimization progress
     elbos = [-1 * objective(flat_params, 0)]
-    def callback(params, t, g):
-        elbos.append(-1 * objective(params, t))
+    def callback(flat_params, t, g):
+        elbos.append(-1 * objective(flat_params, t))
 
         # Sample the variational posterior and compute num correct matches
-        W, Ps = sample_q(unflatten(params), unpack_W, unpack_Ps, Cs, 5)
+        log_mu_Ps, log_sigmasq_Ps = unflatten(flat_params)
+        Ps = sample_q((log_mu_Ps, log_sigmasq_Ps), unpack_Ps, Cs, num_sinkhorn=5)
 
         # Round doubly stochastic matrix P to the nearest permutation matrix
         num_correct = np.zeros(M)
@@ -300,8 +277,8 @@ if __name__ == "__main__":
             row, col = linear_sum_assignment(-P + 1e8 * (1 - Cs[m]))
             num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
 
-        print("Iteration {}.  ELBO: {:.4f}  MSE(W): {:.4f}  Num Correct: {}"
-              .format(t, elbos[-1], np.mean((W-W_true)**2), num_correct))
+        print("Iteration {}. ELBO: {:.2f}  Num Correct: {}".
+              format(t, elbos[-1], num_correct))
 
     # Run optimizer
     num_adam_iters = 100

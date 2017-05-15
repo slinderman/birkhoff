@@ -27,7 +27,7 @@ def gaussian_logp(x, mu, sigma):
     return np.sum(-0.5 * np.log(2 * np.pi * sigma**2) -0.5 * (x - mu)**2 / sigma**2)
 
 def gaussian_entropy(log_sigma):
-    return 0.5 * log_sigma.size ** 2 * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
+    return 0.5 * log_sigma.size * (1.0 + np.log(2 * np.pi)) + np.sum(log_sigma)
 
 ### 1D stick breaking for categoricals
 def python_psi_to_pi(psi, return_intermediates=False):
