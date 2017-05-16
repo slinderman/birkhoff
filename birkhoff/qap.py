@@ -1,23 +1,21 @@
-# This code allows to solve the problem
-#
-#     \sum Tr(A_i P B_i^T P) + Tr(C_i^T P)
-#
-# It is largely based on Fast Approximate Quadratic Programming for Graph Matching
-# http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0121002
 from scipy.optimize import linear_sum_assignment
 import numpy as np
 
 
 ## Helpers
 def _trace_product(A, B, C, D):
-    return \
-        np.sum(np.trace(
-            np.matmul(A, np.matmul(B, np.matmul(C, D))),
-            axis1=1, axis2=2))
+    # return np.sum(np.trace(
+    #     np.matmul(A, np.matmul(B, np.matmul(C, D))),
+    #     axis1=1, axis2=2))
+    AB = np.matmul(A, B)
+    CD = np.matmul(C, D)
+    return np.sum(AB * np.swapaxes(CD, -1, -2))
+
 
 
 def _trace_product_linear(A, B):
-    return np.sum(np.trace(np.matmul(A, B), axis1=1, axis2=2))
+    # return np.sum(np.trace(np.matmul(A, B), axis1=1, axis2=2))
+    return np.sum(A * np.swapaxes(B, -1, -2))
 
 
 ### Inner steps of QAP solver
@@ -53,6 +51,22 @@ def _compute_step_size(P, Q, As, Bs, Cs):
 
 ### Approximate QAP solver
 def solve_qap(As, Bs, Cs, P0=None, max_iter=100):
+    """
+    This code allows to solve the problem:
+
+        \sum_i Tr(A_i P B_i^T P^T) + Tr(C_i^T P)
+
+    subject to P being a permutation matrix. It is largely based on
+    the paper: Fast Approximate Quadratic Programming for Graph Matching
+    http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0121002
+
+    :param As:  stack of A_i matrices   (D x N x N)
+    :param Bs:  stack of B_i matrices   (D x N x N)
+    :param Cs:  stack of C_i matrices   (D x N x N)
+    :param P0:  initial permutation     (N x N)
+    :param max_iter: max number of iterations
+    :return: (N x N) permutation matrix that minimizes the functional above.
+    """
     D, N, _ = As.shape
     assert As.shape == (D, N, N)
     assert Bs.shape == (D, N, N)

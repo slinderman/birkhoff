@@ -15,6 +15,7 @@ from autograd import grad
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from birkhoff.qap import solve_qap
 from birkhoff.primitives import gaussian_logp, gaussian_entropy, logistic, logit
 
 import seaborn as sns
@@ -103,14 +104,14 @@ def log_likelihood(Ys, A, W, Ps, etasq):
         ll += -0.5 * np.sum(Yerr**2 / etasq)
     return ll
 
-### Iterative solver
+### Iterative MAP Estimate Baseline
 def iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W, max_iter=100):
     # Iterate between solving for W | Ps and Ps | W
     M, T, N = Ys.shape
     assert A.shape == (N, N)
 
-    W0 = np.sqrt(sigmasq_W) * npr.randn(N,N)
-    Ps = np.array([perm_to_P(npr.permutation(N))])
+    W = np.sqrt(sigmasq_W) * npr.randn(N,N)
+    Ps = np.array([perm_to_P(npr.permutation(N)) for _ in range(M)])
 
     # W | Ps is just a linear regression
     #    y_{mtn} ~ Pm.T (w_n * a_n) Pm y_{m,t-1,:} + eta^2 I
@@ -129,19 +130,48 @@ def iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W, max_iter=100):
             xn = X[1:,n]
             Xpn = X[:-1][:,A[n]]
             W[n, A[n]] = np.linalg.solve(
-                np.dot(Xpn.T, Xpn) / etasq + sigmasq_W * np.eye(N),
+                np.dot(Xpn.T, Xpn) / etasq + sigmasq_W * np.eye(A[n].sum()),
                 np.dot(Xpn.T, xn) / etasq)
         return W
 
-    # Pm | W should is quadratic assignment problem?
+    # Pm | W should is a quadratic assignment problem
+    # Let y = Ym[1:] and x = Ym[:-1]
     #   (y - P.T W P x)^2
     # = -2 y P.T W P x + x.T P.T W.T P P.T W P x
     # = -2 y.T P.T W P x + x.T P.T W.T W P x
     # = -2 Tr(x y.T P.T W P) + Tr(x x.T P.T W.T W P)
-    def _update_Pm(Ym, A, W, etasq):
-        raise NotImplementedError
+    def _update_Pm(Ym, A, W, Cm):
+        yp, y = Ym[:-1], Ym[1:]
+        A1 = -2 * np.sum(yp[:, None, :] * y[:, :, None], axis=0)
+        B1 = (W * A)
+        A2 = np.sum(yp[:, None, :] * yp[:, :, None], axis=0)
+        B2 = np.dot((W * A).T, (W * A))
 
+        # todo: incorporate constraint matrix Cm
+        C1 = np.zeros((N, N))
+        C2 = 1e8 * (1-Cm)
 
+        Pm = solve_qap(np.array([A1, A2]),
+                       np.array([B1, B2]),
+                       np.array([C1, C2]))
+
+        # Note that solve_qap uses actually yields the transpose of P
+        return Pm.T
+
+    # Run the iterative solver
+    lls = []
+    for itr in range(max_iter):
+        # Score
+        lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
+        num_correct = np.zeros(M)
+        for m, (P, C) in enumerate(zip(Ps, Cs)):
+            row, col = linear_sum_assignment(-P + 1e8 * (1 - C))
+            num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
+        print("Iteration {}. LL: {:.4f}  Num Correct: {}".format(itr, lls[-1], num_correct))
+
+        W = _update_W(Ys, A, Ps, etasq)
+        for m in range(M):
+            Ps[m] = _update_Pm(Ys[m], A, W, Cs[m])
 
 
 ### Variational inference
@@ -293,9 +323,7 @@ if __name__ == "__main__":
     Ys, A, W_true, Ps_true, Cs = simulate_data(M, T, N, num_given_neurons, num_poss_per_neuron, etasq=etasq)
 
     # Make sure the true weights have high probability
-    print("ll true: {:.4f}".format(log_likelihood(Ys, A, W_true, Ps_true, etasq) / (M*T*N)))
-    print("ll tran: {:.4f}".format(log_likelihood(Ys, A, W_true.T, Ps_true, etasq) / (M*T*N)))
-    print("ll rand: {:.4f}".format(log_likelihood(Ys, A, npr.randn(N,N), Ps_true, etasq) / (M*T*N)))
+    print("True LL: {:.4f}".format(log_likelihood(Ys, A, W_true, Ps_true, etasq) / (M*T*N)))
 
     # Initialize variational parameters
     # mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
@@ -349,9 +377,12 @@ if __name__ == "__main__":
     num_adam_iters = 200
     stepsize = 0.1
 
-    callback(flat_params, -1, None)
-    variational_params = adam(grad(objective),
-                              flat_params,
-                              step_size=stepsize,
-                              num_iters=num_adam_iters,
-                              callback=callback)
+    # callback(flat_params, -1, None)
+    # variational_params = adam(grad(objective),
+    #                           flat_params,
+    #                           step_size=stepsize,
+    #                           num_iters=num_adam_iters,
+    #                           callback=callback)
+
+    # Now try an iterative MAP estimate for comparison
+    iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W=0.08)
