@@ -85,6 +85,14 @@ def simulate_data(M, T, N, num_given, num_poss_per_neuron,
 
     return Ys, A, W, Ps, Cs
 
+def log_likelihood_single_worm(Y, A, W, P, etasq):
+    Weff = np.dot(P.T, np.dot(W * A, P))
+    Yerr = Y[1:] - np.dot(Y[:-1], Weff.T)
+    ll = -0.5 * N * (T - 1) * np.log(2 * np.pi)
+    ll += -0.5 * N * (T - 1) * np.log(etasq)
+    ll += -0.5 * np.sum(Yerr ** 2 / etasq)
+    return ll
+
 def log_likelihood(Ys, A, W, Ps, etasq):
     # Compute log likelihood of observed data given W, Ps
     M = Ps.shape[0]
@@ -97,11 +105,7 @@ def log_likelihood(Ys, A, W, Ps, etasq):
 
     ll = 0
     for m in range(M):
-        Wm = np.dot(Ps[m].T, np.dot(W * A, Ps[m]))
-        Yerr = Ys[m,1:] - np.dot(Ys[m,:-1], Wm.T)
-        ll += -0.5 * N * (T-1) * np.log(2 * np.pi)
-        ll += -0.5 * N * (T-1) * np.log(etasq)
-        ll += -0.5 * np.sum(Yerr**2 / etasq)
+        ll += log_likelihood_single_worm(Ys[m], A, W, Ps[m], etasq)
     return ll
 
 ### Iterative MAP Estimate Baseline
@@ -170,6 +174,157 @@ def iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W, max_iter=100):
         print("Iteration {}. LL: {:.4f}  Num Correct: {}".format(itr, lls[-1], num_correct))
 
         W = _update_W(Ys, A, Ps, etasq)
+        for m in range(M):
+            Ps[m] = _update_Pm(Ys[m], A, W, Cs[m])
+
+### MCMC
+def mcmc_estimate(Ys, A, Cs, etasq, sigmasq_W, num_iters=1000,
+                  W_init=None, Ps_init=None, do_update_W=True):
+    # Iterate between solving for W | Ps and Ps | W
+    M, T, N = Ys.shape
+    assert A.shape == (N, N)
+
+    # W = np.sqrt(sigmasq_W) * npr.randn(N, N)
+    W = W_init if W_init is not None else np.sqrt(sigmasq_W) * npr.randn(N, N)
+
+    # Initialize permutations and ensure they are valid
+    Ps = Ps_init if Ps_init is not None else \
+        np.array([perm_to_P(npr.permutation(N)) for _ in range(M)])
+    for m, (P, C) in enumerate(zip(Ps, Cs)):
+        P = round_to_perm( P - 1e8 * (1-C))
+        assert np.sum(P[C]) == N
+        Ps[m] = P
+
+
+    # W | Ps is just a linear regression
+    #    y_{mtn} ~ Pm.T (w_n * a_n) Pm y_{m,t-1,:} + eta^2 I
+    # Pm y_{mtn} ~ w_n * a_n Pm y_{m,t-1,:} + eta^2 I
+    # x_{mtn} ~ w_n[a_n] x_{m,t-1,n}[a_n] + eta^2 I
+    def _update_W(Ys, A, Ps, etasq):
+        # Collect covariates
+        Xs = []
+        for Y, P in zip(Ys, Ps):
+            Xs.append(np.dot(Y, P.T))
+        X = np.vstack(Xs)
+
+        W = np.zeros((N, N))
+        for n in range(N):
+            xn = X[1:, n]
+            Xpn = X[:-1][:, A[n]]
+            Jn = np.dot(Xpn.T, Xpn) / etasq + sigmasq_W * np.eye(A[n].sum())
+            Sign = np.linalg.inv(Jn)
+            hn = np.dot(Xpn.T, xn) / etasq
+            W[n, A[n]] = npr.multivariate_normal(np.dot(Sign, hn), Sign)
+        return W
+
+    # Identify the uncertain rows ahead of time
+    def _naive_mh_step(Pm, Ym, A, W, Cm, curr_ll=None):
+        # Randomly choose two neurons to swap
+        unknowns = np.where(Cm.sum(axis=1) > 1)[0]
+        n1, n2 = npr.choice(unknowns, 2, replace=False)
+        v1 = np.where(Pm[n1])[0][0]
+        v2 = np.where(Pm[n2])[0][0]
+        if not Cm[n1, v2] or not Cm[n2, v1]:
+            return Pm, curr_ll
+
+        # Forward and Backward proposal probabilities are the same
+        # so we just need to evaluate the log likelihoods
+        curr_ll = curr_ll if curr_ll is not None else \
+            log_likelihood_single_worm(Ym, A, W, Pm, etasq)
+
+        P_prop = Pm.copy()
+        P_prop[n1] = Pm[n2]
+        P_prop[n2] = Pm[n1]
+        prop_ll = log_likelihood_single_worm(Ym, A, W, P_prop, etasq)
+
+        # Randomly accept or reject
+        if np.log(npr.rand()) < prop_ll - curr_ll:
+            return P_prop, prop_ll
+        else:
+            return Pm.copy(), curr_ll
+
+    def _get_valid_swaps(Pm, Cm, n1):
+        import ipdb; ipdb.set_trace()
+        # Find rows such that when we swap them, the constraints are satisfied
+        # Get current assignment of n1
+        v1 = np.where(Pm[n1])[0][0]
+        # Find rows where Cm[:,v1] = True; these are potential swaps
+        poss = np.where(Cm[:,v1])[0]
+        # Find current assignments for each of those rows
+        vs_poss = np.where(Pm[poss])[1]
+        # Of these, which are valid for n1
+        valid = np.where(Cm[n1,vs_poss])[0]
+        return poss[valid]
+
+    # todo: finish this up... the forward and backward proposal
+    # todo: probabilties are a bit tricky!
+    # def _smart_mh_step(Pm, Ym, A, W, Cm, curr_ll=None):
+    #     # Identify possible partners to swap with
+    #     n1 = npr.choice(N)
+    #     poss = _get_valid_swaps(Pm, Cm, n1)
+    #     n2 = npr.choice(poss)
+    #
+    #     # DEBUG
+    #     v1 = np.where(Pm[n1])[0][0]
+    #     v2 = np.where(Pm[n2])[0][0]
+    #     assert Cm[n1, v2] and Cm[n2, v1]
+    #
+    #     if n1 == n2:
+    #         return Pm, curr_ll
+    #
+    #     P_prop = Pm.copy()
+    #     P_prop[n1] = Pm[n2]
+    #     P_prop[n2] = Pm[n1]
+    #
+    #     # Now forward and backward probabilities differ
+    #     log_p_fwd = -np.log(poss.size)
+    #
+    #     # This is tricky: the backward probability involves selecting
+    #     # either n1 and then n2, or n2 then n1.  But now both are measured
+    #     # according to
+    #     bwd_poss = _get_valid_swaps(P_prop, Cm, )
+    #
+    #
+    #     # so we just need to evaluate the log likelihoods
+    #     curr_ll = curr_ll if curr_ll is not None else \
+    #         log_likelihood_single_worm(Ym, A, W, Pm, etasq)
+    #
+    #     prop_ll = log_likelihood_single_worm(Ym, A, W, P_prop, etasq)
+    #
+    #     # Randomly accept or reject
+    #     if np.log(npr.rand()) < prop_ll - curr_ll:
+    #         return P_prop, prop_ll
+    #     else:
+    #         return Pm.copy(), curr_ll
+
+    # Sample Pm | W with Metropolis Hastings
+    def _update_Pm(Ym, A, W, Cm, num_mh_steps=1000):
+        Pm = Ps[m]
+        curr_ll = None
+        for _ in range(num_mh_steps):
+            Pm, curr_ll = _naive_mh_step(Pm, Ym, A, W, Cm, curr_ll=curr_ll)
+            # Pm, curr_ll = _smart_mh_step(Pm, Ym, A, W, Cm, curr_ll=curr_ll)
+
+            # Check validity
+            assert Pm[Cm].sum() == N
+        return Pm
+
+    # Run the MCMC algorithm
+    lls = []
+    for itr in range(num_iters):
+        # Score
+        lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
+        num_correct = np.zeros(M)
+        for m, (P, C) in enumerate(zip(Ps, Cs)):
+            row, col = linear_sum_assignment(-P + 1e8 * (1 - C))
+            num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
+        print("Iteration {}. LL: {:.4f}  Num Correct: {}".format(itr, lls[-1], num_correct))
+
+        # Resample weights
+        if do_update_W:
+            W = _update_W(Ys, A, Ps, etasq)
+
+        # Resample permutations
         for m in range(M):
             Ps[m] = _update_Pm(Ys[m], A, W, Cs[m])
 
@@ -385,4 +540,8 @@ if __name__ == "__main__":
     #                           callback=callback)
 
     # Now try an iterative MAP estimate for comparison
-    iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W=0.08)
+    # iterative_map_estimate(Ys, A, Cs, etasq, sigmasq_W=0.08)
+
+    # Now try MCMC with Metropolis Hastings moves
+    # DEBUG: give it the true weights!
+    mcmc_estimate(Ys, A, Cs, etasq, sigmasq_W=0.08, W_init=W_true, do_update_W=False)
