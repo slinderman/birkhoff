@@ -251,15 +251,15 @@ rather than restricting~$p({\pi} \mid \theta)$ to be an atomic measure,
 let it be a continuous density on the simplex. To be concrete, suppose
 the density of~${\pi}$ is defined by the transformation,
 \begin{align}
-  \xi &\sim p(\xi), \\
-  {\pi} &= g(\theta, \xi) \\
-  g(\theta, \xi) &= \text{softmax}(\log \theta + \xi).
+  \psi &\sim p(\psi), \\
+  {\pi} &= g(\theta, \psi) \\
+  g(\theta, \xi) &= \text{softmax}(\log \theta + \psi).
 \end{align}
 The output~$x$ is now a point on the simplex, and the parameters~$\theta$ can
 be optimized via stochastic gradient ascent with the reparameterization trick,
 as discussed above.
 
-In the aforementioned papers,~$p(\xi)$ is taken to be the Gumbel distribution.
+In the aforementioned papers,~$p(\psi)$ is taken to be the Gumbel distribution.
 This choice leads to a nicely interpretable model: adding
 Gumbel noise and taking the argmax yields an exact sample from~$\theta$;
 setting~$g$ to the softmax is a natural relaxation. Ultimately, however, this
@@ -268,101 +268,58 @@ density.
 
 \section{Alternative continuous relaxations}
 \label{sec:alternative}
+Here we introduce two alternative ways of conceiving a relaxed version of a discrete random variable that are also amenable for variational inference with Monte Carlo estimates of the gradient based on re-parameterization. However, unlike the Gumbel-Softmax, these relaxations enable extensions to more complex combinatorial objects; notably, permutations.
 
-While the Gumbel-softmax has some nice properties, as we will see, it does
-not lend itself as naturally to more complicated generalizations. 
+\subsection{Stick breaking}
 Consider the following alternative model for~${\pi}$:
 \begin{align}
-  \psi_k &\sim \distNormal(\mu_k, \tau^{-1} \eta_k^2) & &  \text{for } k=1, \ldots, K-1\\
-  {\pi}_1 &= \sigma(\psi_1) \\
+  \psi &\sim p(\psi) \\
+  z &  = g(\psi) & & z\in[0,1]^{K-1}, \\ 
+   {\pi}_1 &= z_2 \\
 %  {\pi}_k &= \sigma(\psi_k) \prod_{j=1}^{k-1} (1-\sigma(\psi_j)) & &  \text{for } k=2, \ldots, K-1\\
-  {\pi}_k &= \sigma(\psi_k) (1- \sum_{j=1}^{k-1} {\pi}_j) & &  \text{for } k=2, \ldots, K-1\\
+  {\pi}_k &= z_k (1- \sum_{j=1}^{k-1} {\pi}_j) & &  \text{for } k=2, \ldots, K-1\\
 %  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
 {\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j
 \end{align}
-This is known as a logistic stick breaking transformation since
-~$\sigma(\cdot)$ is the logistic function and~$\sigma(\psi_k)$ can be
-seen as the fraction of the remaining ``stick'' of probability mass
-assigned to~${\pi}_k$ \citep{linderman2015dependent}. Moreover,
+In this paper wefocus on the choice $\psi_k \sim \distNormal(\mu_k, \eta_k^2) $ and the transformation $g(\cdot) = \sigma(\cdot/ \tau)$, where ~$\sigma(\dot)$ the logistic function. This is known as a logistic-normal stick breaking transformation. $z_k$ can seen as the fraction of the remaining ``stick'' of probability mass assigned to~${\pi}_k$ \citep{linderman2015dependent}. Moreover,
 the density of~${\pi}$ can be expressed in closed form as a
-function of~$\mu_k$ and~$\eta_k^2$.  Finally, as with the relaxations
-above, the temperature~$\tau$ controls how
-concentrated~$p_\tau({\pi} \mid \{\mu_k, \eta_k^2\})$ is at the
-vertices of the simplex. As~$\tau \to 0$, the density becomes
-concentrated on atoms at the~$K$ vertices, and as~$\tau \to \infty$,
-the density concentrates on a point in the interior of the simplex
-determined by~$\{\mu_k\}$. For intermediate values, the density is
-continuous on the simplex.
+function of~$\mu_k$ and~$\eta_k^2$.  The temperature~$\tau$ controls how
+concentrated $p(\pi)$ is at the vertices of the simplex. We showed that with appropriate choices of parameters, in the limit ~$\tau \to 0$ we can recover any categorial distribution, i.e., the density becomes concentrated on atoms at the~$K$ vertices. Also as ~$\tau \to \infty$, the density concentrates on a point in the interior of the simplex
+determined by the parameters. For intermediate values, the density is
+continuous on the simplex. 
 
-\subsection{Limit analysis}
-\todo{appendix}
-One nice property of the concrete distribution \citep{maddison2016concrete, jang2016categorical} is that it can be understood as the 'heating' of the original categorical distribution (equivalently, a probability simplex-valued distribution whose atoms are the vertices of the simplex): specifically, in the high temperature limit ($\tau \rightarrow \infty$) the distribution becomes a single atom in the center of mass of the probability simplex, while the zero-temperature limit ($\tau\rightarrow 0$) corresponds to the target categorical distribution. Now we show that although the stick-breaking representation may seem 'position biased', in reality, through appropriate choices of the parameters we are able to provide richer representations as compared to the concrete case. Specifically, we will show that degenerate cases can correspond to arbitrary categorical distributions and arbitrary point masses in the simplex.
+Finally, we stress the above logistic-normal construction is not the only available: by taking $g(\cdot) $ the identity function we conceive two other reparameterizations, by letting $z$ have either a Kumaraswamy or Beta distribution on the unit interval. While the former is easily reparameterizable, the latter --- which leads to the generalized Dirichlet distribution on the simplex ---  is not, requiring an additional rejection sampling correction term on its implementation in variational inference.
+%a Kumaraswamy distribution $z = \psi \sim \mathcal{KM}(a,b)$ and ii) by letting $z$ have a Beta distribution 
+See the appendix for proofs of our claims and details on alternative constructions.
 
-To see this, consider first the more general stick-breaking representation
+
+\subsection{Rounding}
+The rounding relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2$$
+This operator partitions $R^K$ into $M$ different regions, the ``Voronoi'' cells with center $p_m$, 
+\begin{equation}V^\mathcal{P}_{m}=\{\psi\in\mathbb{R}^K:\;||\psi-p_m||\leq ||\psi-p_i||,\forall i\}.\end{equation}
+We might simply conceive a discrete distribution by the application of the above map to some continuous value random variable. However, that is not differentiable. Then, instead we consider a map that 'pulls' a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
 \begin{align}
-  \psi_k & = g(\theta_k,\epsilon_k)& &  \text{for } k=1, \ldots, K-1\\
-  {\pi}_1 &= \psi_1 \\
-  {\pi}_k &= \psi_k \left(1- \sum_{j=1}^{k-1} {\pi}_j\right) & &  \text{for } k=2, \ldots, K-1\\
-%  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
-{\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j.
+  \psi &\sim p(\psi) \\
+  \pi &  = \equiv \tau \psi + (1-\tau) R^\mathcal{P}(\psi) 
 \end{align}
 
-Where $g$ is a $[0,1]$-valued function. 
-
-The following lemmas analyze two degenerate but useful cases:
-
-\textbf{Proposition:}  the degenerate case where $\psi_k=g(\theta_k)$ (i.e, $\psi_k$ is non-random) leads to $\pi\sim \delta(\tilde{\pi})$  (i.e, single atom in the point $\tilde{\pi}$) with $\pi$ in $\Delta^{k-1}$ is computed from the above formulae. Also, if any point in $[0,1]$ can be realized through $g(\theta_k)$ then any deterministic $\pi$ can be realized.
-
-\textit{Proof}: The first part is obvious. The second part is also obvious, once acknowledging the invertibility of the function $f$ that maps $\psi \xrightarrow{f} \pi$.
-
-\textbf{Proposition:} the degenerate case where  $\psi_k$ are Bernoulli with some parameter $p_{\theta_k}$) leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$ (i.e, $\pi$ is categorical). We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
-\begin{align}
-P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_{\theta_i}) p_{\theta_k}  & &\text{for } k=1, \ldots, K-1,\\
-P(\pi_K =1) &= \prod_{i=1}^{K-1} (1-p_{\theta_i}).
-\end{align}
-Moreover, if any Bernoulli variable can be realized through appropriate choice of the parameters then, any categorical distribution can be realized.
-\textit{Proof}: the first expression comes from expressing the event $\pi_k=1$ equivalently as $\pi_k=1,p_i=0 i<k$ and then, conditioning backwards successively. The second comes from the following (which is deduced by replacing terms in the above)
-$$ p_{\theta_k}=\frac{P(\pi_k =1)}{P(\pi_{k-1} =1)}\frac{p_{\theta_{k-1}}}{1-p_{\theta_{k-1}}},\quad k =1,\ldots, K-1.$$
-The recursive nature of the above equation gives a recipe to iteratively determine the required $p_{\theta_k}$, given  $P(\pi_k =1), P(\pi_{k-1} =1)$ and the already computed $p_{\theta_{k-1}}$.
-
-Having stated the above properties it only remains showing that the two re-parameterizations we consider here, based on the Gaussian and Kumaraswamy distributions, lead to the above degenerate distribution as their limits.
-
-\textbf{Proposition} For the choice $\psi=\sigma(\delta),\delta\sim\mathcal{N}(\mu,\eta^2)$, the limit $\eta\rightarrow 0$ leads to the non-random $\psi=\sigma(\mu)$. Additionally, the limit $\mu\rightarrow \infty, \eta^2=\mu/K$ with K constant leads to $\psi\sim \text{Bernoulli}(\Phi(K))$ ($\Phi$ denotes the standard normal cdf). In both cases the convergence is in distribution \textit{Proof}. The first convergence is obvious. To see the second, let's index $\mu_n$ and  study the cdf of $\Psi_n$ and 
-\begin{align}F_{\Psi_n}(x)&=& P(\sigma(\delta_n)<x) \\
-&=&P(\delta_n< \sigma^{-1}(x))\\
-&=& P(\mu_n +\mu_n/K\epsilon <\sigma^{-1}(x)),\\\
-&=& P( \epsilon <\sigma^{-1}(x))K/\mu_n -K)\\
-&=& \Phi( \sigma^{-1}(x))K/\mu_n -K) 
-\end{align}
-Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero from (zero to $1-p$), and at one (from $1-p$ to 1. As we have obtained convergence to $F$ at all ints continuity points (the interval $(0,1)$), with $1-p= \Phi(-K)\rightarrow \Phi(K)=p$) so we can conclude. Notice that the above representation only allows   to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
-
-\textbf{Proposition} For the choice $\psi=\mathcal{K}(a,b)$: i) in the limit $a,b \rightarrow $  we converge to a non-random $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence. ii) In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. In both cases convergence is in probability.
-
-
-\textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
-
-
-
+Clearly, in the temperature limit $\tau=0$ we recover a discrete distribution, but for intermediate values the obtained R.V. is still continuous. Then, this gives us a way to approximate discrete values by continuous ones, but differing with previous approaches in that the approximating values $z$ are not required to lie in the simplex, but anywhere.
+ 
+ 
 \section{Continuous relaxations for permutation matrices}
 \label{sec:permutation}
-
-Just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
+To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in ^\{0,1\} {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. By this representation, the rounding relaxation is immediately available. However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
-hull of doubly stochastic matrices.
-For permutations of size~$n$, a permutation matrix,~$X \in \{0,1\}^{n \times n}$,
-is a binary matrix such that every row and every column sums to one.
-An analogous relaxation to the one above is to consider~$X \approx {\Pi}$,
-where~${\Pi} \in [0,1]^{n \times n}$ is a doubly stochastic matrix,
-i.e. the rows and columns both sum to one. This set is known as the Birkhoff
-polytope, which we denote by~$\cB_n$. Due to these constraints, the Birkhoff
-polytope lies within a~$(n-1)^2$ dimensional subspace of all $[0,1]^{n \times n}$ matrices. 
+hull of doubly stochastic matrices. Then, an analogous relaxation is to consider~$X \approx {\Pi}$,
+where ~${\Pi} \in [0,1]^{N \times N}$ is a doubly stochastic matrix,
+i.e. the rows and columns both are positive and sum to one but entries are not necessarily zero or one. This set is known as the Birkhoff polytope, which we denote by~$\cB_N$. Due to these constraints, the Birkhoff polytope lies within a~$(N-1)^2$ dimensional subspace of all $[0,1]^{N \times N}$ matrices.
+ 
 
-We now derive an invertible and differentiable transformation,~$f: \reals^{(n-1) \times (n-1)} \to \cB_n$,
-which can be used to define a density on~$\cB_n$. Our approach is an
-extension of the stick-breaking transformation described above, with minor
+We now derive an invertible and differentiable transformation,~$f: \reals^{(N-1) \times (N-1)} \to \cB_n$,
+which can be used to define a density on~$\cB_N$, by extending the original stick-breaking transformation, with minor
 modifications to accomodate the additional constraints of doubly stochastic
-matrices. Imagine transforming a real-valued matrix~$\Psi \in \reals^{(n-1) \times (n-1)}$
-into a doubly stochastic matrix,~${\Pi} \in [0,1]^{n \times n}$.
+matrices. Imagine transforming a real-valued matrix~$\Psi \in \reals^{(N-1) \times (N-1)}$
+into a doubly stochastic matrix,~${\Pi} \in [0,1]^{N \times N}$.
 We work entry by entry, starting in the top left
 and raster scanning left to right then top to bottom. Denote the~$(i,j)$-th entries
 of~$\Psi$ and~${\Pi}$ by~$\psi_{ij}$ and~${\pi}_{ij}$, respectively.
@@ -424,6 +381,12 @@ upper and lower bounds and set,
 \end{align}
 
 
+
+ \section{Variational Inference}
+ It remains to specify how we apply the developed machinery for the estimation of 
+Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
+
+
 Notice that these bounds only depend on values of~${\Pi}$ that
 have already been computed; i.e., those that are above or to the left of
 the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~${\Pi}$
@@ -467,6 +430,8 @@ active upper bound to switch from the row to the column constraint
 or vice versa.  I think we can argue that these discontinuities
 will not have a severe effect on our stochastic gradient algorithm.
 
+
+
 \section{Synthetic matching experiments}
 
 \begin{figure*}[t]
@@ -500,6 +465,54 @@ will not have a severe effect on our stochastic gradient algorithm.
 \bibliographystyle{icml2016}
 
 \appendix
+\subsection{Limit analysis}
+
+One nice property of the concrete distribution \citep{maddison2016concrete, jang2016categorical} is that it can be understood as the 'heating' of the original categorical distribution (equivalently, a probability simplex-valued distribution whose atoms are the vertices of the simplex): specifically, in the high temperature limit ($\tau \rightarrow \infty$) the distribution becomes a single atom in the center of mass of the probability simplex, while the zero-temperature limit ($\tau\rightarrow 0$) corresponds to the target categorical distribution. Now we show that although the stick-breaking representation may seem 'position biased', in reality, through appropriate choices of the parameters we are able to provide richer representations as compared to the concrete case. Specifically, we will show that degenerate cases can correspond to arbitrary categorical distributions and arbitrary point masses in the simplex.
+
+To see this, consider first the more general stick-breaking representation
+\begin{align}
+  \psi_k & = g(\theta_k,\epsilon_k)& &  \text{for } k=1, \ldots, K-1\\
+  {\pi}_1 &= \psi_1 \\
+  {\pi}_k &= \psi_k \left(1- \sum_{j=1}^{k-1} {\pi}_j\right) & &  \text{for } k=2, \ldots, K-1\\
+%  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
+{\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j.
+\end{align}
+
+Where $g$ is a $[0,1]$-valued function. 
+
+The following lemmas analyze two degenerate but useful cases:
+
+\textbf{Proposition:}  the degenerate case where $\psi_k=g(\theta_k)$ (i.e, $\psi_k$ is non-random) leads to $\pi\sim \delta(\tilde{\pi})$  (i.e, single atom in the point $\tilde{\pi}$) with $\pi$ in $\Delta^{k-1}$ is computed from the above formulae. Also, if any point in $[0,1]$ can be realized through $g(\theta_k)$ then any deterministic $\pi$ can be realized.
+
+\textit{Proof}: The first part is obvious. The second part is also obvious, once acknowledging the invertibility of the function $f$ that maps $\psi \xrightarrow{f} \pi$.
+
+\textbf{Proposition:} the degenerate case where  $\psi_k$ are Bernoulli with some parameter $p_{\theta_k}$) leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$ (i.e, $\pi$ is categorical). We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
+\begin{align}
+P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_{\theta_i}) p_{\theta_k}  & &\text{for } k=1, \ldots, K-1,\\
+P(\pi_K =1) &= \prod_{i=1}^{K-1} (1-p_{\theta_i}).
+\end{align}
+Moreover, if any Bernoulli variable can be realized through appropriate choice of the parameters then, any categorical distribution can be realized.
+\textit{Proof}: the first expression comes from expressing the event $\pi_k=1$ equivalently as $\pi_k=1,p_i=0 i<k$ and then, conditioning backwards successively. The second comes from the following (which is deduced by replacing terms in the above)
+$$ p_{\theta_k}=\frac{P(\pi_k =1)}{P(\pi_{k-1} =1)}\frac{p_{\theta_{k-1}}}{1-p_{\theta_{k-1}}},\quad k =1,\ldots, K-1.$$
+The recursive nature of the above equation gives a recipe to iteratively determine the required $p_{\theta_k}$, given  $P(\pi_k =1), P(\pi_{k-1} =1)$ and the already computed $p_{\theta_{k-1}}$.
+
+Having stated the above properties it only remains showing that the two re-parameterizations we consider here, based on the Gaussian and Kumaraswamy distributions, lead to the above degenerate distribution as their limits.
+
+\textbf{Proposition} For the choice $\psi=\sigma(\delta),\delta\sim\mathcal{N}(\mu,\eta^2)$, the limit $\eta\rightarrow 0$ leads to the non-random $\psi=\sigma(\mu)$. Additionally, the limit $\mu\rightarrow \infty, \eta^2=\mu/K$ with K constant leads to $\psi\sim \text{Bernoulli}(\Phi(K))$ ($\Phi$ denotes the standard normal cdf). In both cases the convergence is in distribution \textit{Proof}. The first convergence is obvious. To see the second, let's index $\mu_n$ and  study the cdf of $\Psi_n$ and 
+\begin{align}F_{\Psi_n}(x)&=& P(\sigma(\delta_n)<x) \\
+&=&P(\delta_n< \sigma^{-1}(x))\\
+&=& P(\mu_n +\mu_n/K\epsilon <\sigma^{-1}(x)),\\\
+&=& P( \epsilon <\sigma^{-1}(x))K/\mu_n -K)\\
+&=& \Phi( \sigma^{-1}(x))K/\mu_n -K) 
+\end{align}
+Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero from (zero to $1-p$), and at one (from $1-p$ to 1. As we have obtained convergence to $F$ at all ints continuity points (the interval $(0,1)$), with $1-p= \Phi(-K)\rightarrow \Phi(K)=p$) so we can conclude. Notice that the above representation only allows   to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
+
+\textbf{Proposition} For the choice $\psi=\mathcal{K}(a,b)$: i) in the limit $a,b \rightarrow $  we converge to a non-random $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence. ii) In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. In both cases convergence is in probability.
+
+
+\textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
+
+
 
 
 \end{document}
