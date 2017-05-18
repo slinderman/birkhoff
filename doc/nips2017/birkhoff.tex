@@ -140,8 +140,8 @@ our primary contribution: a set of relaxations for permutation matrices
 Sections~\ref{sec:synthetic}-\ref{sec:synth_celegans} detail a variety
 of experiments that illustrate the value of our variational approach.
   
-\section{Related Work}
-\label{sec:relatedwork}
+\subsection{Related Work}
+\label{sub:relatedwork}
 
 \begin{itemize}
   \item MCMC \citep{diaconis1988group} methods are successful
@@ -155,8 +155,8 @@ explore the high dimensional space of permutations.
   \item Other continuous relaxations \citep{plis2011directional}
 \end{itemize}
 
-\section{The Gumbel-softmax relaxation for discrete variational inference}
-\label{sec:gumbel}
+\subsection{The Gumbel-softmax relaxation for discrete variational inference}
+\label{sub:gumbel}
 
 In Bayesian inference problems, we have a prior distribution~$p(x)$
 and a likelihood~$p(y \mid x)$, and
@@ -266,12 +266,12 @@ Gumbel noise and taking the argmax yields an exact sample from~$\theta$;
 setting~$g$ to the softmax is a natural relaxation. Ultimately, however, this
 is just a continuous relaxation of an atomic density to a continuous
 density. 
-
-\section{Alternative continuous relaxations}
-\label{sec:alternative}
+\section{Methods}
+\subsection{Alternative continuous relaxations}
+\label{sub:alternative}
 Here we introduce two alternative ways of conceiving a relaxed version of a discrete random variable that are also amenable for variational inference with Monte Carlo estimates of the gradient based on re-parameterization. However, unlike the Gumbel-Softmax, these relaxations enable extensions to more complex combinatorial objects; notably, permutations.
 
-\subsection{Stick-breaking}
+\subsubsection{Stick-breaking}
 Consider the following alternative model for~${\pi}$:
 \begin{align}
   \xi &\sim p(\xi) \\
@@ -294,11 +294,11 @@ Finally, we stress the above logistic-normal construction is not the only availa
 See the appendix for proofs of our claims and details on alternative constructions.
 
 
-\subsection{Rounding}
-The rounding relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2$$
+\subsubsection{Rounding}
+This relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2$$
 This operator partitions $R^K$ into $M$ different regions, the ``Voronoi'' cells with center $p_m$, 
 \begin{equation}V^\mathcal{P}_{m}=\{\psi\in\mathbb{R}^K:\;||\psi-p_m||\leq ||\psi-p_i||,\forall i\}.\end{equation}
-We might simply conceive a discrete distribution by the application of the above map to some continuous random variable. However, that is not differentiable. Then, instead we consider a map that 'pulls' a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
+We might simply conceive a discrete distribution by the application of the above map to some continuous random variable. However, that is not differentiable. Then, instead we consider a map that pulls a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
 \begin{align}
  \xi   &\sim p(\xi), \\
   \psi &= g(\theta, \xi), \\
@@ -307,13 +307,13 @@ We might simply conceive a discrete distribution by the application of the above
 
 Clearly, in the temperature limit $\tau=0$ we recover a discrete distribution, but for intermediate values the obtained R.V. is still continuous. Then, this gives us a way to approximate discrete values by continuous ones, but differing with previous approaches in that the approximating values $z$ are not required to lie in the simplex, but anywhere. Notably, if $\psi$ is gaussian parameterized by its mean and standard deviation, by appropriate (limit) choices of parameters we can represent any arbitrary categorical distribution over one-hot vectors. This is shown in the appendix. 
  
-\section{Continuous relaxations for permutation matrices}
-\label{sec:permutation}
-To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in \{0,1\}^ {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. By this representation, the rounding relaxation is immediately available. However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
+\subsection{Continuous relaxations for permutation matrices}
+\label{sub:permutation}
+To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in \{0,1\}^ {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. Notice that the rounding-based relaxation is available here, as the rounding operator can be casted as a matching problem, solved by the hungarian algorithm in $O(N^3)$ (see appendix). However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
 hull of doubly stochastic matrices. Then, an analogous relaxation is to consider~$X \approx {\Pi}$,
 where ~${\Pi} \in [0,1]^{N \times N}$ is a doubly stochastic matrix,
-i.e. the rows and columns both are positive and sum to one but entries are not necessarily zero or one. This set is known as the Birkhoff polytope, which we denote by~$\cB_N$. Due to these constraints, the Birkhoff polytope lies within a~$(N-1)^2$ dimensional subspace of all $[0,1]^{N \times N}$ matrices.
+i.e. the rows and columns both are positive and sum to one but entries are not necessarily zero or one. This set is known as the Birkhoff polytope, denoted ~$\cB_N$. Due to these constraints, ~$\cB_N$ lies within a~$(N-1)^2$ dimensional subspace of all $[0,1]^{N \times N}$ matrices.
  
 
 We now derive an invertible and differentiable transformation,~$f: \reals^{(N-1) \times (N-1)} \to \cB_n$,
@@ -383,52 +383,55 @@ upper and lower bounds and set,
 
 
 
- \section{Variational Inference}
+ \subsection{Variational Inference}
 To approximate an intractable posterior distribution over latent discrete or permutation valued variables we choose the best (in the KL sense) among the parametric families that we have described. Now we describe the most relevant details.
 
-\subsection{From the continuum to the discrete}
+\subsubsection{From the continuum to the discrete}
 Doing a continuous relaxation requires to think how the objective changes. We follow a similar approach as in \cite{maddison2016concrete}: we maximize a relaxed ELBO, for which we need to specify a new continuous prior $p(\pi)$ over the latents for this objective to make sense. This prior should be peaked around the discrete points for which inference is required, so we can conceive the original discrete ELBO through a limiting process. Good, peaked priors are necessary as the likelihood $p(y|\pi)$ could be large for points that have nothing to do with the original problem, possibly leading to nonsensical solutions. There is a trade-off, though: priors that are too peaked will lead to multiple local maxima of the ELBO, preventing optimizers from achieving the right solution. In conclusion, for optimal performance the prior has to be treated as a hyperparameter. Here, for one-hot vectors we considered mixture of gaussians around each point (parameterized by the variance), and for permutations, we considered the product of $N$ one-dimensional mixture of gaussians around zero and one. Although this prior puts significant mass on points that are not interesting (e.g. (1,1,\ldots, 1)), at least it penalizes $\pi$ that are too away from ~$\cB_N$.
 
 
-\subsection{Estimating the ELBO}
+\subsubsection{Estimating the ELBO}
 Notice in all the relaxations discussed here, $\pi = F(\psi)$ where $F$ is a differentiable and invertible function  (see the appendix for details). Therefore, by the change of variable theorem and the law of the unconscious statistician:
 $$ \E_{p(\xi)} \left[- \log q(g(\theta, \xi); \theta) \right] = Entropy(\psi)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right],$$
-where the term inside of the expectation is the (log) Jacobian of $F$ evaluated at $\psi = f(\theta,\xi)$. Therefore, as long as this Jacobian and the (parameter dependent) entropy of $\psi$ are available we can consider the following unbiased estimator for the ELBO:
+where the term inside of the expectation is the (log) Jacobian of $F$ evaluated at $\psi = f(\theta,\xi)$. Then, if this Jacobian and the entropy of $\psi$ are available we can consider an unbiased estimator for the ELBO:
 
 $$\hat{\cL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right] $$
 
-For example, for rounding, $F$ is piecewise linear \footnote{the set of discontinuities has Lebesgue measure zero so we can still apply the change of variables theorem} and $\log | DF(g(\theta, \xi)) = K\log \tau$. Also, if $\psi$ is gaussian its entropy is given by $K\log(\eta^2 2\pi e  )/2$.
+For example, for rounding, $F$ is piecewise linear \footnote{the set of discontinuities has Lebesgue measure zero so we can still apply the change of variables theorem.} and $\log | DF(g(\theta, \xi)) |= K\log \tau$. Also, if $\psi$ is gaussian its entropy is given by $K\log(\eta^2 2\pi e  )/2$.
 
 
-\subsection{Constraining the parameters}
-In rounding over permutations, we found that an efficient way of avoiding evaluation of the likelihood in non-relevant points is to constrain $\mu$ to belong to the Birkhoff polytope. This can be done applying Sinkhorn propagation, i.e., successively normalizing the rows and columns of the matrix $\mu$. The resulting $\mu$ is guaranteed to converge to a point in ~$\cB_N$, which will remain close if $\eta$ is small.
+\subsubsection{Constraining the parameters}
+For rounding-based permutation inference, we found that an efficient way of avoiding evaluation of the likelihood in non-relevant points is to constrain $\mu$ to belong to ~$\cB_N$. This can be done applying Sinkhorn propagation, i.e., successively normalizing the rows and columns of the matrix $\mu$. The resulting $\mu$ is guaranteed to converge to a point in ~$\cB_N$, which will remain close if $\eta$ is small.
+\section{Results}
+Here we summarize our main results. See the appendix for implementation details.
+\subsection{Variational Autoencoders (VAE) with categorical latent variables}
+We first demonstrate our proposed relaxations are sensible for categorical random variables, and can be efficiently implemented within the current dominant computational frameworks. We considered the density estimation task on MNIST digits, as in \cite{maddison2016concrete, jang2016categorical}, where observed digits are thought as reconstructed from a latent discrete code. We used the continuous ELBO for training, and evaluated performance based on the marginal likelihood, estimated through the multi-sample variational objective of the discretized model (via rounding the samples $\pi$) with $m=1000$. We trained our models using ADAM in Tensorflow and compared agains the method of \cite{jang2016categorical}, founding similar results, although with slightly lower marginal likelihoods. Also, better results were obtained with rounding. This suggest our methods provide a viable alternative to the Gumbel-Softmax. In figure \ref{fig:VAE} we show some reconstructed images using the different approaches.
 
-\section{Synthetic matching experiments}
 
-\begin{figure*}[t]
+ \subsection{Synthetic matching experiments}
+To assess the quality of our approximations for distributions over permutations, we considered a toy problem where $N=6$ points in $\mathbb{R}^2$ where normally sampled around other fixed $N=6$ centers, with varying standard deviation $\sigma$. This naturally induces a posterior distribution of assignments between samples and the centers they come from \footnote{think of this as a variation of the mixture of gaussians models, where now each center is associated with a unique sample}, and as $N!=720$ is moderate, this posterior can be computed exactly by enumeration. We measured discrepancy through the Battacharya distance (BD) between true histogram and the histogram of the approximated posterior constructed by sampling from $q(\pi)$ and 'rounding' to the nearest permutation using the Hungarian algorithm. We found our methods provide reasonable fit to the true posterior, allowing to represent more complex distributions over permutations than, e.g., simple Mallows distribution around the MAP estimate. In figure \ref{fig:synthetic}\begin{figure*}[t] we show examples of true posteriors (ranked) and their approximations, and quantify the discrepancies by the distribution of the BD.
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure5.pdf} 
   \caption{s
   }
-\label{fig:transforms}
+\label{fig:VAE}
 \end{figure*}
 
-\label{sec:synthetic}
+\label{sub:synthetic}
 
-\section{Variational autoencoders with categorical latent variables}
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=5.in]{../figures/figure4.pdf} 
   \caption{
   }
-\label{fig:transforms}
+\label{fig:synthetic}
 \end{figure*}
 
-\label{sec:vae}
+\label{sub:vae}
 
-\section{Hierarchical permutation inference}
-\label{sec:synth_celegans}
+\subsection{Hierarchical permutation inference}
+\label{sub:synth_celegans}
 
 
 
