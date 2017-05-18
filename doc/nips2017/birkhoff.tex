@@ -199,8 +199,8 @@ in some cases we can simulate from~$q$ via the following procedure,
 \xi &\sim p(\xi),  \\
 x &= g(\theta, \xi),
 \end{align}
-where~$g(\theta, \xi)$ is a deterministic and differentiable
-transformation (which is only possible if~$x$ is continuous). Thus, we
+where~$g(\theta, \xi)$ is a deterministic and differentiable (in $\theta$)
+transformation of the noise distribution $\xi$ (e.g. $\xi$ is a standard normal). Notice for $g$ to be differentiable $x$ needs to be continuous. Thus, we
 can effectively ``factor out'' the randomness of~$q$. With this
 transformation, we can bring the gradient inside the expectation as
 follows,
@@ -251,15 +251,16 @@ rather than restricting~$p({\pi} \mid \theta)$ to be an atomic measure,
 let it be a continuous density on the simplex. To be concrete, suppose
 the density of~${\pi}$ is defined by the transformation,
 \begin{align}
-  \psi &\sim p(\psi), \\
-  {\pi} &= g(\theta, \psi) \\
-  g(\theta, \xi) &= \text{softmax}(\log \theta + \psi).
+  \xi &\sim p(\xi), \\
+  \psi & = g(\theta, \xi), \\
+  {\pi} &=  \text{softmax}(\psi), \\
+  g(\theta, \xi) &= \log \theta + \xi.
 \end{align}
 The output~$x$ is now a point on the simplex, and the parameters~$\theta$ can
 be optimized via stochastic gradient ascent with the reparameterization trick,
 as discussed above.
 
-In the aforementioned papers,~$p(\psi)$ is taken to be the Gumbel distribution.
+In the aforementioned papers,~$p(\xi)$ is taken to be the Gumbel distribution.
 This choice leads to a nicely interpretable model: adding
 Gumbel noise and taking the argmax yields an exact sample from~$\theta$;
 setting~$g$ to the softmax is a natural relaxation. Ultimately, however, this
@@ -270,25 +271,25 @@ density.
 \label{sec:alternative}
 Here we introduce two alternative ways of conceiving a relaxed version of a discrete random variable that are also amenable for variational inference with Monte Carlo estimates of the gradient based on re-parameterization. However, unlike the Gumbel-Softmax, these relaxations enable extensions to more complex combinatorial objects; notably, permutations.
 
-\subsection{Stick breaking}
+\subsection{Stick-breaking}
 Consider the following alternative model for~${\pi}$:
 \begin{align}
-  \psi &\sim p(\psi) \\
-  z &  = g(\psi) & & z\in[0,1]^{K-1}, \\ 
-   {\pi}_1 &= z_2 \\
-%  {\pi}_k &= \sigma(\psi_k) \prod_{j=1}^{k-1} (1-\sigma(\psi_j)) & &  \text{for } k=2, \ldots, K-1\\
-  {\pi}_k &= z_k (1- \sum_{j=1}^{k-1} {\pi}_j) & &  \text{for } k=2, \ldots, K-1\\
-%  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
-{\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j
+  \xi &\sim p(\xi) \\
+  \psi & = g(\theta, \xi),  \\
+  z &  = h(\psi), \;\; z\in[0,1]^{K-1}, \\ 
+   {\pi} &=\mathcal{SB}(z), 
+  \end{align}
+ where the stick-breaking transformation $\mathcal{SB}(z_i)$ is defined by the assignment:
+\begin{align} {\pi}_1 =z_1, \quad {\pi}_k = z_k \left(1- \sum_{j=1}^{k-1} {\pi}_j\right) \;\; \text{for } k=2, \ldots, K-1,  \quad {\pi}_K = 1- \sum_{j=1}^{K-1} {\pi}_j. 
 \end{align}
-In this paper wefocus on the choice $\psi_k \sim \distNormal(\mu_k, \eta_k^2) $ and the transformation $g(\cdot) = \sigma(\cdot/ \tau)$, where ~$\sigma(\dot)$ the logistic function. This is known as a logistic-normal stick breaking transformation. $z_k$ can seen as the fraction of the remaining ``stick'' of probability mass assigned to~${\pi}_k$ \citep{linderman2015dependent}. Moreover,
-the density of~${\pi}$ can be expressed in closed form as a
-function of~$\mu_k$ and~$\eta_k^2$.  The temperature~$\tau$ controls how
-concentrated $p(\pi)$ is at the vertices of the simplex. We showed that with appropriate choices of parameters, in the limit ~$\tau \to 0$ we can recover any categorial distribution, i.e., the density becomes concentrated on atoms at the~$K$ vertices. Also as ~$\tau \to \infty$, the density concentrates on a point in the interior of the simplex
-determined by the parameters. For intermediate values, the density is
+In words: the noise distribution is transformed to $\psi$, which is latter constrained to belong to the unit hypercube through $z = h(\psi)$. Then, we apply the stick-breaking transformation to $z$ to obtain a point $\pi$ on the simplex. $z_k$ can seen as the fraction of the remaining ``stick'' of probability mass assigned to~${\pi}_k$ \citep{linderman2015dependent}.
+
+
+In this paper we focus on the choice $\psi_k \sim \distNormal(\mu_k, \eta_k^2) $ (i.e., $\xi\sim\distNormal(0,I), \theta = (\mu,\eta), g(\theta, \xi) = \mu + \eta \xi$), and $h(\cdot) = \sigma(\cdot /\tau)$ with $\sigma$ the logistic function. We name this the known as a logistic-normal stick-breaking transformation, which enjoys the following properties: i)the density of~${\pi}$ can be expressed in closed form as a function of~$\mu_k$ and~$\eta_k^2$, ii) the temperature~$\tau$ controls how
+concentrated $p(\pi)$ is at the vertices of the simplex, iii) with appropriate choices of parameters, in the limit ~$\tau \to 0$ we can recover any categorial distribution, i.e., the density becomes concentrated on atoms at the~$K$ vertices, and iv) as ~$\tau \to \infty$, the density concentrates on a point in the interior of the simplex determined by the parameters, and for intermediate values, the density is
 continuous on the simplex. 
 
-Finally, we stress the above logistic-normal construction is not the only available: by taking $g(\cdot) $ the identity function we conceive two other reparameterizations, by letting $z$ have either a Kumaraswamy or Beta distribution on the unit interval. While the former is easily reparameterizable, the latter --- which leads to the generalized Dirichlet distribution on the simplex ---  is not, requiring an additional rejection sampling correction term on its implementation in variational inference.
+Finally, we stress the above logistic-normal construction is not the only available: by taking $h(\cdot) $ the identity function we conceive two other reparameterizations, by letting $z$ have either a Kumaraswamy or Beta distribution on the unit interval. While the former is easily reparameterizable, the latter --- which leads to the generalized Dirichlet distribution on the simplex ---  is not, requiring an additional rejection sampling correction term on its implementation in variational inference.
 %a Kumaraswamy distribution $z = \psi \sim \mathcal{KM}(a,b)$ and ii) by letting $z$ have a Beta distribution 
 See the appendix for proofs of our claims and details on alternative constructions.
 
@@ -297,18 +298,18 @@ See the appendix for proofs of our claims and details on alternative constructio
 The rounding relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2$$
 This operator partitions $R^K$ into $M$ different regions, the ``Voronoi'' cells with center $p_m$, 
 \begin{equation}V^\mathcal{P}_{m}=\{\psi\in\mathbb{R}^K:\;||\psi-p_m||\leq ||\psi-p_i||,\forall i\}.\end{equation}
-We might simply conceive a discrete distribution by the application of the above map to some continuous value random variable. However, that is not differentiable. Then, instead we consider a map that 'pulls' a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
+We might simply conceive a discrete distribution by the application of the above map to some continuous random variable. However, that is not differentiable. Then, instead we consider a map that 'pulls' a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
 \begin{align}
-  \psi &\sim p(\psi) \\
-  \pi &  = \equiv \tau \psi + (1-\tau) R^\mathcal{P}(\psi) 
+ \xi   &\sim p(\xi), \\
+  \psi &= g(\theta, \xi), \\
+  \pi &   =  \tau \psi + (1-\tau) R^\mathcal{P}(\psi) 
 \end{align}
 
-Clearly, in the temperature limit $\tau=0$ we recover a discrete distribution, but for intermediate values the obtained R.V. is still continuous. Then, this gives us a way to approximate discrete values by continuous ones, but differing with previous approaches in that the approximating values $z$ are not required to lie in the simplex, but anywhere.
- 
+Clearly, in the temperature limit $\tau=0$ we recover a discrete distribution, but for intermediate values the obtained R.V. is still continuous. Then, this gives us a way to approximate discrete values by continuous ones, but differing with previous approaches in that the approximating values $z$ are not required to lie in the simplex, but anywhere. Notably, if $\psi$ is gaussian parameterized by its mean and standard deviation, by appropriate (limit) choices of parameters we can represent any arbitrary categorical distribution over one-hot vectors. This is shown in the appendix. 
  
 \section{Continuous relaxations for permutation matrices}
 \label{sec:permutation}
-To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in ^\{0,1\} {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. By this representation, the rounding relaxation is immediately available. However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
+To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in \{0,1\}^ {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. By this representation, the rounding relaxation is immediately available. However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
 hull of doubly stochastic matrices. Then, an analogous relaxation is to consider~$X \approx {\Pi}$,
 where ~${\Pi} \in [0,1]^{N \times N}$ is a doubly stochastic matrix,
@@ -383,54 +384,24 @@ upper and lower bounds and set,
 
 
  \section{Variational Inference}
- It remains to specify how we apply the developed machinery for the estimation of 
-Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
+To approximate an intractable posterior distribution over latent discrete or permutation valued variables we choose the best (in the KL sense) among the parametric families that we have described. Now we describe the most relevant details.
+
+\subsection{From the continuum to the discrete}
+Doing a continuous relaxation requires to think how the objective changes. We follow a similar approach as in \cite{maddison2016concrete}: we maximize a relaxed ELBO, for which we need to specify a new continuous prior $p(\pi)$ over the latents for this objective to make sense. This prior should be peaked around the discrete points for which inference is required, so we can conceive the original discrete ELBO through a limiting process. Good, peaked priors are necessary as the likelihood $p(y|\pi)$ could be large for points that have nothing to do with the original problem, possibly leading to nonsensical solutions. There is a trade-off, though: priors that are too peaked will lead to multiple local maxima of the ELBO, preventing optimizers from achieving the right solution. In conclusion, for optimal performance the prior has to be treated as a hyperparameter. Here, for one-hot vectors we considered mixture of gaussians around each point (parameterized by the variance), and for permutations, we considered the product of $N$ one-dimensional mixture of gaussians around zero and one. Although this prior puts significant mass on points that are not interesting (e.g. (1,1,\ldots, 1)), at least it penalizes $\pi$ that are too away from ~$\cB_N$.
 
 
-Notice that these bounds only depend on values of~${\Pi}$ that
-have already been computed; i.e., those that are above or to the left of
-the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~${\Pi}$
-is feed-forward according to this ordering.  Consequently, the
-Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} \Pi$,
-is lower triangular, and its determinant is the product of its diagonal,
-\begin{align}
-\left| \frac{\mathrm{d} \Psi } {\mathrm{d} \Pi} \right|
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
-\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
-\left( \frac{1}{u_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
-\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
-\end{align}
+\subsection{Estimating the ELBO}
+Notice in all the relaxations discussed here, $\pi = F(\psi)$ where $F$ is a differentiable and invertible function  (see the appendix for details). Therefore, by the change of variable theorem and the law of the unconscious statistician:
+$$ \E_{p(\xi)} \left[- \log q(g(\theta, \xi); \theta) \right] = Entropy(\psi)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right],$$
+where the term inside of the expectation is the (log) Jacobian of $F$ evaluated at $\psi = f(\theta,\xi)$. Therefore, as long as this Jacobian and the (parameter dependent) entropy of $\psi$ are available we can consider the following unbiased estimator for the ELBO:
 
-With these two ingredients, we can write the density of~${\Pi}$,
-\begin{align}
-  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
-  \\
-  {\Pi} &= f(\Psi) \\
-  \implies
-  p(\Pi \mid \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {\Pi}} \right|
-  \distNormal(f^{-1}({\Pi}) \mid \mu, \diag(\eta^2))
-\end{align}
+$$\hat{\cL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right] $$
 
-Given the density and a differentiable mapping we can perform
-variational inference with stochastic optimization of the ELBO.
-We define a distribution over doubly stochastic matrices as a
-reparameterization of a multivariate Gaussian distribution
-over~$\Psi$. We can estimate gradients via the reparameterization
-trick.
-
-It is important to note that the transformation is only piecewise
-continuous: the function is not differentiable at the points where
-the bounds change; for example, when changing~$\Psi$ causes the
-active upper bound to switch from the row to the column constraint
-or vice versa.  I think we can argue that these discontinuities
-will not have a severe effect on our stochastic gradient algorithm.
+For example, for rounding, $F$ is piecewise linear \footnote{the set of discontinuities has Lebesgue measure zero so we can still apply the change of variables theorem} and $\log | DF(g(\theta, \xi)) = K\log \tau$. Also, if $\psi$ is gaussian its entropy is given by $K\log(\eta^2 2\pi e  )/2$.
 
 
+\subsection{Constraining the parameters}
+In rounding over permutations, we found that an efficient way of avoiding evaluation of the likelihood in non-relevant points is to constrain $\mu$ to belong to the Birkhoff polytope. This can be done applying Sinkhorn propagation, i.e., successively normalizing the rows and columns of the matrix $\mu$. The resulting $\mu$ is guaranteed to converge to a point in ~$\cB_N$, which will remain close if $\eta$ is small.
 
 \section{Synthetic matching experiments}
 
@@ -511,6 +482,54 @@ Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$
 
 
 \textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
+
+
+
+Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
+
+
+Notice that these bounds only depend on values of~${\Pi}$ that
+have already been computed; i.e., those that are above or to the left of
+the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~${\Pi}$
+is feed-forward according to this ordering.  Consequently, the
+Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} \Pi$,
+is lower triangular, and its determinant is the product of its diagonal,
+\begin{align}
+\left| \frac{\mathrm{d} \Psi } {\mathrm{d} \Pi} \right|
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
+\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\left( \frac{1}{u_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
+\end{align}
+
+With these two ingredients, we can write the density of~${\Pi}$,
+\begin{align}
+  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
+  \\
+  {\Pi} &= f(\Psi) \\
+  \implies
+  p(\Pi \mid \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {\Pi}} \right|
+  \distNormal(f^{-1}({\Pi}) \mid \mu, \diag(\eta^2))
+\end{align}
+
+Given the density and a differentiable mapping we can perform
+variational inference with stochastic optimization of the ELBO.
+We define a distribution over doubly stochastic matrices as a
+reparameterization of a multivariate Gaussian distribution
+over~$\Psi$. We can estimate gradients via the reparameterization
+trick.
+
+It is important to note that the transformation is only piecewise
+continuous: the function is not differentiable at the points where
+the bounds change; for example, when changing~$\Psi$ causes the
+active upper bound to switch from the row to the column constraint
+or vice versa.  I think we can argue that these discontinuities
+will not have a severe effect on our stochastic gradient algorithm.
 
 
 
