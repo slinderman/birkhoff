@@ -45,62 +45,45 @@ sns.set_context("paper")
 ### Set the inputs/outputs
 CELEGANS_NETWORK = os.path.join("data", "C-elegans-frontal.txt")
 CELEGANS_METADATA = os.path.join("data", "C-elegans-frontal-meta.csv")
-RESULTS_DIR = os.path.join("results", "celegans", "2017_05_18")
+RESULTS_DIR = os.path.join("results", "celegans_real_network", "2017_05_18")
 
 
 ### Synthetic data
-def simulate_data(M, T, N, num_given, num_poss_per_neuron,
-                  sigmasq_W=None, etasq=0.1, rho=0.1):
-
-    # Set sigmasq_W for stability
-    sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.5 * N * rho)
-
-    # Sample global worm variables
-    A = npr.rand(N, N) < rho
-    W = np.sqrt(sigmasq_W) * npr.randn(N, N)
-    assert np.all(abs(np.linalg.eigvals(A * W)) <= 1.0)
-
-    # Sample permutations for each worm
-    Ps = np.zeros((M, N, N))
-    for m in range(M):
-        # perm[i] = index of neuron i in worm m's neurons
-        perm = npr.permutation(N)
-        Ps[m, np.arange(N), perm] = 1
-
-    # Make constraint matrices for each worm
-    Cs = np.zeros((M, N, N), dtype=bool)
-    for m in range(M):
-        given_inds = npr.choice(N, num_given, replace=False)
-        for n in range(N):
-            i = np.where(Ps[m, n, :] == 1)[0]
-            Cs[m,n,i] = True
-            if n in given_inds:
+def load_celegans_network():
+    # Load the network
+    # rows = pre; cols = post
+    A = np.zeros((131,131), dtype=bool)
+    with open(CELEGANS_NETWORK, "rb") as f:
+        for line in f:
+            if line.startswith(b'#'):
                 continue
+            else:
+                pres, posts = line.split(b' ')
+                A[int(pres), int(posts)] = 1
+                # print("A: {} -> {}".format(int(pres), int(posts)))
+    assert np.all(A.sum() == 764)
 
-            poss = npr.choice(np.arange(N), num_poss_per_neuron, replace=False)
-            for j in poss:
-                Cs[m,n,j] = True
+    # Load the positions
+    import pandas as pd
+    meta = pd.read_csv(CELEGANS_METADATA)
+    node_id = np.array(meta.node_id)
+    assert np.all(np.diff(node_id) == 1), "Sanity check failed..."
+    names = np.array(meta.name)
+    posx = np.array(meta.posx)
+    posy = np.array(meta.posy)
 
-    for C, P in zip(Cs, Ps):
-        assert np.sum(P[C]) == N
+    # Sort by posx
+    perm = np.argsort(posx)
+    A = A[np.ix_(perm, perm)]
+    names = names[perm]
+    posx = posx[perm]
+    posy = posy[perm]
 
-    # Sample some data!
-    Ys = np.zeros((M, T, N))
-    for m in range(M):
-        Ys[m,0,:] = np.ones(N)
-        Wm = Ps[m].T.dot((W*A).dot(Ps[m]))
-        for t in range(1, T):
-            mu_mt = np.dot(Wm, Ys[m, t-1, :])
-            Ys[m,t,:] = mu_mt + np.sqrt(etasq) * npr.randn(N)
-
-    return Ys, A, W, Ps, Cs
+    return A, names, posx, posy
 
 
-
-def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
-                       sigmasq_W=None, etasq=0.1):
-    # import ipdb; ipdb.set_trace()
-    A = npr.rand(N, N) < rho
+def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
+                      sigmasq_W=None, etasq=0.1):
     N = A.shape[0]
     rho = np.mean(A.sum(0))
 
@@ -111,17 +94,17 @@ def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
 
     # Make a global constraint matrix based on x-position
     C = np.eye(N, dtype=bool)
-    pos = npr.rand(N)
-    pos = pos[np.argsort(pos)]
-    dpos = abs(pos[:,None] - pos[None, :])
+    dpos = abs(posx[:,None] - posx[None, :])
     C[dpos < dthresh] = True
 
-    # Sample permutations for each worm (wlog make it identity)
+    # Sample permutations for each worm
     perms = []
     Ps = np.zeros((M, N, N))
     for m in range(M):
-        Ps[m] = np.eye(N, dtype=bool)
-        perms.append(np.arange(N))
+        # perm[i] = index of neuron i in worm m's neurons
+        perm = npr.permutation(N)
+        perms.append(perm)
+        Ps[m, np.arange(N), perm] = 1
 
     # Make constraint matrices for each worm
     Cs = np.zeros((M, N, N), dtype=bool)
@@ -138,6 +121,18 @@ def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
         Cs[m] = Cm
         assert np.sum(Pm * Cm) == N
 
+        # plt.figure()
+        # plt.subplot(131)
+        # plt.imshow(Ps[m], interpolation="none")
+        #
+        # plt.subplot(132)
+        # plt.imshow(Cm, interpolation="none")
+        #
+        # plt.subplot(133)
+        # plt.imshow(Ps[m] * Cm, interpolation="none")
+        #
+        # plt.show()
+
     # Sample some data!
     Ys = np.zeros((M, T, N))
     for m in range(M):
@@ -148,7 +143,6 @@ def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
             Ys[m,t,:] = mu_mt + np.sqrt(etasq) * npr.randn(N)
 
     return Ys, A, W, Ps, Cs
-
 
 
 def log_likelihood_single_worm(Y, A, W, P, etasq):
@@ -280,7 +274,7 @@ def run_iterative_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
 ### MCMC
 def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
-                   num_iters=200, num_mh_per_iter=100,
+                   num_iters=200, num_mh_per_iter=1000,
                    W_init=None, Ps_init=None, do_update_W=True):
     # Iterate between solving for W | Ps and Ps | W
     M, T, N = Ys.shape
@@ -297,6 +291,8 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
         assert np.sum(P[C]) == N
         Ps[m] = P
 
+    # assert False
+
     # W | Ps is just a linear regression
     #    y_{mtn} ~ Pm.T (w_n * a_n) Pm y_{m,t-1,:} + eta^2 I
     # Pm y_{mtn} ~ w_n * a_n Pm y_{m,t-1,:} + eta^2 I
@@ -310,6 +306,9 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
         W = np.zeros((N, N))
         for n in range(N):
+            if np.sum(A[n]) == 0:
+                continue
+
             xn = X[1:, n]
             Xpn = X[:-1][:, A[n]]
             Jn = np.dot(Xpn.T, Xpn) / etasq + sigmasq_W * np.eye(A[n].sum())
@@ -678,13 +677,16 @@ def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
 
     return L
 
-def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq, num_iters=250):
+def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,
+                              init_with_true=False, num_iters=250):
     M, T, N = Ys.shape
     # Initialize variational parameters
-    # mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
-    #     initialize_params(A, Cs, map_W=W_true, map_Ps=Ps_true)
-    mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
-        initialize_params(A, Cs)
+    if init_with_true:
+        mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
+            initialize_params(A, Cs, map_Ps=Ps_true, map_W=W_true)
+    else:
+        mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
+            initialize_params(A, Cs)
 
     # Make a function to convert an array of params into
     # a set of parameters mu_W, sigmasq_W, [mu_P1, sigmasq_P1, ... ]
@@ -722,11 +724,11 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq, num_iters=250):
 
     def callback(params, t, g):
         collect_stats(params)
-        print("VI Iteration {}.  ELBO: {:.4f}  MSE(W): {:.4f}  Num Correct: {}"
+        print("Iteration {}.  ELBO: {:.4f}  MSE(W): {:.4f}  Num Correct: {}"
               .format(t, elbos[-1], mses[-1], num_corrects[-1]))
 
     # Run optimizer
-    stepsize = 1.0
+    stepsize = 0.01
     callback(flat_params, -1, None)
     variational_params = adam(grad(objective),
                               flat_params,
@@ -788,55 +790,52 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
     plt.savefig(os.path.join(RESULTS_DIR, experiment_name + ".png"))
     plt.savefig(os.path.join(RESULTS_DIR, experiment_name + ".pdf"))
 
-# def run_experiments():
-if __name__ == "__main__":
+
+def run_realistic_experiment():
+    # Load the real C Elegans network
+    A, names, xpos, ypos = load_celegans_network()
+    N = A.shape[0]
+
     Ms = [5]
-    Ts = [500, 1000]
-    Ns = [50, 100, 200]
+    Ts = [1000]
     num_given_neuronss = [25]
-    num_poss_per_neurons = [25]
-    rhos = [0.1]
+    dthreshs = [0.0025]
     etasqs = [1.0]
 
-    for M, T, N, num_given_neurons, num_poss_per_neuron, rho, etasq in \
-        it.product(Ms, Ts, Ns, num_given_neuronss, num_poss_per_neurons, rhos, etasqs):
-        experiment_name = "celegans_M{}_T_{}_N{}_giv{}_poss{}_rho{}_etasq{}".\
-            format(M, T, N, num_given_neurons, num_poss_per_neuron, rho, etasq)
-        print("Running experiment: {}".format(experiment_name))
+    for M, T, num_given_neurons, dthresh, etasq in \
+            it.product(Ms, Ts, num_given_neuronss, dthreshs, etasqs):
+        experiment_name = "celegans_M{}_T{}_giv{}_dthresh{}_etasq{}". \
+            format(M, T, num_given_neurons, dthresh, etasq)
 
-        # Cached simulate function
-        # sim = cached(RESULTS_DIR, experiment_name + "_data")(simulate_data_symm)
-        sim = simulate_data_symm
+        # Simulate a few "worm recordings"
+        # sim = cached(RESULTS_DIR, experiment_name + "_data")(simulate_celegans)
+        sim = simulate_celegans
         Ys, A, W_true, Ps_true, Cs = \
-            sim(M, T, N, num_given_neurons, etasq=etasq, rho=rho)
+            sim(A, xpos, M, T, num_given_neurons, dthresh=dthresh, etasq=etasq)
 
-        # DEBUG
-        # P0 = Ps_true[0]
-        # C0 = Cs[0]
-        # Chat = C0.dot(P0.T)
-        # plt.imshow(Chat, interpolation="none")
-        # plt.show()
+        print("Avg choices: {}".format(Cs.sum(1).mean()))
+        print("E[W]: {:.4f}".format(W_true[A].mean()))
+        print("Std[W]: {:.4f}".format(W_true[A].std()))
+
 
         # Cached VI experiment function
-        # run_vi = cached(RESULTS_DIR, experiment_name + "_vi")(run_variational_inference)
-        # run_vi = run_variational_inference
-        # results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq)
+        run_vi = cached(RESULTS_DIR, experiment_name + "_vi")(run_variational_inference)
+        results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, init_with_true=False)
 
-        # # Cached MCMC experiment
-        sigmasq_W = 1. / (1.5 * N * rho)
-        # run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
-        run_mcmc = run_naive_mcmc
+        # Cached MCMC experiment
+        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
         results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
                                 W_init=None, do_update_W=True)
-        #
-        # # Cached MAP experiment
+
+        # Cached MAP experiment
         # sigmasq_W = 1. / (1.5 * N * rho)
         # run_map = cached(RESULTS_DIR, experiment_name + "_map")(run_iterative_map)
         # results_map = run_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true)
-        #
+
         # plot_results(experiment_name, results_vi, results_mcmc, results_map)
 
 
-
-# if __name__ == "__main__":
-#     run_experiments()
+if __name__ == "__main__":
+    # npr.seed(1)
+    run_realistic_experiment()
