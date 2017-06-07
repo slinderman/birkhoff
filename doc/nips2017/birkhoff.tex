@@ -252,10 +252,10 @@ let it be a continuous density on the simplex. To be concrete, suppose
 the density of~${\pi}$ is defined by the transformation,
 \begin{align}
   \xi &\sim p(\xi), \\
-  \psi & = g(\theta, \xi), \\
-  {\pi} &=  \text{softmax}(\psi), \\
-  g(\theta, \xi) &= \log \theta + \xi.
-\end{align}
+  \psi & = g(\theta, \xi),  \quad g(\theta, \xi) = \log \theta + \xi,
+\\
+  {\pi} &=  \text{softmax}(\psi). \\
+  \end{align}
 The output~$x$ is now a point on the simplex, and the parameters~$\theta$ can
 be optimized via stochastic gradient ascent with the reparameterization trick,
 as discussed above.
@@ -282,7 +282,7 @@ Consider the following alternative model for~${\pi}$:
  where the stick-breaking transformation $\mathcal{SB}(z_i)$ is defined by the assignment:
 \begin{align} {\pi}_1 =z_1, \quad {\pi}_k = z_k \left(1- \sum_{j=1}^{k-1} {\pi}_j\right) \;\; \text{for } k=2, \ldots, K-1,  \quad {\pi}_K = 1- \sum_{j=1}^{K-1} {\pi}_j. 
 \end{align}
-In words: the noise distribution is transformed to $\psi$, which is latter constrained to belong to the unit hypercube through $z = h(\psi)$. Then, we apply the stick-breaking transformation to $z$ to obtain a point $\pi$ on the simplex. $z_k$ can seen as the fraction of the remaining ``stick'' of probability mass assigned to~${\pi}_k$ \citep{linderman2015dependent}.
+In words: the noise distribution is transformed to $\psi$, which is latter constrained to belong to the unit hypercube through $z = h(\psi)$, assumed invertible. Then, we apply the stick-breaking transformation to $z$ to obtain a point $\pi$ on the simplex. $z_k$ can seen as the fraction of the remaining ``stick'' of probability mass assigned to~${\pi}_k$ \citep{linderman2015dependent}.
 
 
 In this paper we focus on the choice $\psi_k \sim \distNormal(\mu_k, \eta_k^2) $ (i.e., $\xi\sim\distNormal(0,I), \theta = (\mu,\eta), g(\theta, \xi) = \mu + \eta \xi$), and $h(\cdot) = \sigma(\cdot /\tau)$ with $\sigma$ the logistic function. We name this the known as a logistic-normal stick-breaking transformation, which enjoys the following properties: i)the density of~${\pi}$ can be expressed in closed form as a function of~$\mu_k$ and~$\eta_k^2$, ii) the temperature~$\tau$ controls how
@@ -295,7 +295,7 @@ See the appendix for proofs of our claims and details on alternative constructio
 
 
 \subsubsection{Rounding}
-This relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2$$
+This relaxation is based on the notion of partitioning the space into regions around central points. Specifically,  consider $M$ points $\mathcal{P}=\{p_m\}$ in $\mathbb{R}^K$ (e.g., but not restricted to, one-hot vectors). Now, given $\psi\in\mathbb{R}^K$ we define the rounding operator $$R^{P}(\psi)=\arg\min_{p_n} ||p_n-\psi||^2.$$
 This operator partitions $R^K$ into $M$ different regions, the ``Voronoi'' cells with center $p_m$, 
 \begin{equation}V^\mathcal{P}_{m}=\{\psi\in\mathbb{R}^K:\;||\psi-p_m||\leq ||\psi-p_i||,\forall i\}.\end{equation}
 We might simply conceive a discrete distribution by the application of the above map to some continuous random variable. However, that is not differentiable. Then, instead we consider a map that pulls a point towards its rounded value, by taking a convex combination between both. Specifically, we consider the following sampling scheme:
@@ -307,7 +307,7 @@ We might simply conceive a discrete distribution by the application of the above
 
 Clearly, in the temperature limit $\tau=0$ we recover a discrete distribution, but for intermediate values the obtained R.V. is still continuous. Then, this gives us a way to approximate discrete values by continuous ones, but differing with previous approaches in that the approximating values $z$ are not required to lie in the simplex, but anywhere. Notably, if $\psi$ is gaussian parameterized by its mean and standard deviation, by appropriate (limit) choices of parameters we can represent any arbitrary categorical distribution over one-hot vectors. This is shown in the appendix. 
  
-\subsection{Continuous relaxations for permutation matrices}
+\subsection{Continuous relaxations for distributions over permutations}
 \label{sub:permutation}
 To extend the above relaxations to also represent distributions over permutations we start by representing permutations $\sigma$ (now not the logistic function) of $N$ elements (i.e., the $N!$ biyections from $\{1,\ldots,N\}$ onto itself) as binary matrices $X\in \{0,1\}^ {N \times N}$, whose row and column sums equal one. Then, $X$ is like a one-hot vector but defined by a richer combinatorial structure. Notice that the rounding-based relaxation is available here, as the rounding operator can be casted as a matching problem, solved by the hungarian algorithm in $O(N^3)$ (see appendix). However, the stick-breaking equivalent for permutations is more involved: just as one-hot vectors are the vertices of the simplex, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
@@ -386,16 +386,16 @@ upper and lower bounds and set,
  \subsection{Variational Inference}
 To approximate an intractable posterior distribution over latent discrete or permutation valued variables we choose the best (in the KL sense) among the parametric families that we have described. Now we describe the most relevant details.
 
-\subsubsection{From the continuum to the discrete}
-Doing a continuous relaxation requires to think how the objective changes. We follow a similar approach as in \cite{maddison2016concrete}: we maximize a relaxed ELBO, for which we need to specify a new continuous prior $p(\pi)$ over the latents for this objective to make sense. This prior should be peaked around the discrete points for which inference is required, so we can conceive the original discrete ELBO through a limiting process. Good, peaked priors are necessary as the likelihood $p(y|\pi)$ could be large for points that have nothing to do with the original problem, possibly leading to nonsensical solutions. There is a trade-off, though: priors that are too peaked will lead to multiple local maxima of the ELBO, preventing optimizers from achieving the right solution. In conclusion, for optimal performance the prior has to be treated as a hyperparameter. Here, for one-hot vectors we considered mixture of gaussians around each point (parameterized by the variance), and for permutations, we considered the product of $N$ one-dimensional mixture of gaussians around zero and one. Although this prior puts significant mass on points that are not interesting (e.g. (1,1,\ldots, 1)), at least it penalizes $\pi$ that are too away from ~$\cB_N$.
+\subsubsection{From continuum to discrete}
+Doing a continuous relaxation requires re-thinking the objective. As in \cite{maddison2016concrete}, we maximize a relaxed ELBO, for which we need to specify a new continuous prior $p(\pi)$ over the latents. This prior should be peaked around the discrete points for which inference is required, so we can conceive the original discrete ELBO through a limiting process. Good, peaked priors are necessary as the likelihood $p(y|\pi)$ could be large for points that have nothing to do with the original problem, leading to nonsensical solutions. There is a trade-off, though: priors that are too peaked will lead to multiple local maxima of the ELBO, preventing optimizers from achieving the right solution.Then, for optimal performance the prior has to be treated as a hyperparameter. Here, for one-hot vectors we considered mixture of gaussians around each point (parameterized by the variance), and for permutations, we considered the product of $N$ one-dimensional mixture of gaussians around zero and one. Although this prior puts significant mass on points that are not interesting (e.g. (1,1,\ldots, 1)), at least it penalizes $\pi$ that are too away from ~$\cB_N$.
 
 
 \subsubsection{Estimating the ELBO}
 Notice in all the relaxations discussed here, $\pi = F(\psi)$ where $F$ is a differentiable and invertible function  (see the appendix for details). Therefore, by the change of variable theorem and the law of the unconscious statistician:
-$$ \E_{p(\xi)} \left[- \log q(g(\theta, \xi); \theta) \right] = Entropy(\psi)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right],$$
+$$ \E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = Entropy(\psi;\theta)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right],$$
 where the term inside of the expectation is the (log) Jacobian of $F$ evaluated at $\psi = f(\theta,\xi)$. Then, if this Jacobian and the entropy of $\psi$ are available we can consider an unbiased estimator for the ELBO:
 
-$$\hat{\cL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right] $$
+$$\hat{\cL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right].$$
 
 For example, for rounding, $F$ is piecewise linear \footnote{the set of discontinuities has Lebesgue measure zero so we can still apply the change of variables theorem.} and $\log | DF(g(\theta, \xi)) |= K\log \tau$. Also, if $\psi$ is gaussian its entropy is given by $K\log(\eta^2 2\pi e  )/2$.
 
@@ -405,15 +405,31 @@ For rounding-based permutation inference, we found that an efficient way of avoi
 \section{Results}
 Here we summarize our main results. See the appendix for implementation details.
 \subsection{Variational Autoencoders (VAE) with categorical latent variables}
-We first demonstrate our proposed relaxations are sensible for categorical random variables, and can be efficiently implemented within the current dominant computational frameworks. We considered the density estimation task on MNIST digits, as in \cite{maddison2016concrete, jang2016categorical}, where observed digits are thought as reconstructed from a latent discrete code. We used the continuous ELBO for training, and evaluated performance based on the marginal likelihood, estimated through the multi-sample variational objective of the discretized model (via rounding the samples $\pi$) with $m=1000$. We trained our models using ADAM in Tensorflow and compared agains the method of \cite{jang2016categorical}, founding similar results, although with slightly lower marginal likelihoods. Also, better results were obtained with rounding. This suggest our methods provide a viable alternative to the Gumbel-Softmax. In figure \ref{fig:VAE} we show some reconstructed images using the different approaches.
+We first demonstrate that our proposed relaxations are sensible for categorical random variables, and can be efficiently implemented within the current dominant computational frameworks. We considered the density estimation task on MNIST digits, as in \cite{maddison2016concrete, jang2016categorical}, where observed digits are thought as reconstructed from a latent discrete code. We used the continuous ELBO for training, and evaluated performance based on the marginal likelihood, estimated through the multi-sample variational objective of the discretized model (via rounding the samples $\pi$) with $m=1000$. We trained our models using ADAM in Tensorflow and compared agains the method of \cite{jang2016categorical}, finding similar results (Table 1). Also, better results were obtained with rounding. Our results suggest our methods provide a viable alternative to the Gumbel-Softmax. In figure \ref{fig:VAE} we show some reconstructed images using the different approaches.
+
+
+\begin{table}[t]
+  \caption{Summary of results in VAE}
+  \label{sample-table}
+  \centering
+  \begin{tabular}{llll}
+
+    %\multicolumn{4}{Method}                   \\
+    \midrule
+
+    & Gumbel-Softmax    & Rounding & Stick-breaking\\
+    \cmidrule{2-4}
+    - $\log p(x)$ & 113.9  & $\sim$106.9  & 12    \\
+        \bottomrule
+  \end{tabular}
+\end{table}
 
 
  \subsection{Synthetic matching experiments}
 To assess the quality of our approximations for distributions over permutations, we considered a toy problem where $N=6$ points in $\mathbb{R}^2$ where normally sampled around other fixed $N=6$ centers, with varying standard deviation $\sigma$. This naturally induces a posterior distribution of assignments between samples and the centers they come from \footnote{think of this as a variation of the mixture of gaussians models, where now each center is associated with a unique sample}, and as $N!=720$ is moderate, this posterior can be computed exactly by enumeration. We measured discrepancy through the Battacharya distance (BD) between true histogram and the histogram of the approximated posterior constructed by sampling from $q(\pi)$ and 'rounding' to the nearest permutation using the Hungarian algorithm. We found our methods provide reasonable fit to the true posterior, allowing to represent more complex distributions over permutations than, e.g., simple Mallows distribution around the MAP estimate. In figure \ref{fig:synthetic}\begin{figure*}[t] we show examples of true posteriors (ranked) and their approximations, and quantify the discrepancies by the distribution of the BD.
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure5.pdf} 
-  \caption{s
-  }
+  \caption{}
 \label{fig:VAE}
 \end{figure*}
 
@@ -423,7 +439,7 @@ To assess the quality of our approximations for distributions over permutations,
 \begin{figure*}[t]
   \centering
   \includegraphics[width=5.in]{../figures/figure4.pdf} 
-  \caption{
+  \caption{Examples of true and reconstructed digits from their corresponding random codes using with $N=20$ categorical variables with $K=10$ possible values. In any case 
   }
 \label{fig:synthetic}
 \end{figure*}
@@ -439,57 +455,95 @@ To assess the quality of our approximations for distributions over permutations,
 \bibliographystyle{abbrvnat}
 
 \appendix
-\subsection{Limit analysis}
+\section{Limit analysis}
+\subsection{Stick-breaking}
+Here we state and prove that for all the stick-breaking based distributions in the simplex we consider here; based on the Logistic-gaussian, Kumaraswamy, and Beta distributions, we can arrive to any point in the interior of the simple or any categorical distribution as limiting cases (in $\tau$). First, we need some lemmas.
 
-One nice property of the concrete distribution \citep{maddison2016concrete, jang2016categorical} is that it can be understood as the 'heating' of the original categorical distribution (equivalently, a probability simplex-valued distribution whose atoms are the vertices of the simplex): specifically, in the high temperature limit ($\tau \rightarrow \infty$) the distribution becomes a single atom in the center of mass of the probability simplex, while the zero-temperature limit ($\tau\rightarrow 0$) corresponds to the target categorical distribution. Now we show that although the stick-breaking representation may seem 'position biased', in reality, through appropriate choices of the parameters we are able to provide richer representations as compared to the concrete case. Specifically, we will show that degenerate cases can correspond to arbitrary categorical distributions and arbitrary point masses in the simplex.
 
-To see this, consider first the more general stick-breaking representation
+\textbf{Lemma 1.}  The following statements are true:
+\begin{enumerate} \item the degenerate case where  $z_k$ is deterministic leads to $\pi\sim \delta(\tilde{\pi})$  (i.e, single atom in the point $\tilde{\pi}$). Also, if $z_k$ can be any in $(0,1)$ then any deterministic $\pi$ in the interior of the simplex can be realized.
+\item the degenerate case where  $z_k$ are Bernoulli with parameter $p_k(\theta) \in (0,1)$ leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$; i.e, $\pi$ is categorical. We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
 \begin{align}
-  \psi_k & = g(\theta_k,\epsilon_k)& &  \text{for } k=1, \ldots, K-1\\
-  {\pi}_1 &= \psi_1 \\
-  {\pi}_k &= \psi_k \left(1- \sum_{j=1}^{k-1} {\pi}_j\right) & &  \text{for } k=2, \ldots, K-1\\
-%  {\pi}_K &= \prod_{j=1}^{K-1} (1-\sigma(\psi_j))
-{\pi}_K &= 1- \sum_{j=1}^{K-1} {\pi}_j.
+\label{eq:onehotprob}
+P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_i(\theta)) p_k(\theta)  \;\; \text{for } k=2, \ldots, K-1, \quad P(\pi_K =1) = \prod_{i=1}^{K-1} (1-p_i(\theta)).
 \end{align}
 
-Where $g$ is a $[0,1]$-valued function. 
+Moreover, if for each index $k$ any parameter of the Bernoulli variable $z_k$ can be realized through appropriate choice of $\theta$, then any categorical distribution can be realized.
 
-The following lemmas analyze two degenerate but useful cases:
+\end{enumerate}
+\textit{Proof}: (a) both claims are obvious and come from the invertibility of the function $\mathcal{SB} \circ h (\cdot)$. (b) the formulae for $P(\pi_k =1)$ comes from expressing the event $\pi_k=1$ equivalently as $\pi_k=1,\pi_i=0, i<k$ and then, conditioning backwards successively. The second statement comes from the following expression, which easily follows  from \eqref{eq:onehotprob}:
+$$ p_k(\theta)=\frac{P(\pi_k =1)}{P(\pi_{k-1} =1)}\frac{p_{k-1}(\theta)}{1-p_{k-1}(\theta)},\quad k =1,\ldots, K-1.$$
+The recursive nature of the above equation gives a recipe to iteratively determine the required $p_k(\theta)$, given  $P(\pi_k =1), P(\pi_{k-1} =1)$ and the already computed $p_{k-1}(\theta)$.
 
-\textbf{Proposition:}  the degenerate case where $\psi_k=g(\theta_k)$ (i.e, $\psi_k$ is non-random) leads to $\pi\sim \delta(\tilde{\pi})$  (i.e, single atom in the point $\tilde{\pi}$) with $\pi$ in $\Delta^{k-1}$ is computed from the above formulae. Also, if any point in $[0,1]$ can be realized through $g(\theta_k)$ then any deterministic $\pi$ can be realized.
 
-\textit{Proof}: The first part is obvious. The second part is also obvious, once acknowledging the invertibility of the function $f$ that maps $\psi \xrightarrow{f} \pi$.
+Now we can state our results:
 
-\textbf{Proposition:} the degenerate case where  $\psi_k$ are Bernoulli with some parameter $p_{\theta_k}$) leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$ (i.e, $\pi$ is categorical). We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
-\begin{align}
-P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_{\theta_i}) p_{\theta_k}  & &\text{for } k=1, \ldots, K-1,\\
-P(\pi_K =1) &= \prod_{i=1}^{K-1} (1-p_{\theta_i}).
+\textbf{Lemma 2.} If $z=\sigma(\psi),\psi\sim\mathcal{N}(\mu,\eta^2)$, then
+\begin{enumerate} \item the  limit $\eta\rightarrow 0$ and $\mu$ fixed leads to the deterministic $z=\sigma(\mu)$. 
+\item the limit $\mu\rightarrow \infty, \eta^2=\mu/K$ with K constant leads to $z\sim \text{Bernoulli}(\Phi(K))$, with $\Phi(\cdot)$ denoting the standard normal cdf.
+\end{enumerate} In both cases the convergence is in distribution 
+
+\textit{Proof}. The first convergence is obvious. To see the second, let's index $\mu_n$ and  study the cdf $F$ of $z_n$ on the interval (0,1) (it evaluates zero below zero and one above one).
+\begin{align}F_{z_n}(x)&= P(\sigma(\psi_n)<x) \\
+&=P(\psi_n< \sigma^{-1}(x))\\
+&=P(\mu_n +\mu_n/K\xi <\sigma^{-1}(x)),\\\
+&= P( \xi <\sigma^{-1}(x)K/\mu_n - K)\\
+&= \Phi( \sigma^{-1}(x)K/\mu_n - K) 
 \end{align}
-Moreover, if any Bernoulli variable can be realized through appropriate choice of the parameters then, any categorical distribution can be realized.
-\textit{Proof}: the first expression comes from expressing the event $\pi_k=1$ equivalently as $\pi_k=1,p_i=0 i<k$ and then, conditioning backwards successively. The second comes from the following (which is deduced by replacing terms in the above)
-$$ p_{\theta_k}=\frac{P(\pi_k =1)}{P(\pi_{k-1} =1)}\frac{p_{\theta_{k-1}}}{1-p_{\theta_{k-1}}},\quad k =1,\ldots, K-1.$$
-The recursive nature of the above equation gives a recipe to iteratively determine the required $p_{\theta_k}$, given  $P(\pi_k =1), P(\pi_{k-1} =1)$ and the already computed $p_{\theta_{k-1}}$.
 
-Having stated the above properties it only remains showing that the two re-parameterizations we consider here, based on the Gaussian and Kumaraswamy distributions, lead to the above degenerate distribution as their limits.
+Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(0,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero, from zero to $1-p$, and at one, from $1-p$ to 1. As convergence occurs at all continuity points (the interval $(0,1)$), we conclude (recall, $1-p= \Phi(-K)\rightarrow \Phi(K)=p$). Notice that the above representation only allows  to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
 
-\textbf{Proposition} For the choice $\psi=\sigma(\delta),\delta\sim\mathcal{N}(\mu,\eta^2)$, the limit $\eta\rightarrow 0$ leads to the non-random $\psi=\sigma(\mu)$. Additionally, the limit $\mu\rightarrow \infty, \eta^2=\mu/K$ with K constant leads to $\psi\sim \text{Bernoulli}(\Phi(K))$ ($\Phi$ denotes the standard normal cdf). In both cases the convergence is in distribution \textit{Proof}. The first convergence is obvious. To see the second, let's index $\mu_n$ and  study the cdf of $\Psi_n$ and 
-\begin{align}F_{\Psi_n}(x)&=& P(\sigma(\delta_n)<x) \\
-&=&P(\delta_n< \sigma^{-1}(x))\\
-&=& P(\mu_n +\mu_n/K\epsilon <\sigma^{-1}(x)),\\\
-&=& P( \epsilon <\sigma^{-1}(x))K/\mu_n -K)\\
-&=& \Phi( \sigma^{-1}(x))K/\mu_n -K) 
-\end{align}
-Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero from (zero to $1-p$), and at one (from $1-p$ to 1. As we have obtained convergence to $F$ at all ints continuity points (the interval $(0,1)$), with $1-p= \Phi(-K)\rightarrow \Phi(K)=p$) so we can conclude. Notice that the above representation only allows   to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
-
-\textbf{Proposition} For the choice $\psi=\mathcal{K}(a,b)$: i) in the limit $a,b \rightarrow $  we converge to a non-random $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence. ii) In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. In both cases convergence is in probability.
-
-
+\textbf{Lemma 3.} If $z=\mathcal{K}(a,b)$: \begin{enumerate}
+\item in the limit $a,b \rightarrow $  we converge to deterministc $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence.
+\item In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. 
+\end{enumerate}
+In both cases convergence is in probability.
 \textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
 
+\textbf{Lemma 4.} If $z=Beta(a,b)$: \begin{enumerate}
+\item in the limit $a,b \rightarrow \infty $  we converge to deterministc $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence.
+\item In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. 
+\end{enumerate}
+In both cases convergence is in distribution.
+
+\textbf{Proposition.} In all the discussed cases of re-parameterizations of the simplex via stick-breaking, arbitrary categorical distributions can be obtained in the low-temperature limit. Also, in the high-temperature convergence is to certain point(s) in the interior of the simplex.
+
+\textit{Proof}: Consider each distribution separately
+\begin{enumerate}
+\item For the logistic-normal re-parameterization $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low temperature case use Lemma 2 (b) by the always available representation  $K= \frac{\mu}{\eta^2}$and conclude by Lemma 1(b). In the high temperature case convergence is to the point $\pi = \mathcal{SB}(0.5,0.5,\ldots, 0.5)$.
+\item For Kumaraswamy $z_k=\mathcal{K}(a_k,b_k)$ the argument is similar, but here the temperature can only be defined implicitly through sequences of parameters $(a_k,b_k)$ converging to either $\infty$ or 0 along a sequence with fixed $p_k=b_kB\left(1+\frac{1}{a_k},b_k\right)$. Then in the low temperature case we conclude by Lemma 3(b) and Lemma 1(b). In the hig-temperature case we converge to the point $SB(p_1,\ldots p_{k-1}$
+\item For the Beta $z_k\sim Beta(\frac{a_k}{\tau},\frac{b_k}{\tau})$ low-temperature leads to convergence to $z_k$ Bernoulli with parameter $a_k/(a_k+b_k)$ and we conclude from Lemma 4(b) and Lemma 1(b). For high temperatures, convergence is to the point $\mathcal{SB}(a_k/(a_k+b_k),\ldots,a_{k-1}/(a_{k-1}+b_{k-1}))$.  \end{enumerate}
 
 
-Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
+\subsection{Rounding}
+Here we have two extremes: at $\tau =1$ we obtain a continuous distribution in the space (here, gaussian). If $\tau=0$ the resulting distribution has only atoms in the one-hot vectors $p_n$, in this proof assumed to be the one-hot vectors. We show that in this case it is possible to represent any arbitrary categorical distribution through a judicious choice of the parameters.
 
+
+\textbf{Proposition:} In the zero temperature case, i.e., $\pi  = R^\mathcal{P}(\psi)$ it is possible to represent any arbitrary distribution i.e, for any $\alpha$ in the $N-1$ simplex there exists gaussian parameters $(\mu, \eta)$ so that   $P(\pi = p_n)  = \alpha_n$. Points inside the simplex are realized directly, while distributions with some $\alpha_k=0$ are realized through a limiting process in the parameters.
+
+\textit{Proof:} First set $\eta_n=1$. By representing $\psi = \mu + \xi$ where $\xi\sim\distNormal(0, I)$ we see that
+$$\alpha_n = P(R^\mathcal{P}(\mu + \xi) = p_n ) = P(\mu + \xi \in V^\mathcal{P}_{n}) = P(\xi \in V^\mathcal{P}_{n} - \mu) =  \int_{V^\mathcal{P}_{n} - \mu} \frac{1}{(2\pi)^\frac{N}{2}}e^{-\frac{||x||^2}{2}} dx.$$
+Three conclusions are drawn from the above: first, we see that probabilities are ultimately gaussian integrals over a new partition, a translation of the Voronoi regions $V^\mathcal{P}_{n}$. Second,
+the map $(\mu_1,\ldots,  \mu_n)\xrightarrow{m} (\alpha_1,\ldots, \alpha_n)$ is continuous by virtue of the dominated convergence theorem \cite{browder2012mathematical}: indeed, if $\mu_i\rightarrow \mu$ then $(\alpha^i_1,\ldots, \alpha^i_n) \rightarrow (\alpha_1,\ldots, \alpha_n)$, as the $\alpha^i_n$ are integrals that can be expressed using indicator functions in the integrands (which are all bounded by the integrable gaussian density), and as pointwise convergence of the indicators holds because of the continuity of the translation operator $f_\mu(\cdot) = \cdot + \mu$. Third, for each $q\in(0,1)$ it is possible to choose $\mu$ so that $\alpha_n =q$ and $\alpha_m = (1-q)/(n-1)$. Indeed, by moving $\mu_n$ between $-\infty$ and $\infty$ while keeping the other $\mu_k$ fixed then $V^\mathcal{P}_{n} - \mu$ fluctuates between the empty set ($\alpha_n =0$) and the entire space ($\alpha_n=1$). Therefore, by the continuity of $m$ and the intermediate value theorem, every value in $\alpha_n\in (0,1)$ is realized, and by symmetry the other $\alpha_k$ occupy the remaining mass uniformly. 
+
+To conclude, we use the fact that the image of a convex set through a continuous function is also convex \cite{Rockafellar70}. We also showed that for each tolerance $\epsilon$ the image of $m$ contains these $\epsilon$-one-hot vectors: that is, the points with $(1-\epsilon)$ in one coordinate and $\epsilon/ (n-1)$ in the rest. Then, given a point in the interior of the simplex choose $\epsilon$ small enough so it is in the convex hull of the $\epsilon$-one vectors. Then, by the above theorem there must be a pre-image $\mu$ that realizes this point.
+
+For $\alpha$ with zero entries the above arguments has to be extended to permit a limit process where $\mu$ goes to either infinity or infinity. It is easy to see that by that extension it is possible to represent any $\alpha$ in the border of the simplex.
+
+\section{Deriving  the approximation for the ELBO}
+Here we show that $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = Entropy(\psi; \theta)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].$$
+Indeed, first, by the `Law of the Unconscious Statistician' we have:
+ $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = \E_{p(\psi;\theta)} \left[- \log q(F(\psi); \theta) \right]. $$
+Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain:\begin{align}
+q(F(\psi); \theta) & = p(F^{-1}(\pi) ;\theta)  |DF ^{-1}(\pi) | \\
+ & = p(\psi;\theta) | DF (\psi) | ^{-1}.
+ \end{align}
+ To conclude we use once more the Law of the Unconscious Statistician:
+ \begin{align}
+ \E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right]  &= \E_{p(\psi;\theta)}\left[ - \log p(\psi;\theta)\right] +   \E_{p(\psi;\theta)}\left[\log | DF(\psi)|\right] \\
+ &= Entropy(\psi; \theta)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].\end{align}
+ 
+ Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
 
 Notice that these bounds only depend on values of~${\Pi}$ that
 have already been computed; i.e., those that are above or to the left of
