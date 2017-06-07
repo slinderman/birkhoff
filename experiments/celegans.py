@@ -97,17 +97,18 @@ def simulate_data(M, T, N, num_given, num_poss_per_neuron,
 
 
 
-def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
-                       sigmasq_W=None, etasq=0.1):
+def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1, etasq=0.1):
     # import ipdb; ipdb.set_trace()
     A = npr.rand(N, N) < rho
     N = A.shape[0]
     rho = np.mean(A.sum(0))
 
     # Set sigmasq_W for stability
-    sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
-    W = np.sqrt(sigmasq_W) * npr.randn(N, N)
-    assert np.all(abs(np.linalg.eigvals(A * W)) <= 1.0)
+    # sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
+    W = npr.randn(N, N)
+    ev = np.max(abs(np.linalg.eigvals(A * W)))
+    sigmasq_W = (1./ (2 * ev))**2
+    W *= np.sqrt(sigmasq_W)
 
     # Make a global constraint matrix based on x-position
     C = np.eye(N, dtype=bool)
@@ -147,7 +148,7 @@ def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1,
             mu_mt = np.dot(Wm, Ys[m, t-1, :])
             Ys[m,t,:] = mu_mt + np.sqrt(etasq) * npr.randn(N)
 
-    return Ys, A, W, Ps, Cs
+    return Ys, A, W, Ps, Cs, sigmasq_W
 
 
 
@@ -792,7 +793,8 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
 if __name__ == "__main__":
     Ms = [5]
     Ts = [500, 1000]
-    Ns = [50, 100, 200]
+    # Ns = [50, 100, 200]
+    Ns = [200]
     num_given_neuronss = [25]
     num_poss_per_neurons = [25]
     rhos = [0.1]
@@ -800,15 +802,16 @@ if __name__ == "__main__":
 
     for M, T, N, num_given_neurons, num_poss_per_neuron, rho, etasq in \
         it.product(Ms, Ts, Ns, num_given_neuronss, num_poss_per_neurons, rhos, etasqs):
-        experiment_name = "celegans_M{}_T_{}_N{}_giv{}_poss{}_rho{}_etasq{}".\
+        experiment_name = "celegans_M{}_T{}_N{}_giv{}_poss{}_rho{}_etasq{}".\
             format(M, T, N, num_given_neurons, num_poss_per_neuron, rho, etasq)
         print("Running experiment: {}".format(experiment_name))
 
         # Cached simulate function
         # sim = cached(RESULTS_DIR, experiment_name + "_data")(simulate_data_symm)
         sim = simulate_data_symm
-        Ys, A, W_true, Ps_true, Cs = \
+        Ys, A, W_true, Ps_true, Cs, sigmasq_W = \
             sim(M, T, N, num_given_neurons, etasq=etasq, rho=rho)
+        print("sigmasq_W: ", sigmasq_W)
 
         # DEBUG
         # P0 = Ps_true[0]
@@ -823,7 +826,6 @@ if __name__ == "__main__":
         # results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq)
 
         # # Cached MCMC experiment
-        sigmasq_W = 1. / (1.5 * N * rho)
         # run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
         run_mcmc = run_naive_mcmc
         results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
