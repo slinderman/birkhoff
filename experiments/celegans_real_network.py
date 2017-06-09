@@ -1,9 +1,10 @@
 import os
 import itertools as it
 import time
-
+import csv
 import autograd.numpy as np
 import autograd.numpy.random as npr
+
 npr.seed(0)
 
 from autograd.scipy.misc import logsumexp
@@ -14,11 +15,14 @@ from autograd import grad
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import sys
+from tensorflow.examples.tutorials.mnist import input_data
+import matplotlib.pyplot as plt
 
 from birkhoff.qap import solve_qap
-from birkhoff.primitives import gaussian_entropy
+from birkhoff.primitives import gaussian_entropy, logistic
 from birkhoff.utils import cached
-
+from copy import deepcopy
 import seaborn as sns
 
 sns.set_context("talk")
@@ -49,37 +53,251 @@ RESULTS_DIR = os.path.join("results", "celegans_real_network", "2017_05_18")
 
 
 ### Synthetic data
-def load_celegans_network():
-    # Load the network
-    # rows = pre; cols = post
-    A = np.zeros((131,131), dtype=bool)
-    with open(CELEGANS_NETWORK, "rb") as f:
-        for line in f:
-            if line.startswith(b'#'):
-                continue
-            else:
-                pres, posts = line.split(b' ')
-                A[int(pres), int(posts)] = 1
-                # print("A: {} -> {}".format(int(pres), int(posts)))
-    assert np.all(A.sum() == 764)
+# def load_celegans_network():
+#     # Load the network
+#     # rows = pre; cols = post
+#     A = np.zeros((131,131), dtype=bool)
+#     with open(CELEGANS_NETWORK, "rb") as f:
+#         for line in f:
+#             if line.startswith(b'#'):
+#                 continue
+#             else:
+#                 pres, posts = line.split(b' ')
+#                 A[int(pres), int(posts)] = 1
+#                 # print("A: {} -> {}".format(int(pres), int(posts)))
+#     assert np.all(A.sum() == 764)
+#
+#     # Load the positions
+#     import pandas as pd
+#     meta = pd.read_csv(CELEGANS_METADATA)
+#     node_id = np.array(meta.node_id)
+#     assert np.all(np.diff(node_id) == 1), "Sanity check failed..."
+#     names = np.array(meta.name)
+#     posx = np.array(meta.posx)
+#     posy = np.array(meta.posy)
+#
+#     # Sort by posx
+#     perm = np.argsort(posx)
+#     A = A[np.ix_(perm, perm)]
+#     names = names[perm]
+#     posx = posx[perm]
+#     posy = posy[perm]
+#
+#     return A, names, posx, posy
 
-    # Load the positions
-    import pandas as pd
-    meta = pd.read_csv(CELEGANS_METADATA)
-    node_id = np.array(meta.node_id)
-    assert np.all(np.diff(node_id) == 1), "Sanity check failed..."
-    names = np.array(meta.name)
-    posx = np.array(meta.posx)
-    posy = np.array(meta.posy)
 
-    # Sort by posx
-    perm = np.argsort(posx)
-    A = A[np.ix_(perm, perm)]
-    names = names[perm]
-    posx = posx[perm]
-    posy = posy[perm]
+def load_celegans_network(props = np.ones((3, 4))):
+    """" This function loads a connectome with a subsample of the entire connectome. The sub-sample
+        is given by props. props[i,j] = proportion of neurons of category (i,j) to include
+        category i = body position (Head = 0, Middle =1, Tail =2)
+        category j = neuron type (Sensory = 0, Motor = 1, Interneuron =2, Poly-type =3)
+        Besides names and positions of neurons, it outputs an array of adjacency matrix, for each type of
+        connectivity (Synapse, electric junction and NMJ (?))"""
 
-    return A, names, posx, posy
+
+    NeuronTypeCSV = csv.reader(open('../data/NeuronType.csv', 'r'), delimiter=',', skipinitialspace=True)
+    neuron_info_all = [[] for index in range(4)]
+    relevant_indexes = [0, 1, 2, 14]
+    # load relevant information (names, numerica position, anatomical position and type)
+    for row in NeuronTypeCSV:
+        for j0, j in enumerate(relevant_indexes):
+            neuron_info_all[j0].append(row[j].strip(' \t\n\r'))
+
+    names_with_zeros = deepcopy(neuron_info_all[0])
+    # erase extra zeros in name
+    for j in range(279):
+        indZero = neuron_info_all[0][j].find('0')
+        if (indZero >= 0 and indZero < len(neuron_info_all[0][j]) - 1):
+            neuron_info_all[0][j] = neuron_info_all[0][j].replace('0', '')
+
+    names = deepcopy(neuron_info_all[0])
+    xpos = np.array(neuron_info_all[1])
+
+    location = neuron_info_all[2]
+
+    issensory = np.zeros(279)
+    ismotor = np.zeros(279)
+    isinterneuron = np.zeros(279)
+
+    NeuronTypeISM = csv.reader(open('../data/NeuronTypeISM.csv', 'r'), delimiter=',', skipinitialspace=True)
+
+    for row in NeuronTypeISM:
+        try:
+            index = names.index(row[0])
+            words = row[2].lower()
+            if ('sensory' in words):
+                issensory[index] = 1
+            if ('motor' in words):
+                ismotor[index] = 1
+            if ('interneuron' in words):
+                isinterneuron[index] = 1
+        except:
+            pass
+    NeuronRemainingTypesISM = csv.reader(open('../data/NeuronRemainingTypesISM.csv', 'r'), delimiter=',',
+                                         skipinitialspace=True)
+    for row in NeuronRemainingTypesISM:
+        try:
+            index = neuron_info_all[0].index(row[0])
+            words = row[1].lower()
+            if ('sensory' in words):
+                issensory[index] = 1
+            if ('motor' in words):
+                ismotor[index] = 1
+            if ('interneuron' in words):
+                isinterneuron[index] = 1
+        except:
+            pass
+
+    ConnectomeCSV = csv.reader(open('../data/NeuronConnect.csv', 'r'), delimiter=',', skipinitialspace=True)
+    As_weighted = np.zeros((3, 279, 279))
+
+    for row in ConnectomeCSV:
+        try:
+            index1 = names_with_zeros.index(row[0])
+            index2 = names_with_zeros.index(row[1])
+            if ('S' in row[2] or 'R' in row[2] or 'Sp' in row[2] or 'Rp' in row[2]):
+                As_weighted[0, index1, index2] = As_weighted[0, index1, index2] + float(row[3])
+            if ('EJ' in row[2]):
+                As_weighted[1, index1, index2] = As_weighted[1, index1, index2] + float(row[3])
+            if ('NMJ' in row[2]):
+                As_weighted[2, index1, index2] = As_weighted[2, index1, index2] + float(row[3])
+        except:
+            pass
+    As = (As_weighted > 0).astype(int)
+
+    ind_type = [[] for _ in range(4)]
+
+    # 0=sensory,motor,interneuron,poly
+    ind_type[0] = np.where(
+        np.logical_and(np.logical_and(issensory.astype(bool), (1 - ismotor).astype(bool)),
+                       (1 - isinterneuron).astype(bool)))[0]
+    ind_type[1] = np.where(
+        np.logical_and(np.logical_and((1 - issensory).astype(bool), ismotor.astype(bool)),
+                       (1 - isinterneuron).astype(bool)))[0]
+    ind_type[2] = np.where(
+        np.logical_and(np.logical_and((1 - issensory).astype(bool), (1 - ismotor).astype(bool)),
+                       isinterneuron.astype(bool)))[0]
+
+    ind_type[3] = np.where(issensory + ismotor + isinterneuron >= 2)[0]
+
+    # Head, Middle, Tail
+
+    ind_pos = [[] for _ in range(3)]
+    ind_pos[0] = [i for i, j in enumerate(location) if j == 'H']
+    ind_pos[1] = [i for i, j in enumerate(location) if j == 'M']
+    ind_pos[2] = [i for i, j in enumerate(location) if j == 'T']
+
+    ind_type_pos_number = np.zeros((3, 4))
+
+    ind_type_pos = [[] for _ in range(3)]
+
+    for j in range(3):
+        ind_type_pos[j] = [[] for _ in range(4)]
+
+    for i in range(4):
+        for j in range(3):
+            ind_type_pos[j][i] = [val for val in ind_pos[j] if val in ind_type[i]]
+            ind_type_pos_number[j, i] = len(ind_type_pos[j][i])
+
+    ind_neuron_subsampled = [[] for _ in range(3) for _ in range(4)]
+    for j in range(3):
+        ind_neuron_subsampled[j] = [[] for _ in range(4)]
+
+    for i in range(4):
+        for j in range(3):
+            try:
+                ind_neuron_subsampled[j][i] = np.random.choice(ind_type_pos[j][i],
+                                                               np.floor(ind_type_pos_number[j, i] * props[j, i]).astype(
+                                                                   int), replace=False)
+            except:
+                ind_neuron_subsampled[j][i] = []
+
+    ind_neuron_subsampled = np.sort(
+        np.concatenate([np.concatenate(ind_neuron_subsampled[j][:], axis=0) for j in range(3)]).astype(int))
+
+    As = As[np.ix_(range(3), ind_neuron_subsampled, ind_neuron_subsampled)]
+    xpos = np.array(deepcopy(xpos[ind_neuron_subsampled]).astype(float))
+    names = [j for j0, j in enumerate(names) if j0 in ind_neuron_subsampled]
+
+    return As, names, xpos
+
+
+# def simulate_celegans(A, posx, M, T, num_given, dthresh,
+#                       sigmasq_W, etasq):
+#
+#     N = A.shape[0]
+#     rho = np.mean(A.sum(0))
+#
+#     # Set sigmasq_W for stability
+#     sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
+#     W = np.sqrt(sigmasq_W) * npr.randn(N, N)
+#
+#     W = (npr.randn(N, N) * A)
+#     #W =np.identity(N) * A
+#     eigmax = np.max(abs(np.linalg.eig(W)[0]))
+#
+#
+#     W = W/ (1.5 * eigmax)
+#
+#     assert np.all(abs(np.linalg.eigvals(A * W)) <= 1.0)
+#
+#     # Make a global constraint matrix based on x-position
+#     C = np.eye(N, dtype=bool)
+#
+#     dpos = abs(posx[:,None] - posx[None, :])
+#     C[dpos < dthresh] = True
+#
+#     # Sample permutations for each worm
+#     perms = []
+#     Ps = np.zeros((M, N, N))
+#     for m in range(M):
+#         # perm[i] = index of neuron i in worm m's neurons
+#         perm = npr.permutation(N)
+#         perms.append(perm)
+#         Ps[m, np.arange(N), perm] = 1
+#         #Ps[m,:,:] = np.identity(N)
+#
+#     # Make constraint matrices for each worm
+#     Cs = np.zeros((M, N, N), dtype=bool)
+#     for m, (Cm, Pm, permm) in enumerate(zip(Cs, Ps, perms)):
+#         # C is in canonical x canonical
+#         # make it canonical x worm[m] order
+#         Cm = C.dot(Pm)
+#
+#         # Randomly choose a handful of given neurons
+#         given = npr.choice(N, replace=False, size=num_given)
+#         Cm[given, :] = 0
+#         Cm[:,permm[given]] = 0
+#         Cm[given,permm[given]] = 1
+#         Cs[m] = Cm
+#         assert np.sum(Pm * Cm) == N
+#
+#         # plt.figure()
+#         # plt.subplot(131)
+#         # plt.imshow(Ps[m], interpolation="none")
+#         #
+#         # plt.subplot(132)
+#         # plt.imshow(Cm, interpolation="none")
+#         #
+#         # plt.subplot(133)
+#         # plt.imshow(Ps[m] * Cm, interpolation="none")
+#         #
+#         # plt.show()
+#
+#     # Sample some data!
+#     Ys = np.zeros((M, T, N))
+#     for m in range(M):
+#         Ys[m,0,:] = np.zeros(N)
+#         Wm = Ps[m].T.dot((W*A).dot(Ps[m]))
+#         #Wm = Ps[m].dot((W * A).dot(Ps[m]).T)
+#         for t in range(1, T):
+#             mu_mt = np.dot(Wm, Ys[m, t-1, :])
+#
+#             Ys[m,t,:] = mu_mt + np.sqrt(etasq) * npr.randn(N)
+#         #plt.plot(Ys[m,:,:])
+#
+#         #plt.show()
+#     return Ys, A, W, Ps, Cs
 
 
 def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
@@ -89,7 +307,16 @@ def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
 
     # Set sigmasq_W for stability
     sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
+
     W = np.sqrt(sigmasq_W) * npr.randn(N, N)
+
+    W = (sigmasq_W * npr.randn(N, N) *A)
+    #W =np.identity(N) * A
+    eigmax = np.max(abs(np.linalg.eig(W)[0]))
+
+
+    W = W/ (2 * eigmax)
+
     assert np.all(abs(np.linalg.eigvals(A * W)) <= 1.0)
 
     # Make a global constraint matrix based on x-position
@@ -105,7 +332,7 @@ def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
         perm = npr.permutation(N)
         perms.append(perm)
         Ps[m, np.arange(N), perm] = 1
-
+        #Ps[m, np.arange(N),np.arange(N)] = 1
     # Make constraint matrices for each worm
     Cs = np.zeros((M, N, N), dtype=bool)
     for m, (Cm, Pm, permm) in enumerate(zip(Cs, Ps, perms)):
@@ -137,12 +364,13 @@ def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
     Ys = np.zeros((M, T, N))
     for m in range(M):
         Ys[m,0,:] = np.ones(N)
-        Wm = Ps[m].T.dot((W*A).dot(Ps[m]))
+        Wm = Ps[m].T.dot((W * A).dot(Ps[m]))
         for t in range(1, T):
             mu_mt = np.dot(Wm, Ys[m, t-1, :])
             Ys[m,t,:] = mu_mt + np.sqrt(etasq) * npr.randn(N)
 
     return Ys, A, W, Ps, Cs
+
 
 
 def log_likelihood_single_worm(Y, A, W, P, etasq):
@@ -236,7 +464,7 @@ def run_iterative_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
         lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
         W_samples.append(W)
         Ps_samples.append(Ps)
-        mses.append(np.mean((W - W_true) ** 2))
+        mses.append(np.mean((W * A - W_true * A) ** 2))
 
         # Round doubly stochastic matrix P to the nearest permutation matrix
         num_correct = np.zeros(M)
@@ -274,7 +502,7 @@ def run_iterative_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
 ### MCMC
 def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
-                   num_iters=200, num_mh_per_iter=1000,
+                   num_iters=500, num_mh_per_iter=1000,
                    W_init=None, Ps_init=None, do_update_W=True):
     # Iterate between solving for W | Ps and Ps | W
     M, T, N = Ys.shape
@@ -367,7 +595,7 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
         lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
         W_samples.append(W)
         Ps_samples.append(Ps)
-        mses.append(np.mean((W - W_true) ** 2))
+        mses.append(np.mean((W * A - W_true * A) ** 2))
 
         # Round doubly stochastic matrix P to the nearest permutation matrix
         num_correct = np.zeros(M)
@@ -375,6 +603,16 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
             row, col = linear_sum_assignment(-P + 1e8 * (1 - Cs[m]))
             num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
         num_corrects.append(num_correct)
+        ind = np.where(A.flatten()>0)[0]
+        Wf = W.flatten()[ind]
+        Wtruef = W_true.flatten()[ind]
+        a = np.percentile(Wf, 95)
+        b = np.percentile(Wf, 5)
+        # print np.logical_or(np.greater(Wf,a), np.greater(b,Wf))
+        # if len(mses) == 50:
+        #     plt.hist(Wf - Wtruef)
+        #     plt.show()
+        #
 
     def callback(W, Ps, t):
         collect_stats(W, Ps)
@@ -506,7 +744,7 @@ def run_smart_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
         lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
         W_samples.append(W)
         Ps_samples.append(Ps)
-        mses.append(np.mean((W - W_true) ** 2))
+        mses.append(np.mean((W * A - W_true * A) ** 2))
 
         # Round doubly stochastic matrix P to the nearest permutation matrix
         num_correct = np.zeros(M)
@@ -601,7 +839,7 @@ def initialize_params(A, Cs, map_W=None, map_Ps=None):
 
     unpack_W, pack_W = make_map(A)
     mu_W = np.zeros(A.sum()) if map_W is None else pack_W(map_W)
-    log_sigmasq_W = -4 * np.ones(A.sum())
+    log_sigmasq_W = -10 * np.ones(A.sum())
 
     log_mu_Ps = []
     log_sigmasq_Ps = []
@@ -616,10 +854,12 @@ def initialize_params(A, Cs, map_W=None, map_Ps=None):
     return mu_W, log_sigmasq_W, unpack_W, \
            log_mu_Ps, log_sigmasq_Ps, unpack_Ps
 
-def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, temp=0.1):
+def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn,sigma_Lim, temp):
+
     # Sample W
     mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
     W_flat = mu_W + np.sqrt(np.exp(log_sigmasq_W)) * npr.randn(*mu_W.shape)
+
     W = unpack_W(W_flat)
 
     # Sample Ps: run sinkhorn to move mu close to Birkhoff
@@ -629,17 +869,24 @@ def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, temp=0.1):
         # Unpack the mean, run sinkhorn, the pack it again
         log_mu_P = unpack_P(log_mu_P)
         log_mu_P = sinkhorn_logspace(log_mu_P - 1e8 * (1 - C), num_sinkhorn)
+
         log_mu_P = log_mu_P[C]
 
         log_sigmasq_P = log_sigmasq_P
+
+        ##Notice how we limit the variance
         P = np.exp(log_mu_P) + \
-            np.sqrt(np.exp(log_sigmasq_P)) * \
+            np.sqrt(logistic(log_sigmasq_P)*(sigma_Lim[1]-sigma_Lim[0]) +sigma_Lim[0]) * \
             npr.randn(*log_mu_P.shape)
         P = unpack_P(P)
-
         # Round to nearest permutation
-        Phat = round_to_perm(P if isinstance(P, np.ndarray) else P.value)
-        P = P * temp + (1 - temp) * Phat
+
+        if(temp<1):
+            Phat = round_to_perm(P if isinstance(P, np.ndarray) else P.value)
+            P = P * temp + (1 - temp) * Phat
+
+
+        #Ps.append(np.identity(P.shape[0]))
 
         Ps.append(P)
 
@@ -650,35 +897,44 @@ def q_entropy(log_sigmasq_P, temp):
     return gaussian_entropy(0.5 * log_sigmasq_P) + log_sigmasq_P.size * np.log(temp)
 
 def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
-         num_sinkhorn=5, num_mcmc_samples=1, temp=1.0):
+         num_sinkhorn, num_mcmc_samples, sigma_Lim, temp):
     """
     Provides a stochastic estimate of the variational lower bound.
+    sigma_Lim: limits for the variance of the re-parameterization of the permutation
     """
+
     M, T, N = Ys.shape
     assert A.shape == (N, N)
     assert len(unpack_Ps) == M
 
     mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
 
-    L = 0
+    L  = 0
+
     for smpl in range(num_mcmc_samples):
-        W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn)
+        W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
 
         # Compute the ELBO
         L += log_likelihood(Ys, A, W, Ps, etasq) / num_mcmc_samples
         L += np.sum([unconstrained_log_prior(P, sigmasq_P) for P in Ps]) / num_mcmc_samples
 
     # Add the entropy terms
-    L += np.sum([q_entropy(log_sigmasq_P, temp) for log_sigmasq_P in log_sigmasq_Ps])
+    L += np.sum([q_entropy(np.log(logistic(log_sigmasq_P)*(sigma_Lim[1]-sigma_Lim[0]) +sigma_Lim[0]), temp) for log_sigmasq_P in log_sigmasq_Ps])
+
     L += gaussian_entropy(0.5 * log_sigmasq_W)
 
+    ## This latter term was missing, for details see the appendix of the VAE paper
+    L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi)) -0.5* np.sum(np.exp(log_sigmasq_W)) -0.5 *np.sum(np.power(mu_W, 2))
     # Normalize objective
+
     L /= (T * M * N)
 
     return L
 
-def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,
-                              init_with_true=False, num_iters=250):
+
+def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
+                              init_with_true=True, num_iters=250, sigmasq_P =0.1, num_sinkhorn =10,
+                              num_mcmc_samples=500, sigma_Lim = [0,0.005], temp=1):
     M, T, N = Ys.shape
     # Initialize variational parameters
     if init_with_true:
@@ -696,24 +952,38 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,
     objective = \
         lambda flat_params, t: \
             -1 * elbo(unflatten(flat_params), unpack_W, unpack_Ps, Ys, A, Cs, etasq,
-                      sigmasq_P=0.1)
+                      sigmasq_P, num_sinkhorn, num_mcmc_samples, sigma_Lim, temp)
 
     # Define a callback to monitor optimization progress
     elbos = []
+    lls=[]
     mses = []
+
     num_corrects = []
     W_samples = []
     Ps_samples = []
     times = []
+
     def collect_stats(params):
         times.append(time.time())
         elbos.append(-1 * objective(params, 0))
 
         # Sample the variational posterior and compute num correct matches
-        W, Ps = sample_q(unflatten(params), unpack_W, unpack_Ps, Cs, 5)
+        mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = unflatten(params)
+
+        W, Ps = sample_q(unflatten(params), unpack_W, unpack_Ps, Cs, 10, sigma_Lim, 0)
+
+        lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
+
+
+        list=[]
+        for i in range(A.shape[0]):
+            list.extend(np.where(Ps[0, i, :]+Ps_true[0, i, :] ==1)[0])
+
         W_samples.append(W)
         Ps_samples.append(Ps)
-        mses.append(np.mean((W - W_true) ** 2))
+        mses.append(np.mean((W * A - W_true * A) ** 2))
+
 
         # Round doubly stochastic matrix P to the nearest permutation matrix
         num_correct = np.zeros(M)
@@ -724,11 +994,11 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,
 
     def callback(params, t, g):
         collect_stats(params)
-        print("Iteration {}.  ELBO: {:.4f}  MSE(W): {:.4f}  Num Correct: {}"
-              .format(t, elbos[-1], mses[-1], num_corrects[-1]))
+        print("Iteration {}.  ELBO: {:.4f} LL: {:.4f} MSE(W): {:.4f}, Num Correct: {}"
+              .format(t, elbos[-1], lls[-1], mses[-1], num_corrects[-1]))
 
     # Run optimizer
-    stepsize = 0.01
+
     callback(flat_params, -1, None)
     variational_params = adam(grad(objective),
                               flat_params,
@@ -738,7 +1008,7 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,
 
     times = np.array(times)
     times -= times[0]
-    return unflatten(variational_params), \
+    return variational_params, \
            times, np.array(elbos), np.array(mses), \
            np.array(num_corrects), np.array(W_samples), \
            np.array(Ps_samples)
@@ -793,16 +1063,30 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
 
 def run_realistic_experiment():
     # Load the real C Elegans network
-    A, names, xpos, ypos = load_celegans_network()
+    props = np.zeros((3, 4))
+    props[: , 0] = 1
+    props[:, 1] = 1
+    props[:, 2] = 1
+    props[:, 3] = 1
+    As, names, xpos, = load_celegans_network(props )
+    A = (np.sum(As, axis = 0) > 0).astype(bool)
+
+
     N = A.shape[0]
+
+    ## Chose instead a random adjacency matrix
+    #A = np.random.binomial(1, 0.05, (N, N)).astype(bool)
+    #print np.sum(A)
 
     Ms = [5]
     Ts = [1000]
-    num_given_neuronss = [25]
-    dthreshs = [0.0025]
-    etasqs = [1.0]
+    num_given_neuronss = [26]
+    dthreshs = [0.01]
+    etasqs = [1]
+    sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
 
-    for M, T, num_given_neurons, dthresh, etasq in \
+
+    for M, T, num_given_neurons, dthresh, etasq, in \
             it.product(Ms, Ts, num_given_neuronss, dthreshs, etasqs):
         experiment_name = "celegans_M{}_T{}_giv{}_dthresh{}_etasq{}". \
             format(M, T, num_given_neurons, dthresh, etasq)
@@ -810,32 +1094,32 @@ def run_realistic_experiment():
         # Simulate a few "worm recordings"
         # sim = cached(RESULTS_DIR, experiment_name + "_data")(simulate_celegans)
         sim = simulate_celegans
+
         Ys, A, W_true, Ps_true, Cs = \
-            sim(A, xpos, M, T, num_given_neurons, dthresh=dthresh, etasq=etasq)
+            sim(A, xpos, M, T, num_given_neurons, dthresh, sigmasq_W, etasq)
 
         print("Avg choices: {}".format(Cs.sum(1).mean()))
         print("E[W]: {:.4f}".format(W_true[A].mean()))
         print("Std[W]: {:.4f}".format(W_true[A].std()))
 
-
         # Cached VI experiment function
         run_vi = cached(RESULTS_DIR, experiment_name + "_vi")(run_variational_inference)
-        results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, init_with_true=False)
+        results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize = 0.1, init_with_true=False, num_iters=30, sigmasq_P =0.1, num_sinkhorn =10, num_mcmc_samples=1, sigma_Lim = [0,0.005], temp=1)
 
-        # Cached MCMC experiment
+
+        #Cached MCMC experiment
         sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
         run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
-        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
-                                W_init=None, do_update_W=True)
+        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true, num_iters=5, W_init=None, do_update_W=True)
 
         # Cached MAP experiment
-        # sigmasq_W = 1. / (1.5 * N * rho)
-        # run_map = cached(RESULTS_DIR, experiment_name + "_map")(run_iterative_map)
-        # results_map = run_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true)
+        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        run_map = cached(RESULTS_DIR, experiment_name + "_map")(run_iterative_map)
+        results_map = run_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true)
 
-        # plot_results(experiment_name, results_vi, results_mcmc, results_map)
+        plot_results(experiment_name, results_vi, results_mcmc, results_map)
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
     # npr.seed(1)
-    run_realistic_experiment()
+run_realistic_experiment()

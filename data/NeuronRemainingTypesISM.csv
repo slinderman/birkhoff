@@ -1,0 +1,83 @@
+ADFL,sensory
+ADFR,sensory
+ADLL,sensory
+ADLR,sensory
+AFDL,sensory
+AFDR,sensory
+ALA,sensory interneuron
+ALML,sensory
+ALMR,sensory
+ALNL,sensory
+ALNR,sensory
+AQR,sensory
+ASEL,sensory
+ASER,sensory
+ASGL,sensory
+ASGR,sensory
+ASHL,sensory
+ASHR,sensory
+ASIL,sensory
+ASIR,sensory
+ASJL,sensory
+ASJR,sensory
+ASKL,sensory
+ASKR,sensory
+AUAL,interneuron
+AUAR,interneuron
+AVHL,interneuron
+AVHR,interneuron
+AVJL,interneuron
+AVJR,interneuron
+AVM,sensory
+BAGL,sensory
+BAGR,sensory
+BDUL,interneuron
+BDUR,interneuron
+CEPDL,sensory
+CEPDR,sensory
+CEPVL,sensory
+CEPVR,sensory
+DB1,motor sensory
+DB3,motor sensory
+FLPL,sensory
+FLPR,sensory
+IL1DL,sensory motor interneuron
+IL1DR,sensory motor interneuron
+IL1L,sensory motor interneuron
+IL1R,sensory motor interneuron
+IL1VL,sensory motor interneuron
+IL1VR,sensory motor interneuron
+IL2DL,sensory
+IL2DR,sensory
+IL2L,sensory
+IL2R,sensory
+IL2VL,sensory
+IL2VR,sensory
+OLLL,sensory
+OLLR,sensory
+OLQDL,sensory motor interneuron
+OLQDR,sensory motor interneuron
+OLQVL,sensory motor interneuron
+OLQVR,sensory motor interneuron
+PDEL,sensory
+PDER,sensory
+PLML,sensory
+PLMR,sensory
+PQR,sensory
+PVDL,sensory
+PVDR,sensory
+PVM,sensory
+SIADL,interneuron motor
+SIADR,interneuron motor
+SIAVL,interneuron motor
+SIAVR,interneuron motor
+SIBDL,interneuron motor
+SIBDR,interneuron motor
+SIBVL,interneuron motor
+SIBVR,interneuron motor
+URBL,interneuron
+URBR,interneuron
+URYDL,sensory
+URYDR,sensory
+URYVL,sensory
+URYVR,sensory

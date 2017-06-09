@@ -1,0 +1,395 @@
+ADAL,AB plapaaaapp,Ring interneuron
+ADAR,AB prapaaaapp,Ring interneuron
+ADEL,AB plapaaaapa,"Anterior deirid, sensory neuron"
+ADER,AB prapaaaapa,"Anterior deirid, sensory neuron"
+ADFL,AB alpppppaa,Amphid neuron
+ADFR,AB praaappaa,Amphid neuron
+ADLL,AB alppppaad,Amphid neuron
+ADLR,AB praaapaad,Amphid neuron
+AFDL,AB alpppapav,Amphid finger cell
+AFDR,AB praaaapav,Amphid finger cell
+AIAL,AB plppaappa,Amphid interneuron
+AIAR,AB prppaappa,Amphid interneuron
+AIBL,AB plaapappa,Amphid interneuron
+AIBR,AB praapappa,Amphid interneuron
+AIML,AB plpaapppa,Ring interneuron
+AIMR,AB prpaapppa,Ring interneuron
+AINL,AB alaaaalal,Ring interneuron
+AINR,AB alaapaaar,Ring interneuron
+AIYL,AB plpapaaap,Amphid interneuron
+AIYR,AB prpapaaap,Amphid interneuron
+AIZL,AB plapaaapav,Amphid interneuron
+AIZR,AB prapaaapav,Amphid interneuron
+ALA,AB alapppaaa,"Neuron, sends processes laterally and along dorsal cord"
+ALML,AB arppaappa,Anterior lateral microtubule cell
+ALMR,AB arpppappa,Anterior lateral microtubule cell
+ALNL,AB plapappppap,Neuron associated with ALM
+ALNR,AB prapappppap,Neuron associated with ALM
+AQR,QR.ap,"Neuron, basal body. not part of a sensillum, projects into ring"
+AS1,P1.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS2,P2.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS3,P3.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS4,P4.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS5,P5.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS6,P6.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS7,P7.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS8,P8.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS9,P9.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS10,P10.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+AS11,P11.apa,"Ventral cord motor neuron, innervates dorsal muscles, no ventral counterpart"
+ASEL,AB alppppppaa,"Amphid neurons, single ciliated endings"
+ASER,AB praaapppaa,"Amphid neurons, single ciliated endings"
+ASGL,AB plaapapap,"Amphid neurons, single ciliated endings"
+ASGR,AB praapapap,"Amphid neurons, single ciliated endings"
+ASHL,AB plpaappaa,"Amphid neurons, single ciliated endings"
+ASHR,AB prpaappaa,"Amphid neurons, single ciliated endings"
+ASIL,AB plaapapppa,"Amphid neurons, single ciliated endings"
+ASIR,AB praapapppa,"Amphid neurons, single ciliated endings"
+ASJL,AB alpppppppa,"Amphid neurons, single ciliated endings"
+ASJR,AB praaappppa,"Amphid neurons, single ciliated endings"
+ASKL,AB alpppapppa,"Amphid neurons, single ciliated endings"
+ASKR,AB praaaapppa,"Amphid neurons, single ciliated endings"
+AUAL,AB alpppppppp,"Neuron, process runs with amphid processes but lacks ciliated ending"
+AUAR,AB praaappppp,"Neuron, process runs with amphid processes but lacks ciliated ending"
+AVAL,AB alppaaapa,Ventral cord interneuron
+AVAR,AB alaappapa,Ventral cord interneuron
+AVBL,AB plpaapaap,Ventral cord interneuron
+AVBR,AB prpaapaap,Ventral cord interneuron
+AVDL,AB alaaapalr,Ventral cord interneuron
+AVDR,AB alaaapprl,Ventral cord interneuron
+AVEL,AB alpppaaaa,"Ventral cord interneuron, like AVD but outputs restricted to anterior cord"
+AVER,AB praaaaaaa,"Ventral cord interneuron, like AVD but outputs restricted to anterior cord"
+AVFL,P1.aaaa/ W.aaa,Interneuron
+AVFR,P1.aaaa/ W.aaa,Interneuron
+AVG,AB prpapppap,Ventral cord interneuron
+AVHL,AB alapaaaaa,"Neuron, mainly postsynaptic in ventral cord and presynaptic in the ring"
+AVHR,AB alappapaa,"Neuron, mainly postsynaptic in ventral cord and presynaptic in the ring"
+AVJL,AB alapapppa,"Neuron, synapses like AVHL/R"
+AVJR,AB alapppppa,"Neuron, synapses like AVHL/R"
+AVKL,AB plpapapap,Ring and ventral cord interneuron
+AVKR,AB prpapapap,Ring and ventral cord interneuron
+AVL,AB prpappaap,Ring and ventral cord interneuron and an excitatory GABAergic motor neuron for rectal muscles. Few synapses
+AVM,QR.paa,"Anterior ventral microtubule cell, touch receptor"
+AWAL,AB plaapapaa,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+AWAR,AB praapapaa,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+AWBL,AB alpppppap,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+AWBR,AB praaappap,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+AWCL,AB plpaaaaap,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+AWCR,AB prpaaaaap,"Amphid wing cells, neurons having ciliated sheet-like sensory endings closely associated with amphid sheath"
+BAGL,AB alppappap,"Neuron, ciliated ending in head, no supporting cells, associated with ILso"
+BAGR,AB arappppap,"Neuron, ciliated ending in head, no supporting cells, associated with ILso"
+BDUL,AB arppaappp,"Neuron, process runs along excretory canal and into ring, unique darkly staining synaptic vesicles"
+BDUR,AB arpppappp,"Neuron, process runs along excretory canal and into ring, unique darkly staining synaptic vesicles"
+CA1,P3.aapa,"Male specific cells, ventral cord, not constructed"
+CA2,P4.aapa,"Male specific cells, ventral cord, not constructed"
+CA3,P5.aapa,"Male specific cells, ventral cord, not constructed"
+CA4,P6.aapa,"Male specific neuron, ventral cord, innervates dorsal muscles"
+CA5,P7.aapa,"Male specific neuron, ventral cord, innervates dorsal muscles"
+CA6,P8.aapa,"Male specific neuron, ventral cord, innervates dorsal muscles"
+CA7,P9.aapa,"Male specific neuron, ventral cord, innervates dorsal muscles"
+CA8,P10.aapa,"Male specific cell, ventral cord, neuron-like but lacks synapses"
+CA9,P11.aapa,"Male specific cell, ventral cord, neuron-like but lacks synapses"
+CANL,AB alapaaapa,"Process runs along excretory canal, no synapses, essential for survival"
+CANR,AB alappappa,"Process runs along excretory canal, no synapses, essential for survival"
+CEMDL,AB plaaaaaap,"Male specific cephalic neurons (programmed cell death in hermaphrodite embryo) open to outside, possible function in male chemotaxis toward hermaphrodite"
+CEMDR,AB arpapaaap,"Male specific cephalic neurons (programmed cell death in hermaphrodite embryo) open to outside, possible function in male chemotaxis toward hermaphrodite"
+CEMVL,AB plpaapapp,"Male specific cephalic neurons (programmed cell death in hermaphrodite embryo) open to outside, possible function in male chemotaxis toward hermaphrodite"
+CEMVR,AB prpaapapp,"Male specific cephalic neurons (programmed cell death in hermaphrodite embryo) open to outside, possible function in male chemotaxis toward hermaphrodite"
+CEPDL,AB plaaaaappa,"Cephalic neurons, contain dopamine"
+CEPDR,AB arpapaappa,"Cephalic neurons, contain dopamine"
+CEPVL,AB plpaappppa,"Cephalic neurons, contain dopamine"
+CEPVR,AB prpaappppa,"Cephalic neurons, contain dopamine"
+CP0,P2.aap,Male specific neuron in ventral cord
+CP1,P3.aapp,Male specific neuron in ventral cord
+CP2,P4.aapp,Male specific neuron in ventral cord
+CP3,P5.aapp,Male specific neuron in ventral cord
+CP4,P6.aapp,Male specific motor neuron in ventral cord
+CP5,P7.aapp,Male specific motor neuron in ventral cord
+CP6,P8.aapp,Male specific motor neuron in ventral cord
+CP7,P9.aapp,Male specific motor neuron in ventral cord
+CP8,P10.aapp,"Male specific interneuron, projects into preanal ganglion"
+CP9,P11.aapp,"Male specific interneuron, projects into preanal ganglion"
+DA1,AB prppapaap,"Ventral cord motor neurons, innervate dorsal muscles"
+DA2,AB plppapapa,"Ventral cord motor neurons, innervate dorsal muscles"
+DA3,AB prppapapa,"Ventral cord motor neurons, innervate dorsal muscles"
+DA4,AB plppapapp,"Ventral cord motor neurons, innervate dorsal muscles"
+DA5,AB prppapapp,"Ventral cord motor neurons, innervate dorsal muscles"
+DA6,AB plpppaaap,"Ventral cord motor neurons, innervate dorsal muscles"
+DA7,AB prpppaaap,"Ventral cord motor neurons, innervate dorsal muscles"
+DA8,AB prpapappp,"Ventral cord motor neurons, innervate dorsal muscles"
+DA9,AB plpppaaaa,"Ventral cord motor neurons, innervate dorsal muscles"
+DB1/3,AB plpaaaapp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB2,AB arappappa,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB3/1,AB prpaaaapp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB4,AB prpappapp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB5,AB plpapappp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB6,AB plppaappp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DB7,AB prppaappp,"Ventral cord motor neurons, innervate dorsal muscles, reciprocal inhibitor"
+DD1,AB plppappap,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DD2,AB prppappap,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DD3,AB plppapppa,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DD4,AB prppapppa,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DD5,AB plppapppp,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DD6,AB prppapppp,"Ventral cord motor neurons, reciprocal inhibitors, change synaptic pattern during L1"
+DVA,AB prppppapp,"Ring interneurons, cell bodies in dorsorectal ganglion"
+DVB,K.p,An excitatory GABAergic motor neuron/interneuron located in dorso-rectal ganglion. Innervates rectal muscles
+DVC,C aapaa,"Ring interneurons, cell bodies in dorsorectal ganglion"
+DVE,B.ppap,"Male specific interneuron, cell body in dorsorectal ganglion"
+DVF,B.ppppa,"Male specific interneuron, cell body in dorsorectal ganglion"
+DX1/2,F.lvda,"Male specific interneuron, cell body in dorsorectal ganglion"
+DX1/2,F.rvda,"Male specific interneuron, cell body in dorsorectal ganglion"
+DX3/4,U.laa,"Male specific interneuron, cell body in pre-anal ganglion"
+DX3/4,U.raa,"Male specific interneuron, cell body in pre-anal ganglion"
+EF1/2,F.lvda,"Male specific interneuron, cell body in dorsorectal ganglion"
+EF1/2,F.rvda,"Male specific interneuron, cell body in dorsorectal ganglion"
+EF3/4,U.lap,"Male specific interneuron, cell body in preanal ganglion, synaptic inputs from ray neurons"
+EF3/4,U.rap,"Male specific interneuron, cell body in preanal ganglion, synaptic inputs from ray neurons"
+FLPL,AB plapaaapad,"Neuron, ciliated ending in head, no supporting cells, associated with ILso"
+FLPR,AB prapaaapad,"Neuron, ciliated ending in head, no supporting cells, associated with ILso"
+HOA,P10.pppa,"Male specific neuron, sensory ending in male hook sensillum, cell body in pre-anal ganglion"
+HOB,P10.ppap,"Male specific neuron, sensory ending in male hook sensillum, cell body in pre-anal ganglion"
+HSNL,AB plapppappa,"Hermaphrodite specific motor neurons (die in male embryo), innervate vulval muscles, serotonergic"
+HSNR,AB prapppappa,"Hermaphrodite specific motor neurons (die in male embryo), innervate vulval muscles, serotonergic"
+I1L,AB alpapppaa,"Pharyngeal interneurons: ant sensory, input from RIP"
+I1R,AB arapappaa,"Pharyngeal interneurons: ant sensory, input from RIP"
+I2L,AB alpappaapa,"Pharyngeal interneurons, ant sensory"
+I2R,AB arapapaapa,"Pharyngeal interneurons, ant sensory"
+I3,MS aaaaapaa,"Pharyngeal interneuron, ant sensory"
+I4,MS aaaapaa,Pharyngeal interneuron
+I5,AB arapapapp,"Pharyngeal interneuron, post sensory"
+I6,MS paaapaa,"Pharyngeal interneuron, post sensory"
+IL1DL,AB alapappaaa,Inner labial neuron
+IL1DR,AB alappppaaa,Inner labial neuron
+IL1L,AB alapaappaa,Inner labial neuron
+IL1R,AB alaappppaa,Inner labial neuron
+IL1VL,AB alppapppaa,Inner labial neuron
+IL1VR,AB arapppppaa,Inner labial neuron
+IL2DL,AB alapappap,Inner labial neuron
+IL2DR,AB alappppap,Inner labial neuron
+IL2L,AB alapaappp,Inner labial neuron
+IL2R,AB alaappppp,Inner labial neuron
+IL2VL,AB alppapppp,Inner labial neuron
+IL2VR,AB arapppppp,Inner labial neuron
+LUAL,AB plpppaapap,"Interneuron, short process in post ventral cord"
+LUAR,AB prpppaapap,"Interneuron, short process in post ventral cord"
+M1,MS paapaaa,Pharyngeal motorneuron
+M2L,AB araapappa,Pharyngeal motorneurons
+M2R,AB araappppa,Pharyngeal motorneurons
+M3L,AB araapappp,Pharyngeal sensory-motorneurons
+M3R,AB araappppp,Pharyngeal sensory-motorneurons
+M4,MS paaaaaa,Pharyngeal motorneuron
+M5,MS paaapap,Pharyngeal motorneuron
+MCL,AB alpaaappp,Pharyngeal neurons that synapse onto marginal cells
+MCR,AB arapaappp,Pharyngeal neurons that synapse onto marginal cells
+MCML,AmsoL,Male interneuron
+MCMR,AmsoR,Male interneuron
+MI,AB araappaaa,Pharyngeal motor neuron/interneuron
+NSML,AB araapapaav,"Pharyngeal neurosecretory motorneuron, contain serotonin"
+NSMR,AB araapppaav,"Pharyngeal neurosecretory motorneuron, contain serotonin"
+OLLL,AB alppppapaa,Lateral outer labial neurons
+OLLR,AB praaapapaa,Lateral outer labial neurons
+OLQDL,AB alapapapaa,Quadrant outer labial neuron
+OLQDR,AB alapppapaa,Quadrant outer labial neuron
+OLQVL,AB plpaaappaa,Quadrant outer labial neuron
+OLQVR,AB prpaaappaa,Quadrant outer labial neuron
+PCAL,Y.plppd,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in left cloacal ganglion"
+PCAR,Y.prppd,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in right cloacal ganglion"
+PCBL,Y.plpa,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in left cloacal ganglion"
+PCBR,Y.prpa,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in right cloacal ganglion"
+PCCL,B.arpaaa,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in left cloacal ganglion"
+PCCR,B.alpaaa,"Male specific sensory-motor neuron, sensory ending in male postcloacal sensilla, cell body in right cloacal ganglion"
+PDA,AB prpppaaaa,"Motor neuron, process in dorsal cord, same as Y cell in hermaphrodite, Y.a in male"
+PDB,P12.apa,"Motor neuron, process in dorsal cord, cell body in pre-anal ganglion"
+PDC,P11.papa,"Male specific interneuron, pre-anal ganglion"
+PDEL,V5L.paaa,"Neuron, dopaminergic of postderid sensillum"
+PDER,V5R.paaa,"Neuron, dopaminergic of postderid sensillum"
+PGA,P11.papp,"Male specific interneuron, pre-anal ganglion"
+PHAL,AB plpppaapp,"Phasmid neurons, chemosensory"
+PHAR,AB prpppaapp,"Phasmid neurons, chemosensory"
+PHBL,AB plapppappp,"Phasmid neurons, chemosensory"
+PHBR,AB prapppappp,"Phasmid neurons, chemosensory"
+PHCL,TL.pppaa,"Neuron, striated rootlet in male, possibly sensory in tail spike"
+PHCR,TR.pppaa,"Neuron, striated rootlet in male, possibly sensory in tail spike"
+PLML,AB plapappppaa,"Posterior lateral microtubule cells, touch receptor neurons"
+PLMR,AB prapappppaa,"Posterior lateral microtubule cells, touch receptor neurons"
+PLNL,TL.pppap,"Interneuron, associated with PLM"
+PLNR,TR.pppap,"Interneuron, associated with PLM"
+PQR,QL.ap,"Neuron, basal body, not part of a sensillum, projects into preanal ganglion"
+PVCL,AB plpppaapaa,"Ventral cord interneuron, cell body in lumbar ganglion, synapses onto VB and DB motor neurons, formerly called delta"
+PVCR,AB prpppaapaa,"Ventral cord interneuron, cell body in lumbar ganglion, synapses onto VB and DB motor neurons, formerly called delta"
+PVDL,V5L.paapa,"Neuron, lateral process adjacent to excretory canal"
+PVDR,V5R.paapa,"Neuron, lateral process adjacent to excretory canal"
+PVM,QL.paa,"Posterior ventral microtubule cell, touch receptor"
+PVNL,TL.appp,"Interneuron/motor neuron, post. vent. cord, few synapses"
+PVNR,TR.appp,"Interneuron/motor neuron, post. vent. cord, few synapses"
+PVPL,AB plppppaaa,"Interneuron, cell body in preanal ganglion, projects along ventral cord to nerve ring"
+PVPR,AB prppppaaa,"Interneuron, cell body in preanal ganglion, projects along ventral cord to nerve ring"
+PVQL,AB plapppaaa,"Interneuron, projects along ventral cord to ring"
+PVQR,AB prapppaaa,"Interneuron, projects along ventral cord to ring"
+PVR,C aappa,"Interneuron, projects along ventral cord to ring"
+PVS,AB prppppaaa,"PVPR interneuron of male, cell body in preanal ganglion, sexually dimorphic connectivity"
+PVT,AB plpappppa,"Interneuron, projects along ventral cord to ring"
+PVU,AB plppppaaa,"PVPL interneuron of male, cell body in preanal ganglion, sexually dimorphic connectivity"
+PVV,P11.paaa,"Male specific motor neuron, pre-anal ganglion"
+PVWL,TL.ppa,"Interneuron, posterior ventral cord, few synapses"
+PVWR,TR.ppa,"Interneuron, posterior ventral cord, few synapses"
+PVY,P11.paap,"Male specific interneuron, cell body in pre-anal ganglion"
+PVX,P12.aap,"Male specific interneuron, cell body in pre-anal ganglion, postsynaptic in ring and ventral cord"
+PVZ,P10.ppppa,"Male specific motor neuron, cell body in pre-anal ganglion"
+R1AL,"V5L.pppppaaa, (R1.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R1AR,"V5R.pppppaaa, (R1.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R1BL,"V5L.pppppapa, (R1.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R1BR,"V5R.pppppapa, (R1.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R2AL,"V6L.papapaaa, (R2.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R2AR,"V6R.papapaaa, (R2.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R2BL,"V6L.papapapa, (R2.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside,cell body in left lumbar ganglion"
+R2BR,"V6R.papapapa, (R2.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R3AL,"V6L.papppaaa, (R3.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R3AR,"V6R.papppaaa, (R3.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R3BL,"V6L.papppapa, (R3.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R3BR,"V6R.papppapa, (R3.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R4AL,"V6L.pppapaaa, (R4.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R4AR,"V6R.pppapaaa, (R4.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R4BL,"V6L.pppapapa, (R4.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R4BR,"V6R.pppapapa, (R4.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R5AL,"V6L.pppppaaa, (R5.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R5AR,"V6R.pppppaaa, (R5.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R5BL,"V6L.pppppapa, (R5.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R5BR,"V6R.pppppapa, (R5.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R6AL,"V6L.ppppaaaa, (R6.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R6AR,"V6R.ppppaaaa, (R6.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R6BL,"V6L.ppppaapa, (R6.apaL)","Male sensory rays, neuron, not darkly staining nor open to outside, cell body in left lumbar ganglion"
+R6BR,"V6R.ppppaapa, (R6.apaR)","Male sensory rays, neuron, not darkly staining nor open to outside, cell body in right lumbar ganglion"
+R7AL,"TL.apappaaa, (R7.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R7AR,"TR.apappaaa, (R7.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R7BL,"TL.apappapa, (R7.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R7BR,"TR.apappapa, (R7.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R8AL,"TL.appaaaaa, (R8.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R8AR,"TR.appaaaaa, (R8.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R8BL,"TL.appaaapa, (R8.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R8BR,"TR.appaaapa, (R8.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+R9AL,"TL.appapaaa, (R9.aaaL)","Male sensory rays, neuron, striated rootlet, cell body in left lumbar ganglion"
+R9AR,"TR.appapaaa, (R9.aaaR)","Male sensory rays, neuron, striated rootlet, cell body in right lumbar ganglion"
+R9BL,"TL.appapapa, (R9.apaL)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in left lumbar ganglion"
+R9BR,"TR.appapapa, (R9.apaR)","Male sensory rays, neuron, darkly staining tip, open to outside, cell body in right lumbar ganglion"
+RIAL,AB alapaapaa,"Ring interneuron, many synapses"
+RIAR,AB alaapppaa,"Ring interneuron, many synapses"
+RIBL,AB plpaappap,Ring interneuron
+RIBR,AB prpaappap,Ring interneuron
+RICL,AB plppaaaapp,Ring interneuron
+RICR,AB prppaaaapp,Ring interneuron
+RID,AB alappaapa,"Ring interneuron, projects along dorsal cord"
+RIFL,AB plppapaaap,Ring interneuron
+RIFR,AB prppapaaap,Ring interneuron
+RIGL,AB plppappaa,Ring interneuron
+RIGR,AB prppappaa,Ring interneuron
+RIH,AB prpappaaa,Ring interneuron
+RIML,AB plppaapap,Ring motor neuron
+RIMR,AB prppaapap,Ring motor neuron
+RIPL,AB alpapaaaa,"Ring/pharynx interneuron, only direct connection between pharynx and ring"
+RIPR,AB arappaaaa,"Ring/pharynx interneuron, only direct connection between pharynx and ring"
+RIR,AB prpapppaa,Ring interneuron
+RIS,AB prpappapa,Ring interneuron
+RIVL,AB plpaapaaa,Ring interneuron
+RIVR,AB prpaapaaa,Ring interneuron
+RMDDL,AB alpapapaa,"Ring motor neuron/interneuron, many synapses"
+RMDDR,AB arappapaa,"Ring motor neuron/interneuron, many synapses"
+RMDL,AB alpppapad,"Ring motor neuron/interneuron, many synapses"
+RMDR,AB praaaapad,"Ring motor neuron/interneuron, many synapses"
+RMDVL,AB alppapaaa,"Ring motor neuron/interneuron, many synapses"
+RMDVR,AB arapppaaa,"Ring motor neuron/interneuron, many synapses"
+RMED,AB alapppaap,Ring motor neuron
+RMEL,AB alaaaarlp,Ring motor neuron
+RMER,AB alaaaarrp,Ring motor neuron
+RMEV,AB plpappaaa,Ring motor neuron
+RMFL,G2.al,Ring motor neuron/interneuron
+RMFR,G2.ar,Ring motor neuron/interneuron
+RMGL,AB plapaaapp,Ring interneuron
+RMGR,AB prapaaapp,Ring interneuron
+RMHL,G1.l,Ring motor neuron/interneuron
+RMHR,G1.r,Ring motor neuron/interneuron
+SAADL,AB alppapapa,"Ring interneuron, anteriorly projecting process that runs sublaterally"
+SAADR,AB arapppapa,"Ring interneuron, anteriorly projecting process that runs sublaterally"
+SAAVL,AB plpaaaaaa,"Ring interneuron, anteriorly projecting process that runs sublaterally"
+SAAVR,AB prpaaaaaa,"Ring interneuron, anteriorly projecting process that runs sublaterally"
+SABD,AB plppapaap,"Ring interneuron, anteriorly projecting process that runs sublaterally, synapses to anterior body muscles in L1"
+SABVL,AB plppapaaaa,"Ring interneuron, anteriorly projecting process that runs sublaterally, synapses to anterior body muscles in L1"
+SABVR,AB prppapaaaa,"Ring interneuron, anteriorly projecting process that runs sublaterally, synapses to anterior body muscles in L1"
+SDQL,QL.pap,"Post. lateral interneuron, process projects into ring"
+SDQR,QR.pap,"Ant. lateral interneuron, process projects into ring"
+SIADL,AB plpapaapa,"Receive a few synapses in the ring, have posteriorly directed processes that run sublaterally"
+SIADR,AB prpapaapa,"Receive a few synapses in the ring, have posteriorly directed processes that run sublaterally"
+SIAVL,AB plpapappa,"Receive a few synapses in the ring, have posteriorly directed processes that run sublaterally"
+SIAVR,AB prpapappa,"Receive a few synapses in the ring, have posteriorly directed processes that run sublaterally"
+SIBDL,AB plppaaaaa,Similar to SIA
+SIBDR,AB prppaaaaa,Similar to SIA
+SIBVL,AB plpapaapp,Similar to SIA
+SIBVR,AB prpapaapp,Similar to SIA
+SMBDL,AB alpapapapp,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMBDR,AB arappapapp,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMBVL,AB alpapappp,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMBVR,AB arappappp,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMDDL,AB plpapaaaa,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMDDR,AB prpapaaaa,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMDVL,AB alppappaa,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SMDVR,AB arappppaa,"Ring motor neuron/interneuron, has a posteriorly direct ed process that runs sublaterally"
+SPCL,B.alpaap,"Male specific sensory/motor neuron, innervates spicule protractor muscle, cell body in left cloacal ganglion"
+SPCR,B.arpaap,"Male specific sensory/motor neuron, innervates spicule protractor muscle, cell body in right cloacal ganglion"
+SPDL,B.alpapaa,"Male specific sensory neuron of male copulatory spicules, ciliated, open to outside at tip of spicule, cell body in left cloacal ganglion"
+SPDR,B.arpapaa,"Male specific sensory neuron of male copulatory spicules, ciliated, open to outside at tip of spicule, cell body in right cloacal ganglion"
+SPVL,B.al/raalda,"Male specific sensory neuron of male copulatory spicules, ciliated, open to outside at tip of spicule, cell body in left cloacal ganglion"
+SPVR,B.al/raarda,"Male specific sensory neuron of male copulatory spicules, ciliated, open to outside at tip of spicule, cell body in right cloacal ganglion"
+URADL,AB plaaaaaaa,Ring motor neuron
+URADR,AB arpapaaaa,Ring motor neuron
+URAVL,AB plpaaapaa,Ring motor neuron
+URAVR,AB prpaaapaa,Ring motor neuron
+URBL,AB plaapaapa,"Neuron, presynaptic in ring, ending in head"
+URBR,AB praapaapa,"Neuron, presynaptic in ring, ending in head"
+URXL,AB plaaaaappp,Ring interneuron
+URXR,AB arpapaappp,Ring interneuron
+URYDL,AB alapapapp,"Neuron, presynaptic in ring, ending in head"
+URYDR,AB alapppapp,"Neuron, presynaptic in ring, ending in head"
+URYVL,AB plpaaappp,"Neuron, presynaptic in ring, ending in head"
+URYVR,AB prpaaappp,"Neuron, presynaptic in ring, ending in head"
+VA1,W.pa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA2,P2.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA3,P3.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA4,P4.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA5,P5.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA6,P6.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA7,P7.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA8,P8.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA9,P9.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA10,P10.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA11,P11.aaaa,"Ventral cord motor neuron, innervates vent. body muscles"
+VA12,P12.aaaa,"Ventral cord motor neuron, innervates vent. body muscles, but also interneuron in preanal ganglion"
+VB1,P1.aaap,"Ventral cord motor neuron, innervates vent. body muscles, also interneuron in ring"
+VB2,W.aap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB3,P2.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB4,P3.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB5,P4.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB6,P5.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB7,P6.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB8,P7.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB9,P8.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB10,P9.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VB11,P10.aaap,"Ventral cord motor neuron, innervates vent. body muscles"
+VC1,P3.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VC2,P4.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VC3,P5.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VC4,P6.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VC5,P7.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VC6,P8.aap,Hermaphrodite specific ventral cord motor neuron innervates vulval muscles and ventral body muscles
+VD1,W.pp,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD2,P1.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD3,P2.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD4,P3.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD5,P4.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD6,P5.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD7,P6.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD8,P7.app,"Ventralcord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD9,P8.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD10,P9.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD11,P10.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD12,P11.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
+VD13,P12.app,"Ventral cord motor neuron, innervates vent body muscles, reciprocal inhibitor"
