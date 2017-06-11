@@ -301,29 +301,31 @@ def load_celegans_network(props = np.ones((3, 4))):
 
 
 def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
-                      sigmasq_W=None, etasq=0.1):
+                      sigmasq_W=None, etasq=0.1, spectral_factor = 2):
     N = A.shape[0]
     rho = np.mean(A.sum(0))
 
     # Set sigmasq_W for stability
     sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
 
-    W = np.sqrt(sigmasq_W) * npr.randn(N, N)
 
     W = (sigmasq_W * npr.randn(N, N) *A)
     #W =np.identity(N) * A
     eigmax = np.max(abs(np.linalg.eig(W)[0]))
 
 
-    W = W/ (2 * eigmax)
+    W = W/ (spectral_factor * eigmax)
 
     assert np.all(abs(np.linalg.eigvals(A * W)) <= 1.0)
 
     # Make a global constraint matrix based on x-position
-    C = np.eye(N, dtype=bool)
-    dpos = abs(posx[:,None] - posx[None, :])
-    C[dpos < dthresh] = True
 
+    if type(dthresh) is not str:
+        C = np.eye(N, dtype=bool)
+        dpos = abs(posx[:,None] - posx[None, :])
+        C[dpos < dthresh] = True
+    else:
+        C = np.ones((N, N), dtype = bool)
     # Sample permutations for each worm
     perms = []
     Ps = np.zeros((M, N, N))
@@ -335,6 +337,7 @@ def simulate_celegans(A, posx, M, T, num_given, dthresh=0.01,
         #Ps[m, np.arange(N),np.arange(N)] = 1
     # Make constraint matrices for each worm
     Cs = np.zeros((M, N, N), dtype=bool)
+
     for m, (Cm, Pm, permm) in enumerate(zip(Cs, Ps, perms)):
         # C is in canonical x canonical
         # make it canonical x worm[m] order
@@ -603,16 +606,7 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
             row, col = linear_sum_assignment(-P + 1e8 * (1 - Cs[m]))
             num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
         num_corrects.append(num_correct)
-        ind = np.where(A.flatten()>0)[0]
-        Wf = W.flatten()[ind]
-        Wtruef = W_true.flatten()[ind]
-        a = np.percentile(Wf, 95)
-        b = np.percentile(Wf, 5)
-        # print np.logical_or(np.greater(Wf,a), np.greater(b,Wf))
-        # if len(mses) == 50:
-        #     plt.hist(Wf - Wtruef)
-        #     plt.show()
-        #
+
 
     def callback(W, Ps, t):
         collect_stats(W, Ps)
@@ -632,9 +626,13 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
     times = np.array(times)
     times -= times[0]
+
+
+
     return times, np.array(lls), np.array(mses), \
            np.array(num_corrects), np.array(W_samples), \
            np.array(Ps_samples)
+
 
 
 def run_smart_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
@@ -777,18 +775,6 @@ def run_smart_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
 
 ### Variational inference
-def unconstrained_log_prior(P, sigmasq_P):
-    """
-    Consider a product (coordinate-wise) of mixtures of
-    two gaussians with std sigma_prior and centers at 0 and 1)
-    """
-    N = P.shape[0]
-    assert P.shape == (N, N)
-    corners = np.array([0, 1])
-    diffs = P[:,:,None] - corners[None, None, :]
-    return np.sum(logsumexp(-0.5 * diffs ** 2 / sigmasq_P, axis=2)) \
-           - 0.5 * N**2 * np.log(2 * np.pi) \
-           - 0.5 * N**2 * np.log(sigmasq_P)
 
 # Helpers to convert params into a random permutation-ish matrix
 def perm_to_P(perm):
@@ -854,87 +840,104 @@ def initialize_params(A, Cs, map_W=None, map_Ps=None):
     return mu_W, log_sigmasq_W, unpack_W, \
            log_mu_Ps, log_sigmasq_Ps, unpack_Ps
 
-def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn,sigma_Lim, temp):
 
-    # Sample W
-    mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
-    W_flat = mu_W + np.sqrt(np.exp(log_sigmasq_W)) * npr.randn(*mu_W.shape)
-
-    W = unpack_W(W_flat)
-
-    # Sample Ps: run sinkhorn to move mu close to Birkhoff
-    Ps = []
-    for log_mu_P, log_sigmasq_P, unpack_P, C in \
-            zip(log_mu_Ps, log_sigmasq_Ps, unpack_Ps, Cs):
-        # Unpack the mean, run sinkhorn, the pack it again
-        log_mu_P = unpack_P(log_mu_P)
-        log_mu_P = sinkhorn_logspace(log_mu_P - 1e8 * (1 - C), num_sinkhorn)
-
-        log_mu_P = log_mu_P[C]
-
-        log_sigmasq_P = log_sigmasq_P
-
-        ##Notice how we limit the variance
-        P = np.exp(log_mu_P) + \
-            np.sqrt(logistic(log_sigmasq_P)*(sigma_Lim[1]-sigma_Lim[0]) +sigma_Lim[0]) * \
-            npr.randn(*log_mu_P.shape)
-        P = unpack_P(P)
-        # Round to nearest permutation
-
-        if(temp<1):
-            Phat = round_to_perm(P if isinstance(P, np.ndarray) else P.value)
-            P = P * temp + (1 - temp) * Phat
-
-
-        #Ps.append(np.identity(P.shape[0]))
-
-        Ps.append(P)
-
-    Ps = np.array(Ps)
-    return W, Ps
 
 def q_entropy(log_sigmasq_P, temp):
     return gaussian_entropy(0.5 * log_sigmasq_P) + log_sigmasq_P.size * np.log(temp)
-
-def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
-         num_sinkhorn, num_mcmc_samples, sigma_Lim, temp):
-    """
-    Provides a stochastic estimate of the variational lower bound.
-    sigma_Lim: limits for the variance of the re-parameterization of the permutation
-    """
-
-    M, T, N = Ys.shape
-    assert A.shape == (N, N)
-    assert len(unpack_Ps) == M
-
-    mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
-
-    L  = 0
-
-    for smpl in range(num_mcmc_samples):
-        W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
-
-        # Compute the ELBO
-        L += log_likelihood(Ys, A, W, Ps, etasq) / num_mcmc_samples
-        L += np.sum([unconstrained_log_prior(P, sigmasq_P) for P in Ps]) / num_mcmc_samples
-
-    # Add the entropy terms
-    L += np.sum([q_entropy(np.log(logistic(log_sigmasq_P)*(sigma_Lim[1]-sigma_Lim[0]) +sigma_Lim[0]), temp) for log_sigmasq_P in log_sigmasq_Ps])
-
-    L += gaussian_entropy(0.5 * log_sigmasq_W)
-
-    ## This latter term was missing, for details see the appendix of the VAE paper
-    L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi)) -0.5* np.sum(np.exp(log_sigmasq_W)) -0.5 *np.sum(np.power(mu_W, 2))
-    # Normalize objective
-
-    L /= (T * M * N)
-
-    return L
 
 
 def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
                               init_with_true=True, num_iters=250, sigmasq_P =0.1, num_sinkhorn =10,
                               num_mcmc_samples=500, sigma_Lim = [0,0.005], temp=1):
+
+    def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp):
+
+        # Sample W
+        mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
+        W_flat = mu_W + np.sqrt(np.exp(log_sigmasq_W)) * npr.randn(*mu_W.shape)
+
+        W = unpack_W(W_flat)
+
+        # Sample Ps: run sinkhorn to move mu close to Birkhoff
+        Ps = []
+        for log_mu_P, log_sigmasq_P, unpack_P, C in \
+                zip(log_mu_Ps, log_sigmasq_Ps, unpack_Ps, Cs):
+            # Unpack the mean, run sinkhorn, the pack it again
+            log_mu_P = unpack_P(log_mu_P)
+            log_mu_P = sinkhorn_logspace(log_mu_P - 1e8 * (1 - C), num_sinkhorn)
+
+            log_mu_P = log_mu_P[C]
+
+            log_sigmasq_P = log_sigmasq_P
+
+            ##Notice how we limit the variance
+            P = np.exp(log_mu_P) + \
+                np.sqrt(logistic(log_sigmasq_P) * (sigma_Lim[1] - sigma_Lim[0]) + sigma_Lim[0]) * \
+                npr.randn(*log_mu_P.shape)
+            P = unpack_P(P)
+            # Round to nearest permutation
+
+            if (temp < 1):
+                Phat = round_to_perm(P if isinstance(P, np.ndarray) else P.value)
+                P = P * temp + (1 - temp) * Phat
+
+            # Ps.append(np.identity(P.shape[0]))
+
+            Ps.append(P)
+
+        Ps = np.array(Ps)
+        return W, Ps
+
+    def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
+             num_sinkhorn, num_mcmc_samples, sigma_Lim, temp):
+        """
+        Provides a stochastic estimate of the variational lower bound.
+        sigma_Lim: limits for the variance of the re-parameterization of the permutation
+        """
+
+        def unconstrained_log_prior(P, sigmasq_P):
+            """
+            Consider a product (coordinate-wise) of mixtures of
+            two gaussians with std sigma_prior and centers at 0 and 1)
+            """
+            N = P.shape[0]
+            assert P.shape == (N, N)
+            corners = np.array([0, 1])
+            diffs = P[:, :, None] - corners[None, None, :]
+            return np.sum(logsumexp(-0.5 * diffs ** 2 / sigmasq_P, axis=2)) \
+                   - 0.5 * N ** 2 * np.log(2 * np.pi) \
+                   - 0.5 * N ** 2 * np.log(sigmasq_P)
+
+        M, T, N = Ys.shape
+        assert A.shape == (N, N)
+        assert len(unpack_Ps) == M
+
+        mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
+
+        L = 0
+
+        for smpl in range(num_mcmc_samples):
+            W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
+
+            # Compute the ELBO
+            L += log_likelihood(Ys, A, W, Ps, etasq) / num_mcmc_samples
+            L += np.sum([unconstrained_log_prior(P, sigmasq_P) for P in Ps]) / num_mcmc_samples
+
+        # Add the entropy terms
+        L += np.sum([q_entropy(np.log(logistic(log_sigmasq_P) * (sigma_Lim[1] - sigma_Lim[0]) + sigma_Lim[0]), temp) for
+                     log_sigmasq_P in log_sigmasq_Ps])
+
+        L += gaussian_entropy(0.5 * log_sigmasq_W)
+
+        ## This latter term was missing, for details see the appendix of the VAE paper
+        L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi)) - 0.5 * np.sum(np.exp(log_sigmasq_W)) - 0.5 * np.sum(
+            np.power(mu_W, 2))
+        # Normalize objective
+
+        L /= (T * M * N)
+
+        return L
+
     M, T, N = Ys.shape
     # Initialize variational parameters
     if init_with_true:
@@ -960,8 +963,6 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
     mses = []
 
     num_corrects = []
-    W_samples = []
-    Ps_samples = []
     times = []
 
     def collect_stats(params):
@@ -980,8 +981,6 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
         for i in range(A.shape[0]):
             list.extend(np.where(Ps[0, i, :]+Ps_true[0, i, :] ==1)[0])
 
-        W_samples.append(W)
-        Ps_samples.append(Ps)
         mses.append(np.mean((W * A - W_true * A) ** 2))
 
 
@@ -1008,18 +1007,213 @@ def run_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
 
     times = np.array(times)
     times -= times[0]
-    return variational_params, \
-           times, np.array(elbos), np.array(mses), \
+
+
+    W_samples = []
+    Ps_samples = []
+
+    for i in range(100):
+        W, Ps = sample_q(unflatten(variational_params[0]), unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
+        W_samples.append(W)
+        Ps_samples.append(Ps)
+    print np.array(Ps_samples).shape
+    return times, np.array(elbos), np.array(lls), np.array(mses), \
            np.array(num_corrects), np.array(W_samples), \
            np.array(Ps_samples)
 
 
-def plot_results(experiment_name, results_vi, results_mcmc, results_map):
+def run_naive_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize = 0.1,
+                              init_with_true=True, num_iters=250, sigmasq_P =0.1, num_sinkhorn =10,
+                              num_mcmc_samples=500, sigma_Lim = [0,0.005], temp=1):
+
+    def sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp):
+
+        # Sample W
+        mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
+        W_flat = mu_W + np.sqrt(np.exp(log_sigmasq_W)) * npr.randn(*mu_W.shape)
+
+        W = unpack_W(W_flat)
+
+        Ps = []
+        for log_mu_P, log_sigmasq_P, unpack_P, C in \
+                zip(log_mu_Ps, log_sigmasq_Ps, unpack_Ps, Cs):
+            # Unpack the mean, run sinkhorn, the pack it again
+            log_mu_P = unpack_P(log_mu_P)
+            log_mu_P = log_mu_P - logsumexp(log_mu_P)
+            log_mu_P = log_mu_P[C]
+
+            log_sigmasq_P = log_sigmasq_P
+
+            ##Notice how we limit the variance
+            P = np.exp(log_mu_P) + \
+                np.sqrt(logistic(log_sigmasq_P) * (sigma_Lim[1] - sigma_Lim[0]) + sigma_Lim[0]) * \
+                npr.randn(*log_mu_P.shape)
+
+            P = unpack_P(P)
+            # Round to nearest permutation
+
+            if (temp < 1):
+                ind_one_hot = np.argmax(P, axis = 1)
+                Phat = np.zeros((N, N))
+                Phat[range(N), ind_one_hot] = 1
+
+                #Phat = round_to_perm(P if isinstance(P, np.ndarray) else P.value)
+                P = P * temp + (1 - temp) * Phat
+
+
+            Ps.append(P)
+
+        Ps = np.array(Ps)
+        return W, Ps
+
+
+    def elbo(params, unpack_W, unpack_Ps, Ys, A, Cs, etasq, sigmasq_P,
+             num_sinkhorn, num_mcmc_samples, sigma_Lim, temp):
+        """
+        Provides a stochastic estimate of the variational lower bound.
+        sigma_Lim: limits for the variance of the re-parameterization of the permutation
+        """
+
+        def unconstrained_log_prior(P, sigmasq_P):
+            """
+            Consider a row-wise product of mixtures of M gaussians, with centers at the N N-dimensional one-hot vectors
+
+            """
+            M = P.shape[0]
+            N = P.shape[1]
+            # assert P.shape == (N, N)
+            corners = np.eye(N)
+            # corners = corners[:,:3]
+            diffs = P[:, :, None] - corners[None, :, :]
+
+            ss = -0.5 * np.sum(diffs ** 2, axis=1) / sigmasq_P - N * 0.5 * np.log(2 * np.pi)
+
+            return np.sum(logsumexp(ss, axis=1) - np.log(N))
+
+        M, T, N = Ys.shape
+        assert A.shape == (N, N)
+        assert len(unpack_Ps) == M
+
+        mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = params
+
+        L = 0
+
+        for smpl in range(num_mcmc_samples):
+            W, Ps = sample_q(params, unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
+
+            # Compute the ELBO
+            L += log_likelihood(Ys, A, W, Ps, etasq) / num_mcmc_samples
+            L += np.sum([unconstrained_log_prior(P, sigmasq_P) for P in Ps]) / num_mcmc_samples
+
+        # Add the entropy terms
+        L += np.sum([q_entropy(np.log(logistic(log_sigmasq_P) * (sigma_Lim[1] - sigma_Lim[0]) + sigma_Lim[0]), temp) for
+                     log_sigmasq_P in log_sigmasq_Ps])
+
+        L += gaussian_entropy(0.5 * log_sigmasq_W)
+
+        ## This latter term was missing, for details see the appendix of the VAE paper
+        L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi)) - 0.5 * np.sum(np.exp(log_sigmasq_W)) - 0.5 * np.sum(
+            np.power(mu_W, 2))
+        # Normalize objective
+
+        L /= (T * M * N)
+
+        return L
+
+    M, T, N = Ys.shape
+    # Initialize variational parameters
+    if init_with_true:
+        mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
+            initialize_params(A, Cs, map_Ps=Ps_true, map_W=W_true)
+    else:
+        mu_W, log_sigmasq_W, unpack_W, log_mu_Ps, log_sigmasq_Ps, unpack_Ps = \
+            initialize_params(A, Cs)
+
+    # Make a function to convert an array of params into
+    # a set of parameters mu_W, sigmasq_W, [mu_P1, sigmasq_P1, ... ]
+    flat_params, unflatten = \
+        flatten((mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps))
+
+    objective = \
+        lambda flat_params, t: \
+            -1 * elbo(unflatten(flat_params), unpack_W, unpack_Ps, Ys, A, Cs, etasq,
+                      sigmasq_P, num_sinkhorn, num_mcmc_samples, sigma_Lim, temp)
+
+    # Define a callback to monitor optimization progress
+    elbos = []
+    lls=[]
+    mses = []
+
+    num_corrects = []
+    times = []
+
+    def collect_stats(params):
+        times.append(time.time())
+        elbos.append(-1 * objective(params, 0))
+
+        # Sample the variational posterior and compute num correct matches
+        #mu_W, log_sigmasq_W, log_mu_Ps, log_sigmasq_Ps = unflatten(params)
+
+        W, Ps = sample_q(unflatten(params), unpack_W, unpack_Ps, Cs, 10, sigma_Lim, 0)
+
+        lls.append(log_likelihood(Ys, A, W, Ps, etasq) / (M * T * N))
+
+
+        list=[]
+        for i in range(A.shape[0]):
+            list.extend(np.where(Ps[0, i, :]+Ps_true[0, i, :] ==1)[0])
+
+        mses.append(np.mean((W * A - W_true * A) ** 2))
+
+
+        # Round doubly stochastic matrix P to the nearest permutation matrix
+        num_correct = np.zeros(M)
+        for m, P in enumerate(Ps):
+            row, col = linear_sum_assignment(-P + 1e8 * (1 - Cs[m]))
+            num_correct[m] = n_correct(perm_to_P(col), Ps_true[m])
+        num_corrects.append(num_correct)
+
+    def callback(params, t, g):
+        collect_stats(params)
+        print("Iteration {}.  ELBO: {:.4f} LL: {:.4f} MSE(W): {:.4f}, Num Correct: {}"
+              .format(t, elbos[-1], lls[-1], mses[-1], num_corrects[-1]))
+
+    # Run optimizer
+
+    callback(flat_params, -1, None)
+    variational_params = adam(grad(objective),
+                              flat_params,
+                              step_size=stepsize,
+                              num_iters=num_iters,
+                              callback=callback)
+
+    times = np.array(times)
+    times -= times[0]
+
+    W_samples = []
+    Ps_samples = []
+
+    for i in range(100):
+        W, Ps = sample_q(unflatten(variational_params[0]), unpack_W, unpack_Ps, Cs, num_sinkhorn, sigma_Lim, temp)
+        W_samples.append(W)
+        Ps_samples.append(Ps)
+
+    return times, np.array(elbos), np.array(lls), np.array(mses), \
+           np.array(num_corrects), np.array(W_samples), \
+           np.array(Ps_samples)
+
+
+
+
+
+
+def plot_results(experiment_name, results_vi, results_naive_vi, results_mcmc, results_map):
     # Plots:
-    #  - ELBO over time
+    #  - Log Likelihood over time
     #  - MSE of W over time
     #  - Num correct over time
-    prms_vi, times_vi, elbos_vi, mses_vi, ncs_vi, Ws_vi, Ps_vi = results_vi
+    times_vi, elbos_vi, lls_vi, mses_vi, ncs_vi, Ws_vi, Ps_vi = results_vi
+    times_naive_vi, elbos_naive_vi, lls_naive_vi, mses_naive_vi, ncs_naive_vi, Ws_naive_vi, Ps_naive_vi = results_naive_vi
     times_mcmc, lls_mcmc, mses_mcmc, ncs_mcmc, Ws_mcmc, Ps_mcmc = results_mcmc
     times_map, lls_map, mses_map, ncs_map, Ws_map, Ps_map = results_map
     t_max = np.max([times_vi[-1], times_mcmc[-1], times_map[-1]])
@@ -1027,16 +1221,29 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
     fig = plt.figure(figsize=(5.5, 2.5))
 
     # Panel 1: Expected log likelihood
+    # ax0 = fig.add_subplot(131)
+    # ax0.plot(times_vi, elbos_vi, color=colors[0])
+    # ax0.set_xlabel("Time (s)")
+    # ax0.set_xlim(1, t_max)
+    # ax0.set_xscale("log")
+    # ax0.set_ylabel("ELBO")
+
     ax0 = fig.add_subplot(131)
-    ax0.plot(times_vi, elbos_vi, color=colors[0])
+    ax0.plot(times_vi, lls_vi, color=colors[0])
+    ax0.plot(times_naive_vi, lls_naive_vi, color=colors[3])
+    ax0.plot(times_mcmc, lls_mcmc, color=colors[1])
+    ax0.plot(times_map, lls_map, color=colors[2])
+
     ax0.set_xlabel("Time (s)")
     ax0.set_xlim(1, t_max)
     ax0.set_xscale("log")
-    ax0.set_ylabel("ELBO")
+    ax0.set_ylabel("log likelihood")
+
 
     # Panel 2: MSE(W)
     ax1 = fig.add_subplot(132)
     ax1.plot(times_vi, mses_vi, color=colors[0])
+    ax1.plot(times_naive_vi, mses_naive_vi, color=colors[3])
     ax1.plot(times_mcmc, mses_mcmc, color=colors[1])
     ax1.plot(times_map, mses_map, color=colors[2])
     ax1.set_xlabel("Time (s)")
@@ -1044,16 +1251,20 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
     ax1.set_xscale("log")
     ax1.set_ylabel("MSE($\\mathbf{W}$)")
 
+    N = Ps_vi.shape[2]
+
     # Panel 3: num correct
     ax2 = fig.add_subplot(133)
-    ax2.plot(times_vi, ncs_vi.mean(1), color=colors[0], label="VI")
-    ax2.plot(times_mcmc, ncs_mcmc.mean(1), color=colors[1], label="MCMC")
-    ax2.plot(times_map, ncs_map.mean(1), color=colors[2], label="MAP")
+
+    ax2.plot(times_vi, ncs_vi.mean(1)/ N, color=colors[0], label="VI")
+    ax2.plot(times_naive_vi, ncs_naive_vi.mean(1)/ N, color=colors[3], label="Naive VI")
+    ax2.plot(times_mcmc, ncs_mcmc.mean(1) /N, color=colors[1], label="MCMC")
+    ax2.plot(times_map, ncs_map.mean(1) / N, color=colors[2], label="MAP")
     ax2.legend(loc="upper left")
     ax2.set_xlabel("Time (s)")
     ax2.set_xlim(1, t_max)
     ax2.set_xscale("log")
-    ax2.set_ylabel("Avg. Num. Correct")
+    ax2.set_ylabel("Avg. Prop. Correct")
 
     fig.suptitle(experiment_name)
     plt.tight_layout(rect=(0,0,1,0.95))
@@ -1061,42 +1272,42 @@ def plot_results(experiment_name, results_vi, results_mcmc, results_map):
     plt.savefig(os.path.join(RESULTS_DIR, experiment_name + ".pdf"))
 
 
+
+
 def run_realistic_experiment():
-    # Load the real C Elegans network
-    props = np.zeros((3, 4))
-    props[: , 0] = 1
-    props[:, 1] = 1
-    props[:, 2] = 1
-    props[:, 3] = 1
-    As, names, xpos, = load_celegans_network(props )
-    A = (np.sum(As, axis = 0) > 0).astype(bool)
-
-
-    N = A.shape[0]
-
-    ## Chose instead a random adjacency matrix
-    #A = np.random.binomial(1, 0.05, (N, N)).astype(bool)
-    #print np.sum(A)
 
     Ms = [5]
     Ts = [1000]
-    num_given_neuronss = [26]
-    dthreshs = [0.01]
+    num_given_neuronss = [25]
+    dthreshs = [0.01,0.1,0.5,1]
     etasqs = [1]
-    sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+    rhos =[1]
+    spectral_factors = [1.5]
+
+    # Load the real C Elegans network
 
 
-    for M, T, num_given_neurons, dthresh, etasq, in \
-            it.product(Ms, Ts, num_given_neuronss, dthreshs, etasqs):
-        experiment_name = "celegans_M{}_T{}_giv{}_dthresh{}_etasq{}". \
-            format(M, T, num_given_neurons, dthresh, etasq)
+
+    for M, T, num_given_neurons, dthresh, etasq, rho, spectral_factor in \
+            it.product(Ms, Ts, num_given_neuronss, dthreshs, etasqs, rhos, spectral_factors):
+        experiment_name = "celegans_M{}_T{}_rho{}_giv{}_dthresh{}_etasq{}_sf{}". \
+            format(M, T, rho, num_given_neurons, dthresh, etasq, spectral_factor)
+        ## chose only a proportion rho of entire connectome
+        props = np.ones((3, 4)) * rho
+        As, names, xpos, = load_celegans_network(props)
+
+        A = (np.sum(As, axis=0) > 0).astype(bool)
+        N = A.shape[0]
+        print N
+
+        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
 
         # Simulate a few "worm recordings"
         # sim = cached(RESULTS_DIR, experiment_name + "_data")(simulate_celegans)
         sim = simulate_celegans
 
         Ys, A, W_true, Ps_true, Cs = \
-            sim(A, xpos, M, T, num_given_neurons, dthresh, sigmasq_W, etasq)
+            sim(A, xpos, M, T, num_given_neurons, dthresh, sigmasq_W, etasq, spectral_factor)
 
         print("Avg choices: {}".format(Cs.sum(1).mean()))
         print("E[W]: {:.4f}".format(W_true[A].mean()))
@@ -1104,20 +1315,23 @@ def run_realistic_experiment():
 
         # Cached VI experiment function
         run_vi = cached(RESULTS_DIR, experiment_name + "_vi")(run_variational_inference)
-        results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize = 0.1, init_with_true=False, num_iters=30, sigmasq_P =0.1, num_sinkhorn =10, num_mcmc_samples=1, sigma_Lim = [0,0.005], temp=1)
+        results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize = 0.1, init_with_true=False, num_iters=200, sigmasq_P =0.1, num_sinkhorn =10, num_mcmc_samples=1, sigma_Lim = [0,0.005], temp=1)
 
+        if dthresh == 'inf':
+            run_naive_vi = cached(RESULTS_DIR, experiment_name + "_naive_vi")(run_naive_variational_inference)
+            results_naive_vi = run_naive_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize=0.1, init_with_true=False, num_iters=200, sigmasq_P=0.1, num_sinkhorn=10, num_mcmc_samples=1, sigma_Lim=[0, 0.005], temp=1)
 
         #Cached MCMC experiment
-        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        #sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
         run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
-        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true, num_iters=5, W_init=None, do_update_W=True)
+        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true, num_iters=200, W_init=None, do_update_W=True)
 
         # Cached MAP experiment
-        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        #sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
         run_map = cached(RESULTS_DIR, experiment_name + "_map")(run_iterative_map)
         results_map = run_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true)
 
-        plot_results(experiment_name, results_vi, results_mcmc, results_map)
+        plot_results(experiment_name, results_vi, results_naive_vi, results_mcmc, results_map)
 
 
 #if __name__ == "__main__":
