@@ -18,7 +18,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import sys
 from tensorflow.examples.tutorials.mnist import input_data
 import matplotlib.pyplot as plt
-
+import sys
+sys.path.insert(0, '../')
 from birkhoff.qap import solve_qap
 from birkhoff.primitives import gaussian_entropy, logistic
 from birkhoff.utils import cached
@@ -630,8 +631,7 @@ def run_naive_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true,
 
 
     return times, np.array(lls), np.array(mses), \
-           np.array(num_corrects), np.array(W_samples), \
-           np.array(Ps_samples)
+           np.array(num_corrects)
 
 
 
@@ -1050,8 +1050,8 @@ def run_naive_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize =
                 npr.randn(*log_mu_P.shape)
 
             P = unpack_P(P)
-            # Round to nearest permutation
 
+            # Round each row to the closest index (neuron)
             if (temp < 1):
                 ind_one_hot = np.argmax(P, axis = 1)
                 Phat = np.zeros((N, N))
@@ -1073,7 +1073,7 @@ def run_naive_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize =
         Provides a stochastic estimate of the variational lower bound.
         sigma_Lim: limits for the variance of the re-parameterization of the permutation
         """
-
+        sigma_w_prior = 0.000000000001
         def unconstrained_log_prior(P, sigmasq_P):
             """
             Consider a row-wise product of mixtures of M gaussians, with centers at the N N-dimensional one-hot vectors
@@ -1112,8 +1112,7 @@ def run_naive_variational_inference(Ys, A, W_true, Ps_true, Cs, etasq,stepsize =
         L += gaussian_entropy(0.5 * log_sigmasq_W)
 
         ## This latter term was missing, for details see the appendix of the VAE paper
-        L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi)) - 0.5 * np.sum(np.exp(log_sigmasq_W)) - 0.5 * np.sum(
-            np.power(mu_W, 2))
+        L += - 0.5 * log_sigmasq_W.size * (np.log(2 * np.pi *sigma_w_prior))  - 0.5 * np.sum(np.exp(log_sigmasq_W)) /sigma_w_prior - 0.5 * np.sum(np.power(mu_W, 2)) / sigma_w_prior
         # Normalize objective
 
         L /= (T * M * N)
@@ -1214,7 +1213,7 @@ def plot_results(experiment_name, results_vi, results_naive_vi, results_mcmc, re
     #  - Num correct over time
     times_vi, elbos_vi, lls_vi, mses_vi, ncs_vi, Ws_vi, Ps_vi = results_vi
     times_naive_vi, elbos_naive_vi, lls_naive_vi, mses_naive_vi, ncs_naive_vi, Ws_naive_vi, Ps_naive_vi = results_naive_vi
-    times_mcmc, lls_mcmc, mses_mcmc, ncs_mcmc, Ws_mcmc, Ps_mcmc = results_mcmc
+    times_mcmc, lls_mcmc, mses_mcmc, ncs_mcmc = results_mcmc
     times_map, lls_map, mses_map, ncs_map, Ws_map, Ps_map = results_map
     t_max = np.max([times_vi[-1], times_mcmc[-1], times_map[-1]])
 
@@ -1274,19 +1273,20 @@ def plot_results(experiment_name, results_vi, results_naive_vi, results_mcmc, re
 
 
 
-def run_realistic_experiment():
 
+#if __name__ == "__main__":
+
+def run_realistic_experiment():
     Ms = [5]
     Ts = [1000]
     num_given_neuronss = [25]
-    dthreshs = [0.01,0.1,0.5,1]
+    dthreshs = [0.005,0.01,0.05,0.1,0.5,1]
+    dthreshs =[0.1,0.5,1]
     etasqs = [1]
-    rhos =[1]
-    spectral_factors = [1.5]
+    rhos =[0.3,0.5,0.7]
+    spectral_factors = [2.5]
 
     # Load the real C Elegans network
-
-
 
     for M, T, num_given_neurons, dthresh, etasq, rho, spectral_factor in \
             it.product(Ms, Ts, num_given_neuronss, dthreshs, etasqs, rhos, spectral_factors):
@@ -1317,17 +1317,16 @@ def run_realistic_experiment():
         run_vi = cached(RESULTS_DIR, experiment_name + "_vi")(run_variational_inference)
         results_vi = run_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize = 0.1, init_with_true=False, num_iters=200, sigmasq_P =0.1, num_sinkhorn =10, num_mcmc_samples=1, sigma_Lim = [0,0.005], temp=1)
 
-        if dthresh == 'inf':
-            run_naive_vi = cached(RESULTS_DIR, experiment_name + "_naive_vi")(run_naive_variational_inference)
-            results_naive_vi = run_naive_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize=0.1, init_with_true=False, num_iters=200, sigmasq_P=0.1, num_sinkhorn=10, num_mcmc_samples=1, sigma_Lim=[0, 0.005], temp=1)
+        run_naive_vi = cached(RESULTS_DIR, experiment_name + "_naive_vi")(run_naive_variational_inference)
+        results_naive_vi = run_naive_vi(Ys, A, W_true, Ps_true, Cs, etasq, stepsize=0.1, init_with_true=False, num_iters=200, sigmasq_P=0.1, num_sinkhorn=10, num_mcmc_samples=1, sigma_Lim=[0, 0.005], temp=1)
 
         #Cached MCMC experiment
-        #sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
         run_mcmc = cached(RESULTS_DIR, experiment_name + "_mcmc")(run_naive_mcmc)
-        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true, num_iters=200, W_init=None, do_update_W=True)
+        results_mcmc = run_mcmc(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true, num_iters=2000, W_init=None, do_update_W=True)
 
         # Cached MAP experiment
-        #sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
+        sigmasq_W = 1. / (1.5 * N * np.mean(A.sum(0)))
         run_map = cached(RESULTS_DIR, experiment_name + "_map")(run_iterative_map)
         results_map = run_map(Ys, A, Cs, etasq, sigmasq_W, W_true, Ps_true)
 
