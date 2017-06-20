@@ -98,10 +98,8 @@ def simulate_data(M, T, N, num_given, num_poss_per_neuron,
 
 
 def simulate_data_symm(M, T, N, num_given, dthresh=0.1, rho=0.1, etasq=0.1):
-    # import ipdb; ipdb.set_trace()
     A = npr.rand(N, N) < rho
     N = A.shape[0]
-    rho = np.mean(A.sum(0))
 
     # Set sigmasq_W for stability
     # sigmasq_W = sigmasq_W if sigmasq_W is not None else 1./(1.1 * N * rho)
@@ -794,7 +792,7 @@ if __name__ == "__main__":
     Ms = [5]
     Ts = [500, 1000]
     # Ns = [50, 100, 200]
-    Ns = [200]
+    Ns = [100]
     num_given_neuronss = [25]
     num_poss_per_neurons = [25]
     rhos = [0.1]

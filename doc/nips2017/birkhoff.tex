@@ -11,7 +11,7 @@
 
 
 \author{
-  Great Author 1 \\
+  Scott W. Linderman \\
   \And
   Great Author 2 \\
   \And
@@ -28,9 +28,9 @@
 \maketitle
 
 \begin{abstract}
-  How to perform posterior inference over the space of permutation
-  matrices?  By definition, with~$n$ nodes, there are~$n!$ such
-  matrices.  Clearly, estimating a complete probability mass function
+  How can we efficiently perform posterior inference over the space
+  of permutations when there are~$n!$ permutations of a set of~$n$
+  elements?  Clearly, estimating a complete probability mass function
   over this space quicky becomes intractable as~$n$ grows. Our goal is
   to derive a tractable algorithm for performing approximate inference
   over this challenging discrete space.  To that end, we consider
@@ -80,22 +80,22 @@ estimation problem involving unknown model parameters and hierarchical
 structure.
 
 % Emphasize the importance of Bayesian approach and recent advances
-% in variational inference 
-While the problem of finding optimal point estimates of permutations
-under a variety of cost functions has been the subject of decades of
-research in combinatorial optimization\todo{cite}, many probabilistic
-tasks require reasoning over uncertainty regarding permutation
-matrices.  Many works have addressed the challenge of Bayesian
-permutation inference, leveraging Markov chain Monte Carlo methods
-\citep{diaconis1988group}, Fourier
+% in variational inference
+The task of computing optimal point estimates of permutations under
+various loss functions has been well studied
+in the combinatorial optimization literature ~\citep{kuhn1955hungarian, munkres1957algorithms,
+  lawler1963quadratic}. However, many probabilistic tasks require reasoning
+about uncertainty regarding permutation matrices.  A variety of
+Bayesian permutation inference algorithms have been proposed, leveraging
+Markov chain Monte Carlo methods \citep{diaconis1988group}, Fourier
 representations~\citep{kondor2007multi, huang2009fourier}, as well as
 convex~\citep{lim2014beyond} and
 continuous~\citep{plis2011directional} relaxations for approximating
-the posterior distribution.  Given recent advances in scaling variational
-Bayesian inference, largely driven by efficient Monte Carlo estimators
-of gradients of the variational lower bound \citep{Kingma2014, rezende2014stochastic},
-we revisit the problem of permutation inference from a variational perspective. 
-
+the posterior distribution.  Given recent advances in scaling
+variational Bayesian inference, largely driven by efficient Monte
+Carlo estimators of gradients of the variational lower bound
+\citep{Kingma2014, rezende2014stochastic}, we revisit the problem of
+permutation inference from a variational perspective.
 
 % Gumbel-softmax motivation
 Motivated by the recently proposed Gumbel-softmax method for discrete
