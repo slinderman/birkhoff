@@ -2,11 +2,11 @@
 %\documentclass{article}
 
 % FONTS
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
 
 % Replace default Latin Modern typewriter with its proportional counterpart
 % http://www.tug.dk/FontCatalogue/lmoderntypewriterprop/
-\renewcommand*\ttdefault{lmvtt}
+%\renewcommand*\ttdefault{lmvtt}
 
 
 %%% OPTION 1 - Fourier Math + New Century Schoolbook + ParaType Sans
@@ -24,9 +24,9 @@
 
 % Import MathDesign (this brings along Bitstream Charter)
 % http://www.ctan.org/tex-archive/fonts/mathdesign/
-\usepackage[bitstream-charter]{mathdesign}
-\usepackage{amsmath}
-\usepackage[scaled=0.92]{PTSans}
+%\usepackage[bitstream-charter]{mathdesign}
+% \usepackage{amsmath}
+%\usepackage[scaled=0.92]{PTSans}
 
 
 % %%% OPTION 3 - MTPRO 2 Math + Termes Times + ParaType Sans
@@ -43,6 +43,10 @@
 % \LetLtxMacro{\oldtextsc}{\textsc}
 % \renewcommand{\textsc}[1]{\oldtextsc{\scalefont{1.10}#1}}
 % \usepackage[scaled=0.92]{PTSans}
+
+% Use default fonts here
+\usepackage{amsmath}
+\usepackage{amssymb}
 
 % GEOMETRY: width = 5.2in
 \usepackage[
