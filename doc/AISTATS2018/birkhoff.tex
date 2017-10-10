@@ -8,10 +8,9 @@
 
 \usepackage{aistats2018}
 
-%\newcommand{\distNormal}{\mathcal{N}}
 \DeclareRobustCommand{\parhead}[1]{\textbf{#1}~}
-%\usepackage{amsmath}
- % If your paper is accepted, change the options for the package
+
+% If your paper is accepted, change the options for the package
 % aistats2018 as follows:
 %
 %\usepackage[accepted]{aistats2018}
@@ -39,39 +38,68 @@
 
 \twocolumn[
 
-\aistatstitle{Instructions for paper submissions to AISTATS 2018}
+\aistatstitle{Reparameterizing the Birkhoff Polytope for \\
+  Variational Permutation Inference}
 
-\aistatsauthor{ Author 1 \And Author 2 \And  Author 3 }
+% \aistatsauthor{ Gonzalo E. Mena$^*$ \And Scott W. Linderman$^*$
+%   \And  Hal Cooper \AND Liam Paninski \And John P. Cunningham }
 
-\aistatsaddress{ Institution 1 \And  Institution 2 \And Institution 3 } ]
+% \aistatsaddress{ Columbia University}
 
+\aistatsauthor{ Anonymous Authors }
+
+\aistatsaddress{ Anonymous Institutions}
+]
+
+% \begin{abstract}
+%   How can we efficiently perform posterior inference over the space
+%   of permutations when there are~$N!$ permutations of a set of~$N$
+%   elements?  Clearly, estimating a complete probability mass function
+%   over this space quicky becomes intractable as~$N$ grows. Our goal is
+%   to derive a tractable algorithm for performing approximate inference
+%   over this challenging discrete space.  To that end, we consider
+%   extensions of the recently proposed Gumbel-softmax method, which
+%   leverages continuous relaxations to perform discrete variational
+%   inference with reparameterization gradients. While the
+%   Gumbel-softmax method is not immediately applicable to permutation
+%   inference, we show that two alternative reparameterizations are both
+%   comparable to Gumbel-softmax on tractable discrete problems and
+%   easily extensible to permutation inference. Specifically, we develop
+%   continuous relaxations of permutation matrices to matrices that are
+%   either exactly or nearly doubly stochastic, i.e. to points either in
+%   or near the Birkhoff polytope.  We then derive invertible and
+%   differentiable maps from densities on unconstrained space to
+%   densities on or near the Birkhoff polytope. These transformations
+%   are parameterized by a ``temperature'' that controls how
+%   concentrated the resulting density is at the extrema of the Birkhoff
+%   polytope; i.e. at permutation matrices.  This relaxation admits
+%   variational inference via stochastic gradient ascent over the
+%   distributions on doubly stochastic matrices (and in the
+%   zero-temperature limit, on permutation matrices) using Monte Carlo
+%   estimates of the reparameterized gradient.
+% \end{abstract}
+
+% Take 2 -- significantly shorter
 \begin{abstract}
-How can we efficiently perform posterior inference over the space
-  of permutations when there are~$N!$ permutations of a set of~$N$
-  elements?  Clearly, estimating a complete probability mass function
-  over this space quicky becomes intractable as~$N$ grows. Our goal is
-  to derive a tractable algorithm for performing approximate inference
-  over this challenging discrete space.  To that end, we consider
-  extensions of the recently proposed Gumbel-softmax method, which
-  leverages continuous relaxations to perform discrete variational
-  inference with reparameterization gradients. While the
-  Gumbel-softmax method is not immediately applicable to permutation
-  inference, we show that two alternative reparameterizations are both
-  comparable to Gumbel-softmax on tractable discrete problems and
-  easily extensible to permutation inference. Specifically, we develop
-  continuous relaxations of permutation matrices to matrices that are
-  either exactly or nearly doubly stochastic, i.e. to points either in
-  or near the Birkhoff polytope.  We then derive invertible and
-  differentiable maps from densities on unconstrained space to
-  densities on or near the Birkhoff polytope. These transformations
-  are parameterized by a ``temperature'' that controls how
-  concentrated the resulting density is at the extrema of the Birkhoff
-  polytope; i.e. at permutation matrices.  This relaxation admits
-  variational inference via stochastic gradient ascent over the
-  distributions on doubly stochastic matrices (and in the
-  zero-temperature limit, on permutation matrices) using Monte Carlo
-  estimates of the reparameterized gradient.
-  \end{abstract}
+  How can we efficiently perform posterior inference over the space of
+  permutations when there are~$N!$ permutations of a set of~$N$
+  elements?  Combinatorial optimization algorithms may enable
+  efficient point estimation, but fully Bayesian inference poses a
+  severe challenge in this high-dimensional, discrete space.  We begin
+  with a common maneuver: we relax the discrete set of permutation
+  matrices---the vertices of the Birkhoff polytope---to the continuous
+  set of doubly-stochastic matrices---the interior of the polytope.
+  Our primary contribution is a pair of invertible and differentiable
+  maps from densities on unconstrained space to densities on or near
+  the Birkhoff polytope. These transformations are parameterized by a
+  ``temperature'' that controls how concentrated the resulting density
+  is at the extrema of the Birkhoff polytope; i.e. at permutation
+  matrices.  With these transformations, we perform variational
+  inference over distributions on doubly stochastic matrices (and in
+  the zero-temperature limit, on permutation matrices), leveraging
+  reparameterization gradients to guide our optimization.
+\end{abstract}
+
 
 \section{Introduction}
 
@@ -93,120 +121,83 @@ repulsive point process models~\citep{rao2016bayesian}, incorporate a
 latent permutation into their generative processes; inference over
 model parameters requires integrating over the set of permutations
 that could have given rise to the observed data.  In many of these
-settings, permutation inference is but one component of a larger
+settings, permutation inference is just one component of a larger
 estimation problem involving unknown model parameters and hierarchical
 structure.
 
 % Emphasize the importance of Bayesian approach and recent advances
 % in variational inference
 The task of computing optimal point estimates of permutations under
-various loss functions has been well studied
-in the combinatorial optimization literature ~\citep{kuhn1955hungarian, munkres1957algorithms,
-  lawler1963quadratic}. However, many probabilistic tasks require reasoning
-about uncertainty regarding permutation matrices.  A variety of
-Bayesian permutation inference algorithms have been proposed, leveraging
-Markov chain Monte Carlo methods \citep{diaconis1988group}, Fourier
-representations~\citep{kondor2007multi, huang2009fourier}, as well as
-convex~\citep{lim2014beyond} and
+various loss functions has been well studied in the combinatorial
+optimization literature ~\citep{kuhn1955hungarian,
+  munkres1957algorithms, lawler1963quadratic}. However, many
+probabilistic tasks require reasoning about uncertainty regarding
+permutation matrices.  A variety of Bayesian permutation inference
+algorithms have been proposed, leveraging sampling methods
+\citep{diaconis1988group, miller2013exact, harrison2013importance},
+Fourier representations~\citep{kondor2007multi, huang2009fourier}, as
+well as convex~\citep{lim2014beyond} and
 continuous~\citep{plis2011directional} relaxations for approximating
-the posterior distribution.  Given recent advances in scaling
-variational Bayesian inference, largely driven by efficient Monte
-Carlo estimators of gradients of the variational lower bound
-\citep{Kingma2014, rezende2014stochastic}, we revisit the problem of
-permutation inference from a variational perspective.
-
-% Gumbel-softmax motivation
-Continuous relaxations underlie many approximate algorithms for
-discrete optimization and inference.  After relaxation, we can
-capitalize on local gradients and curvature information. Indeed, this
-is the motivation for the recently proposed Gumbel-softmax method for
-discrete variational inference~\citep{jang2016categorical,
-  maddison2016concrete}.  It is based on the following observation:
-categorical distributions may be viewed as atomic densities
-on the vertices of the simplex; by relaxing this to a continuous
-density on the interior of the simplex we can approximate the discrete
-inference problem with a continuous one and thereby capitalize on
-reparameterization gradients~\citep{Kingma2014, rezende2014stochastic}
-to optimize a variational lower bound on the marginal likelihood.
-Critically, the Gumbel-softmax method has a temperature parameter that
-tunes the degree to which the continuous density concentrates around
-the vertices, and recovers truly discrete inference in the
-zero-temperature limit.
-
-% Discrete/Simplex <-> Permutation/Birkhoff analogy 
-Just as one-hot vectors (discrete random variables) are the vertices
-of the simplex, permutation matrices are the vertices of the Birkhoff
-polytope, i.e. the set of doubly stochastic matrices.  Thus, we seek
-temperature-controlled relaxations of atomic densities on permutation
-matrices to continuous densities on the interior of the Birkhoff
-polytope.  Unfortunately, the dual constraints of row- and
-column-normalization required of doubly stochastic matrices present
-difficulties that are not faced in the categorical setting. However,
-we derive a variety of alternative continuous relaxations for the
-simplex and show that: (i) these relaxations achieve comparable
-performance to the Gumbel-softmax on tractable discrete inference
-tasks; and (ii) they naturally extend to relaxations of permutation
-inference problems.
+the posterior distribution.  Here, we address this problem from an
+alternative direction, leveraging stochastic variational
+inference~\citep{hoffman2013stochastic} and reparameterization
+gradients~\citep{rezende2014stochastic, Kingma2014} to derive a
+scalable and efficient permutation inference algorithm.
 
 % Paper structure
-The remainder of this paper is structured as follows:
-Section~\ref{sec:relatedwork} discusses related work on Bayesian
-permutation inference and the continuous relaxations for discrete
-inference, including the Gumbel-softmax method.
-Section~\ref{sec:alternative} introduces alternative relaxations for
-discrete variational inference, and Section~\ref{sec:permutation}
-presents our primary contribution: a set of relaxations for
-permutation matrices. Section~\ref{sec:results} presents a variety of
-experiments that illustrate the benefits of the proposed variational
-approach.
+Section~\ref{sec:background} lays the necessary groundwork,
+introducing definitions, prior work on permutation inference, variational
+inference, and continuous relaxations.  Section~\ref{sec:permutation}
+presents our primary contribution: a pair of transformations that
+enable variational inference over doubly-stochastic matrices, and, in
+the zero-temperature limit, permutations, via stochastic variational
+inference.  In the process, we show how these transformations connect
+to recent work on discrete variational
+inference~\citep{maddison2016concrete, jang2016categorical}.
+Section~\ref{sec:results} presents a variety of experiments that
+illustrate the benefits of the proposed variational approach.
   
-\section{Related Work}
-\label{sec:relatedwork}
+\section{Background}
+\label{sec:background}
 
-\parhead{Bayesian permutation inference. } As mentioned above, a
-number of previous works have considered approximate methods of
-posterior inference over the space of permutations. When a point
-estimate will suffice, convex relations are commonly employed~\citep{fogel2013convex,
-  lim2014beyond}. Given noisy measurements of a sum of a small number of
-permutation matrices, we can recover the underlying coefficients
-via a convex optimization penalized by the norm induced by the Birkhoff
-polytope~\citep{chandrasekaran2012convex}.  For some ranking problems,
-we can rewrite the objective function in terms of the expected 
-assignment probabilities under a distribution over permutation matrices, which
-in turn are points in the Birkhoff polytope. \citet{adams2011ranking}
-leveraged this property to develop stochastic gradient descent algorithms
-that minimize these objective functions, using Sinkhorn propagation~\citep{knight2008sinkhorn}
-as a differentiable map from the positive orthant to the Birkhoff polytope.
-We will use the same approach in one of our proposed methods. 
+% We begin with definitions and notation, a review of
+% variational inference and the reparameterization trick, and a
+% discussion related work.
+
+\subsection{Definitions and notation.}  A permutation is a bijective
+mapping of a set~$\mcX$ onto itself.
+When~${\mcX = \{x_1, \ldots, x_N\}}$, this mapping is conveniently
+represented as a binary matrix~${X \in \{0,1\}^{N \times N}}$
+where~${X_{m,n}=1}$ implies that~$x_m$ is mapped to~$x_n$.  Since
+permutations are bijections, both the rows and columns of~$X$ must
+sum to one.  From a geometric perspective, the Birkhoff-von Neumann
+theorem states that permutation matrices are vertices of the convex
+hull of doubly stochastic matrices; i.e. non-negative square matrices
+whose rows and columns sum to one. The set of doubly
+stochastic matrices is known as the \emph{Birkhoff polytope}, and it
+is defined by,
+\begin{align*}
+  \mcB_N = \Big \{X : \qquad 
+           X_{m,n} &\geq 0   & &\forall \, m,n \in 1, \ldots, N; \\
+           \sum_{n=1}^N X_{m,n} &= 1  & &\forall \, m \in 1, \ldots, N; \\
+           \sum_{m=1}^N X_{m,n} & =1 &  &\forall \, n \in 1, \ldots, N \Big\}.
+\end{align*}
+These linear row- and column-normalization constraints
+restrict~$\mcB_N$ to a~${(N-1)^2}$ dimensional subset
+of~$\reals^{N \times N}$.  Despite these constraints, we have a number
+of efficient algorithms for working with these objects.
+\emph{Sinkhorn propagation}~\citep{sinkhorn1967concerning} projects the
+positive orthant onto~$\mcB_N$ by iteratively normalizing the rows and
+columns, and the \emph{Hungarian algorithm}~\citep{kuhn1955hungarian,
+  munkres1957algorithms} solves the minimum weight bipartite matching
+problem---optimizing a linear objective over the set of permutation
+matrices---in cubic time.
 
 
-When a point estimate is insufficient, it may be possible to turn
-efficient algorithms for optimizing linear cost functions over the set
-of permutation matrices into efficient sampling algorithms using
-Perturb-and-MAP \citep{li2013efficient}.  For simple problems, Markov
-chain Monte Carlo (MCMC) algorithms can perform quite well by simply
-using Metropolis-Hastings proposals to swap assignments at random
-\citep{diaconis1988group}.  Such methods ultimately rely on a random
-walk to explore the high dimensional space of permutations.
-\citet{harrison2013importance} developed an importance sampling
-algorithm that fills in count matrices one row at a time, leveraging
-column- and row-sum constraints, and showed promising results for
-matrices with~$O(100)$ rows and columns.  Another line of work
-considers inference in the spectral domain, approximating
-distributions over permutations with the low frequency Fourier
-components~\citep{kondor2007multi, huang2009fourier}.  Perhaps most
-relevant to this work, \citet{plis2011directional} propose a
-continuous relaxation from permutation matrices to points on a
-hypersphere, and then use the von Mises-Fisher (vMF) distribution to
-model distributions on the sphere's surface. While the vMF
-distribution does have a concentration parameter, as the concentration
-goes to infinity, the distribution converges to a point on the sphere.
-By contrast, we will derive temperature-controlled densities over
-points inside or near the Birkhoff polytope such that as the temperature
-goes to zero, the distribution converges to an atomic density on
-permutation matrices.
 
-\parhead{Variational inference and the reparameterization trick.}
+
+
+\subsection{Variational inference and the reparameterization trick}
 Variational Bayesian inference algorithms aim to approximate the
 posterior distribution~$p(x \given y)$ with a more tractable
 distribution~$q(x; \theta)$, where ``tractable'' means that, at a
@@ -215,9 +206,9 @@ its normalization constant).  We find this approximate distribution
 by searching for the parameters~$\theta$ that minimize the Kullback-Leibler (KL)
 divergence between~$q$ and the true posterior, or equivalently,
 maximize the evidence lower bound (ELBO),
-\begin{align}
+\begin{align*}
   \mcL(\theta) &\triangleq \bbE_q \left[ \log p(x, y) - \log q(x; \theta) \right].
-\end{align}
+\end{align*}
 Perhaps the simplest method of optimizing the ELBO is stochastic
 gradient ascent. 
 However, computing~$\nabla_\theta \mcL(\theta)$ requires some care
@@ -225,36 +216,111 @@ since the ELBO contains an expectation with respect to a distribution
 that depends on these parameters.
 
 When~$x$ is a continuous random variable, we can often go one step
-further and leverage the ``reparameterization trick''
+further and leverage the \emph{reparameterization trick}
 \citep{Salimans2013, Kingma2014}.  Specifically, in some cases we can
 simulate from~$q$ via the following equivalence,
-\begin{align}
-  \label{eq:reparam}
+\begin{align*}
   x &\sim q(x; \theta)
       & \iff & &  
   \xi &\sim r(\xi), \quad x = g(\theta, \xi),
-\end{align}
+\end{align*}
 where~$r$ is a distribution on the ``noise''~$\xi$ and
-where~$g(\theta, \xi)$ is a deterministic and differentiable
+where~$g(\xi; \theta)$ is a deterministic and differentiable
 function. For example,
 if~${q(x; \theta) = \mathcal{N}(x \given \theta, 1)}$, we can
 reparameterize by setting the noise distribution
 to~${r(\xi) = \mathcal{N}(\xi \given 0, 1)}$ and using the
-transformation~${g(\theta, \xi) = \theta + \xi}$.  The
+transformation~${g(\xi; \theta) = \xi + \theta}$.  The
 reparameterization trick effectively ``factors out'' the randomness
 of~$q$. With this transformation, we can bring the gradient inside the
 expectation as follows,
-\begin{align}
+\begin{multline}
+  \label{eq:elbo}
   \nabla_\theta \mcL(\theta) 
-  &= \E_{r(\xi)} \left[ \nabla_\theta \log p(g(\theta, \xi) \given y)
-    - \nabla_\theta  \log q(g(\theta, \xi); \theta) \right].
-\end{align}
+  = \E_{r(\xi)} \Big[ \nabla_\theta \log p(g(\xi; \theta) \given y) \\
+    - \nabla_\theta  \log q(g(\xi; \theta); \theta) \Big].
+\end{multline}
 This gradient can be estimated with Monte Carlo, and, in practice,
 this leads to lower variance estimates of the gradient than, for
 example, the score function estimator \citep{Williams1992, Glynn1990}.
 However, for $g$ to be differentiable $x$ needs to be continuous.
 
-\begin{figure*}[t]
+
+% % Gumbel-softmax motivation
+% Continuous relaxations underlie many approximate algorithms for
+% discrete optimization and inference.  After relaxation, we can
+% capitalize on local gradients and curvature information. Indeed, this
+% is the motivation for the recently proposed Gumbel-softmax method for
+% discrete variational inference~\citep{jang2016categorical,
+%   maddison2016concrete}.  It is based on the following observation:
+% categorical distributions may be viewed as atomic densities
+% on the vertices of the simplex; by relaxing this to a continuous
+% density on the interior of the simplex we can approximate the discrete
+% inference problem with a continuous one and thereby capitalize on
+% reparameterization gradients~\citep{Kingma2014, rezende2014stochastic}
+% to optimize a variational lower bound on the marginal likelihood.
+% Critically, the Gumbel-softmax method has a temperature parameter that
+% tunes the degree to which the continuous density concentrates around
+% the vertices, and recovers truly discrete inference in the
+% zero-temperature limit.
+
+% % Discrete/Simplex <-> Permutation/Birkhoff analogy 
+% Just as one-hot vectors (discrete random variables) are the vertices
+% of the simplex, permutation matrices are the vertices of the Birkhoff
+% polytope, i.e. the set of doubly stochastic matrices.  Thus, we seek
+% temperature-controlled relaxations of atomic densities on permutation
+% matrices to continuous densities on the interior of the Birkhoff
+% polytope.  Unfortunately, the dual constraints of row- and
+% column-normalization required of doubly stochastic matrices present
+% difficulties that are not faced in the categorical setting. However,
+% we derive a variety of alternative continuous relaxations for the
+% simplex and show that: (i) these relaxations achieve comparable
+% performance to the Gumbel-softmax on tractable discrete inference
+% tasks; and (ii) they naturally extend to relaxations of permutation
+% inference problems.
+
+Recently, there have been a number of proposals for extending the
+reparameterization trick to high-dimensional discrete inference problems
+% \footnote{Discrete inference is only problematic in the high
+%   dimensional case, since in low dimensional problems we can enumerate
+%   the possible values of~$x$ and compute the normalizing
+%   constant~$p(y) = \sum_x p(y, x)$.}
+via continuous relaxation~\citep{maddison2016concrete,
+  jang2016categorical, kusner2016gans}.  The key here is a ``temperature''
+knob that controls the degree of relaxation.  As we discuss below, our
+approach can be seen as an extension of these ideas to discrete
+inference problems with more complex structure, like permutation
+matrices.
+
+% These approaches are based on the following
+% observation: one-hot vectors~$x \in \{0,1\}^N$ can alternatively be
+% viewed as vertices of the simplex~$\Delta_N$; likewise, discrete
+% probability mass functions~$q(x; \theta)$ can be seen as atomic
+% densities on the vertices of the simplex.  This motivates a natural
+% relaxation: let~$x$ assume any value in the simplex, not just the
+% vertices, and let~$q(x; \theta)$ be a density on the interior of the
+% simplex.  One way to define such a density is via the following
+% reparameterization,
+% \begin{align}
+%   \xi &\sim r(\xi), \\
+%   g(\theta, \xi) &= \left[ \frac{\theta_1 + \xi_1}{\sum_{n=1}^N \theta_n + \xi_n},
+%       \ldots,
+%       \frac{\theta_N + \xi_N}{\sum_{n=1}^N \theta_n + \xi_n}
+%       \right]
+%     \triangleq \mathrm{softmax}(\theta + \xi),
+% \end{align}
+% where~${\xi, \theta \in \reals^N}$.  
+
+% In the aforementioned papers, the noise is assumed to be a vector of
+% independent Gumbel random variables,
+% i.e.~${p(\xi) = \prod_{n=1}^N \mathrm{Gumbel}(\xi_n \given 0, 1)}$.
+% This choice leads to a nicely interpretable model: adding Gumbel noise
+% and taking the \emph{argmax} of~$\theta + \xi$ yields an exact sample from~$\pi = \mathrm{softmax}(\theta)$, thus
+% the \emph{softmax} of~$\theta + \xi$ is a natural relaxation. Ultimately,
+% however, this is just a continuous relaxation of an atomic density to
+% a continuous density.
+
+\begin{figure*}[ht!]
   \centering
   \includegraphics[width=5.in]{../figures/figure1.pdf} 
   \caption{Reparameterizations of discrete polytopes.  (a,b) The
@@ -274,41 +340,155 @@ However, for $g$ to be differentiable $x$ needs to be continuous.
 \label{fig:transforms}
 \end{figure*}
 
-\parhead{Continuous relaxations for discrete variational inference.}
-Recently, there have been a number of proposals for extending the
-reparameterization trick to high dimensional discrete
-problems\footnote{Discrete inference is only problematic in the high
-  dimensional case, since in low dimensional problems we can enumerate
-  the possible values of~$x$ and compute the normalizing
-  constant~$p(y) = \sum_x p(y, x)$.} by relaxing them to analogous
-continuous problems \citep{maddison2016concrete, jang2016categorical,
-  kusner2016gans}.  These approaches are based on the following
-observation: one-hot vectors~$x \in \{0,1\}^N$ can alternatively be
-viewed as vertices of the simplex~$\Delta_N$; likewise, discrete
-probability mass functions~$q(x; \theta)$ can be seen as atomic
-densities on the vertices of the simplex.  This motivates a natural
-relaxation: let~$x$ assume any value in the simplex, not just the
-vertices, and let~$q(x; \theta)$ be a density on the interior of the
-simplex.  One way to define such a density is via the following
-reparameterization,
-\begin{align}
-  \xi &\sim r(\xi), \\
-  g(\theta, \xi) &= \left[ \frac{\theta_1 + \xi_1}{\sum_{n=1}^N \theta_n + \xi_n},
-      \ldots,
-      \frac{\theta_N + \xi_N}{\sum_{n=1}^N \theta_n + \xi_n}
-      \right]
-    \triangleq \mathrm{softmax}(\theta + \xi),
-\end{align}
-where~${\xi, \theta \in \reals^N}$.  
+\subsection{Bayesian permutation inference}
+A number of previous works have considered approximate methods of
+posterior inference over the space of permutations.
+% When a point
+% estimate will suffice, convex relations are commonly
+% employed~\citep{fogel2013convex, lim2014beyond}. Given noisy
+% measurements of a sum of a small number of permutation matrices, we
+% can recover the underlying coefficients via a convex optimization
+% penalized by the norm induced by the Birkhoff
+% polytope~\citep{chandrasekaran2012convex}.  For some ranking problems,
+% we can rewrite the objective function in terms of the expected
+% assignment probabilities under a distribution over permutation
+% matrices, which in turn are points in the Birkhoff
+% polytope. \citet{adams2011ranking} leveraged this property to develop
+% stochastic gradient descent algorithms that minimize these objective
+% functions, using Sinkhorn propagation~\citep{knight2008sinkhorn} as a
+% differentiable map from the positive orthant to the Birkhoff polytope.
+% We will use the same approach in one of our proposed methods.
+When a point estimate will not suffice, sampling methods like Markov
+chain Monte Carlo (MCMC) algorithms may yield a reasonable approximate
+posterior for simple problems~\citep{diaconis1988group}.
+\citet{harrison2013importance} developed an importance sampling
+algorithm that fills in count matrices one row at a time, showing
+promising results for matrices with~$O(100)$ rows and columns.  It may
+also be possible to turn the Hungarian algorithm into an efficient
+sampling algorithms using Perturb-and-MAP \citep{li2013efficient}.
+Another line of work considers inference in the spectral domain,
+approximating distributions over permutations with the low frequency
+Fourier components~\citep{kondor2007multi, huang2009fourier}.  Perhaps
+most relevant to this work, \citet{plis2011directional} propose a
+continuous relaxation from permutation matrices to points on a
+hypersphere, and then use the von Mises-Fisher (vMF) distribution to
+model distributions on the sphere's surface. While the vMF
+distribution does have a concentration parameter, as the concentration
+goes to infinity, the distribution converges to a point on the sphere.
+By contrast, we will derive temperature-controlled densities over
+points inside or near the Birkhoff polytope such that as the
+temperature goes to zero, the distribution converges to an atomic
+density on permutation matrices.
 
-In the aforementioned papers, the noise is assumed to be a vector of
-independent Gumbel random variables,
-i.e.~${p(\xi) = \prod_{n=1}^N \mathrm{Gumbel}(\xi_n \given 0, 1)}$.
-This choice leads to a nicely interpretable model: adding Gumbel noise
-and taking the \emph{argmax} of~$\theta + \xi$ yields an exact sample from~$\pi = \mathrm{softmax}(\theta)$, thus
-the \emph{softmax} of~$\theta + \xi$ is a natural relaxation. Ultimately,
-however, this is just a continuous relaxation of an atomic density to
-a continuous density.
+
+ 
+\section{Variational permutation inference via reparameterization}
+\label{sec:permutation}
+
+The key to stochastic variational inference with the reparameterization
+trick is an invertible and differentiable mapping~$x=g(\xi; \theta)$.
+With this mapping, a simple noise density~$r(\xi)$ is transformed
+into a variational posterior density~$q(x; \theta)$ that can be
+sampled and evaluated pointwise---the necessary ingredients for
+computing the stochastic gradients of the ELBO~\eqref{eq:elbo}.
+For discrete variational inference via continuous relaxation,
+we further require a temperature control.  Here we develop two
+mappings for permutation inference.
+
+\subsection{Stick-breaking transformations of the Birkhoff polytope}
+Let~$\Psi$ be an arbitrary matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
+transform it into a doubly stochastic
+matrix,~$X \in [0,1]^{N \times N}$ by filling in entry by entry, starting
+in the top left and raster scanning left to right then top to
+bottom. Denote the~$(m,n)$-th entries of~$\Psi$ and~$X$ by~$\psi_{mn}$
+and~${x}_{mn}$, respectively.
+
+Each row and column has an associated unit-length ``stick'' that we
+allot to its entries.  The first entry in the matrix is given by,
+$x_{11} = \psi_{11}$.  As we work left to right in the first row, the
+remaining stick length decreases as we add new entries. This reflects
+the row normalization constraints.  Formally, the stick-breaking
+transformation for the first row is given by,
+\begin{align*}
+  x_{1n} &= \psi_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
+  x_{1N} &= 1 - \sum_{n=1}^{N-1} x_{1n}.
+\end{align*}
+However, the remaining rows must now conform to both row- and
+column-constraints. That is,
+\begin{align*}
+x_{mn} &\leq 1- \sum_{k=1}^{n-1} x_{mk} & & \text{(row sum)} \\
+x_{mn} &\leq 1- \sum_{k=1}^{m-1} x_{kn} & & \text{(column sum)}.
+\end{align*}
+Moreover, there is also a lower bound on~$x_{mn}$. This entry must
+claim enough of the stick such that what is leftover fits within
+the confines imposed by subsequent column sums. That is, each column
+sum places an upper bound on the amount that may be attributed to any
+subsequent entry. If the remaining stick exceeds the sum of these
+upper bounds, the matrix will not be doubly stochastic.  Thus,
+\begin{align*}
+\underbrace{1 - \sum_{k=1}^n x_{mk}}_{\text{remaining stick}}
+  &\leq \underbrace{\sum_{j=n+1}^N (1- \sum_{k=1}^{m-1} x_{kj})}_{
+    \text{remaining upper bounds}}.
+\end{align*}
+Rearranging terms, we have,
+\begin{align*}
+  x_{mn} &\geq
+  % 1- \sum_{k=1}^{n-1} x_{mk} - \sum_{j=n+1}^N (1- \sum_{k=1}^{m-1} x_{kj}) \\
+1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj}.
+\end{align*}
+Of course, this bound is only relevant if the right hand side is greater than zero.
+Taken together, we have~$\ell_{mn} \leq x_{mn} \leq u_{mn}$, where,
+\begin{align*}
+\ell_{mn} &\triangleq \max \left \{0, \, 1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj} \right \}
+\\
+u_{mn} &\triangleq 
+\min \left \{1- \sum_{k=1}^{n-1} x_{mk}, \,
+1- \sum_{k=1}^{m-1} x_{kn} \right\}.
+\end{align*}
+Accordingly, we define,~${x_{mn} = \ell_{mn} + \psi_{mn} (u_{mn} - \ell_{mn})}$.
+The inverse transformation from~$X$ to $\Psi$ is analogous.
+We start by computing~$\psi_{11}$ and then progressively compute
+upper and lower bounds and set~${\psi_{mn} = (x_{mn} - \ell_{mn})/(u_{mn} - \ell_{mn})}$.
+
+To complete the reparameterization, we define a parametric,
+temperature-controlled density for~$\Psi$.
+Let~${\Xi \in \reals^{(N-1) \times (N-1)}}$ be a matrix of standard
+Gaussian random variables.  We
+define,
+\begin{align*}
+  \psi_{mn} &= \sigma\left( \frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} \right),
+\end{align*}
+where~${\theta = \{\mu_{mn}, \eta^2_{mn}\}_{m,n=1}^N}$ are the mean
+and variance parameters of the
+mapping,~${\sigma(u) = (1+e^{-u})^{-1}}$ is the logistic function,
+and~$\tau$ is a temperature parameter. As~$\tau \to 0$, the values
+of~$\psi_{mn}$ are pushed to either zero or one, depending on whether
+the input to the logistic function is negative or positive,
+respectively.  As a result, the doubly-stochastic output matrix~$X$ is
+pushed toward the extreme points of the Birkhoff polytope, the
+permutation matrices.
+
+
+\subsection{Rounding toward permutation matrices}
+\label{sub:rounding}
+The rounding-based relaxation immediately extends to the permutation
+case.  Now we simulate matrices~$\Psi \in \reals^{N \times N}$ and
+round them to the nearest permutation matrix by solving a matching
+problem.  This can be done in $O(N^3)$ time with the Hungarian
+algorithm~\citep{kuhn1955hungarian, munkres1957algorithms}.  As
+before, if~$\Psi$ is close to the Birkhoff polytope, its rounded
+value~$X$ will be as well.  Fortunately, it is easy to generate a
+distribution that concentrates near~$\mcB_N$.  We use the
+reparameterization~${\Psi = \widetilde{\Theta} + \Xi}$,
+where~${r(\vec(\Xi)) = \mathcal{N}(0, I)}$, and then we
+define~${\widetilde{\Theta}}$ to be the
+result of applying a fixed number of Sinkhorn propagation~\citep{knight2008sinkhorn} steps
+to the unconstrained matrix~$\Theta \in \reals^{N \times N}$.
+Since the Sinkhorn algorithm is differentiable, we can backpropagate
+gradients through this procedure~\citep[c.f.][]{adams2011ranking}.
+Note that even though Sinkhorn is non-invertible, we can still
+evaluate the density of~$q(X; \theta)$ since it applies \emph{before}
+the introduction of the random noise~$\Xi$. 
 
 \section{Alternative relaxations for categorical random variables}
 \label{sec:alternative}
@@ -404,115 +584,6 @@ is easily generalized to more complex discrete polytopes.
 % Moreover, this approach can be generalized to arbitrary discrete we
 % can represent any arbitrary categorical distribution over one-hot
 % vectors. This is shown in the appendix.
- 
-\section{Continuous relaxations of permutation distributions}
-\label{sec:permutation}
-
-Just as one-hot vectors are the vertices of the simplex, the
-Birkhoff-von Neumann theorem states that permutation matrices~$X$ are
-vertices of the convex hull of doubly stochastic matrices. By analogy,
-it is natural to relax to~${X \in \mcB_N \subset [0,1]^{N \times N}}$,
-the Birkhoff polytope of doubly stochastic matrices defined by,
-\begin{align}
-  \mcB_N &= \left \{X: \;
-           x_{m,n} \geq 0 \, \forall m,n \in [N]; \;
-           \sum_{n=1}^N x_{m,n} = 1 \, \forall m \in [N]; \;
-           \sum_{m=1}^N x_{m,n} =1 \, \forall n \in [N]\right\}.
-\end{align}
-Due to these linear row- and column-normalization
-constraints,~$\mcB_N$ lies within a~${(N-1)^2}$ dimensional subspace.
-Unfortunately, these constraints also present difficulties to
-reparameterization.  Next we show how the stick-breaking and rounding
-reparameterizations can be extended to the Birkhoff polytope.
-
-\subsection{Stick-breaking transformations of the Birkhoff polytope}
-We now derive an invertible and differentiable
-transformation,~$g: \reals^{(N-1) \times (N-1)} \to \mcB_n$ by
-extending the original stick-breaking transformation with minor
-modifications to accomodate the additional constraints of doubly
-stochastic matrices. This can be used to define a density
-on~$\mcB_N$. Let~$\Psi$ be an matrix
-in~${[0,1]^{(N-1) \times (N-1)}}$; we will transform it into a doubly
-stochastic matrix,~$X \in [0,1]^{N \times N}$ by working entry by
-entry, starting in the top left and raster scanning left to right then
-top to bottom. Denote the~$(m,n)$-th entries of~$\Psi$ and~$X$
-by~$\psi_{mn}$ and~${x}_{mn}$, respectively.
-
-The first entry is given by, $x_{11} = \psi_{11}$.  As we work left to
-right in the first row, the ``remaining stick'' length decreases as we
-add new entries. This reflects the row normalization constraints.
-Thus,
-\begin{align}
-  x_{1n} &= \psi_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
-  x_{1N} &= 1 - \sum_{n=1}^{N-1} x_{1n}
-\end{align}
-So far, this is exactly as in the stick breaking construction
-above. However, the remaining rows must now conform to both row- and
-column-constraints. That is,
-\begin{align}
-x_{mn} &\leq 1- \sum_{k=1}^{n-1} x_{mk} & & \text{(row sum)} \\
-x_{mn} &\leq 1- \sum_{k=1}^{m-1} x_{kn} & & \text{(column sum)}.
-\end{align}
-Moreover, there is also a lower bound on~$x_{mn}$. This entry must
-claim enough of the stick such that what is leftover ``fits'' within
-the confines imposed by subsequent column sums. That is, each column
-sum places an upper bound on the amount that may be attributed to any
-subsequent entry. If the remaining stick exceeds the sum of these
-upper bounds, the matrix will not be doubly stochastic.  Thus,
-\begin{align}
-\underbrace{1 - \sum_{k=1}^n x_{mk}}_{\text{remaining stick}}
-  &\leq \underbrace{\sum_{j=n+1}^N (1- \sum_{k=1}^{m-1} x_{kj})}_{
-    \text{remaining upper bounds}}.
-\end{align}
-Rearranging terms, we have,
-\begin{align}
-x_{mn} &\geq 1- \sum_{k=1}^{n-1} x_{mk} - \sum_{j=n+1}^N (1- \sum_{k=1}^{m-1} x_{kj}) \\
-&= 1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj}
-\end{align}
-Of course, this bound is only relevant if the right hand side is greater than zero.
-Taken together,~$x_{mn}$ is bounded by,
-\begin{align}
-\ell_{mn} &\leq x_{mn} \leq u_{mn} \\
-\ell_{mn} &\triangleq \max \left \{0, \, 1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj} \right \}
-\\
-u_{mn} &\triangleq 
-\min \left \{1- \sum_{k=1}^{n-1} x_{mk}, \,
-1- \sum_{k=1}^{m-1} x_{kn} \right\}.
-\end{align}
-Thus, we define,
-\begin{align}
-  x_{mn} &= \ell_{mn} + (\psi_{mn} (u_{mn} - \ell_{mn}).
-\end{align}
-
-The inverse transformation from~$X$ to $\Psi$ is analogous.
-We start by computing~$\psi_{11}$ and then progressively compute
-upper and lower bounds and set,
-\begin{align}
-\psi_{mn} &= \frac{x_{mn} - \ell_{mn}}{u_{mn} - \ell_{mn}}.
-\end{align}
-
-
-\subsection{Rounding toward permutation matrices}
-\label{sub:rounding}
-The rounding-based relaxation immediately extends to the permutation
-case.  Now we simulate matrices~$\Psi \in \reals^{N \times N}$ and
-round them to the nearest permutation matrix by solving a matching
-problem.  This can be done in $O(N^3)$ time with the Hungarian
-algorithm~\citep{kuhn1955hungarian, munkres1957algorithms}.  As
-before, if~$\Psi$ is close to the Birkhoff polytope, its rounded
-value~$X$ will be as well.  Fortunately, it is easy to generate a
-distribution that concentrates near~$\mcB_N$.  We use the
-reparameterization~${\Psi = \widetilde{\Theta} + \Xi}$,
-where~${r(\vec(\Xi)) = \mathcal{N}(0, I)}$, and then we
-define~${\widetilde{\Theta}}$ to be the
-result of applying a fixed number of Sinkhorn propagation~\citep{knight2008sinkhorn} steps
-to the unconstrained matrix~$\Theta \in \reals^{N \times N}$.
-Since the Sinkhorn algorithm is differentiable, we can backpropagate
-gradients through this procedure~\citep[c.f.][]{adams2011ranking}.
-Note that even though Sinkhorn is non-invertible, we can still
-evaluate the density of~$q(X; \theta)$ since it applies \emph{before}
-the introduction of the random noise~$\Xi$. 
-
 
 \section{Results}
 \label{sec:results}
@@ -658,7 +729,7 @@ and the latent codes seem very comparable.
 
  \begin{figure*}[t] 
    \centering
-   \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
+   % \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
    \caption{Matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding Bhattacharya distance (BD), for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration. .}
    \label{fig:VAE}
 \end{figure*}
