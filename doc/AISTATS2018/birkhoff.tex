@@ -381,8 +381,6 @@ points inside or near the Birkhoff polytope such that as the
 temperature goes to zero, the distribution converges to an atomic
 density on permutation matrices.
 
-
- 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
 
@@ -469,7 +467,6 @@ respectively.  As a result, the doubly-stochastic output matrix~$X$ is
 pushed toward the extreme points of the Birkhoff polytope, the
 permutation matrices.
 
-
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
 
@@ -509,11 +506,9 @@ the vertices as~${\tau \to 0}$.
 \begin{figure*}[ht] 
    \centering
    \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
-   \caption{Matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding Bhattacharya distance (BD), for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration. .}
+   \caption{Synthetic matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding BD, for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration.}
    \label{fig:matching}
 \end{figure*}
-
-\subsection{Comparing these approaches}
 
 \todo[inline]{work in progress}
 
@@ -526,10 +521,24 @@ the vertices as~${\tau \to 0}$.
 \item Neither admits simple pmf on permutations (contrast with Gumbel-softax).
 \end{itemize}
 
-\subsection{Relation to discrete variational inference}
+\subsection{Extending relaxation-based variational inference to permutations}
 \label{sec:gumbel-softmax}
+With the above ingredients we can now conceive a variational inference routine for permutations, based on the analogy that the one hot vectors are to the probability simplex as permutation matrices are to the Birkhoff polytope, and by extending the relaxation-based framework presented in \cite{maddison2016concrete}.
 
-\todo[inline]{Discuss the relation to Gumbel-softmax and the analogy between relaxing one hot vectors to simplex and relaxing permutations to Birkhoff.}
+Namely, we consider a variational distribution $q(X;\theta)$ over `relaxed' permutations, and dependent on a temperature parameter. As our constructions are re-parameterizable; i.e.  ${X = g(\Psi)}$ and~${\Psi = f(\theta,
+  \Xi)}$, one has:
+  \begin{align}
+  \label{eq:expq}
+  \bbE_{r(\Xi)} \left[- \log q(g(f(\theta, \Xi)); \theta) \right]
+  &= \bbH(\Psi; \theta)+ \\
+ \nonumber  & \bbE_{r(\Xi)}\left[\log \left|\frac{\partial}{\partial \Psi} g(f(\theta, \Xi)) \right| \right].
+  \end{align}
+The entropy term in the r.h.s. can be computed explicitly, while the expectation can be approximated using Monte-Carlo samples. Also, in either relaxation equation \ref{eq:expq} is differentiable w.r.t. $\theta$
+
+Regarding the prior $p(X;\theta)$, we use the product of $N$ mixtures of two gaussians, around $[0,1]$. This prior weights high at points close to the vertices of the hypercube $[0,1]^N$; in particular, at permutation matrices. We benefit from this simple prior to penalize points that might be rather close to the center of the Birkhoff polytope than to permutations.
+
+We refer the reader to the supplement for proofs of the claims stated here.
+
 
 % First, let us consider an alternative reparameterization of the simplex
 % via a stick breaking construction. We break this into two steps. First,
@@ -619,93 +628,25 @@ the vertices as~${\tau \to 0}$.
 
 \section{Synthetic Experiments}
 \label{sec:synthetic}
-
-We are interested in two principal questions: (i) how sensitive
-are categorical relaxations to the choice of Gumbel-softmax,
-stick-breaking, or categorical reparameterization? (ii) how
-well can the stick-breaking and rounding reparameterizations
+We are interested in two principal questions: 
+ (i) how well can the stick-breaking and rounding re-parameterizations
 of the Birkhoff polytope approximate the true posterior distribution
-over permutations in tractable, low-dimensional cases? and (iii)
+over permutations in tractable, low-dimensional cases? and (ii)
 when, if ever, do our proposed continuous relaxations offer
-advantages over alternative approximate Bayesian permutation
-inference algorithms?  We will address these questions in turn,
-but first we discuss some practical details of our experimental
-protocol.
+advantages over alternative  Bayesian permutation
+inference algorithms?
 
-\subsection{Experimental protocol}
-\label{sub:protocol}
-
-\parhead{Continuous prior distributions. } Continuous relaxations requires
-re-thinking of the objective. As in \cite{maddison2016concrete}, we
-maximize a relaxed ELBO, for which we need to specify a new continuous
-prior $p(x)$ over the latent variables.
-\todo{this intro and sec 4.1 can be cut substantially}
-% Not sure I agree with all of this...
-% This prior should be peaked around
-% the discrete points for which inference is required, so we can
-% conceive the original discrete ELBO through a limiting process. Good,
-% peaked priors are necessary as the likelihood $p(y \given x)$ could be
-% large for points that have nothing to do with the original problem,
-% leading to nonsensical solutions. There is a trade-off, though: priors
-% that are too peaked will lead to multiple local maxima of the ELBO,
-% preventing optimizers from achieving the right solution. Then, for
-% optimal performance the prior has to be treated as a
-% hyperparameter.
-For the categorical experiments, we use a mixture of Gaussians around
-each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. For permutations, we use a mixture of Gaussians for each
-dimension,
-\begin{align}
-\label{eq:permprior}
-  p(X) &= \prod_{m=1}^N \prod_{n=1}^N
-  \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \eta^2) + \distNormal(x_{mn} \given 1, \eta^2 \right).
-  \end{align}
-Although this prior puts significant mass invalid points
-(e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
-
-\parhead{Estimating the ELBO. } Notice in all the relaxations
-discussed here,~${x = g(\psi)}$ and~${\psi = f(\theta,
-  \xi)}$. Moreover, both~$g$ and~$f$ are differentiable and invertible
-functions. Therefore, by the change of variable theorem and the law of
-the unconscious statistician:
-\begin{align}
-  \bbE_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right]
-  &= \bbH(\psi; \theta)+
-    \bbE_{r(\xi)}\left[\log \left|\frac{\partial}{\partial \psi} g(f(\theta, \xi)) \right| \right],
-  \end{align}
-where~$\bbH$ is the entropy and the term inside of the expectation
-is the (log Jacobian of $g$ evaluated at $\psi =
-f(\theta,\xi)$. Then, if this Jacobian and the entropy of $\psi$ are
-available we can consider an unbiased, Monte Carlo estimator for the ELBO.
-% \begin{align}
-%   \hat{\mcL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right].
-% \end{align}
-For example, in the rounding transformation, $g$ is piecewise linear
-\footnote{The set of discontinuities has Lebesgue measure zero so we
-  can still apply the change of variables theorem.} and
-$\log | \tfrac{\partial}{\partial \psi} g(f(\theta, \xi)) |= N\log
-\tau$. Also, if $\psi$ is Gaussian its entropy is given by
-$N\log(\eta^2 2\pi e )/2$.
-
+Before addressing those questions we start by comparing how the categorical counterparts \footnote{That is, simple stick breaking and rounding in the probability simplex} of our proposed distributions over permutations perform on a simple VAE task.  Results of this task may shed light on the usefulness of our proposed relaxations.
 
 \subsection{Variational Autoencoders (VAE) with categorical latent variables}
-We first demonstrate that our proposed relaxations are sensible for
-categorical random variables. We considered the density estimation
+We considered the density estimation
 task on MNIST digits, as in \cite{maddison2016concrete,
   jang2016categorical}, where observed digits are reconstructed from a
 latent discrete code. We used the continuous ELBO for training, and
 evaluated performance based on the marginal likelihood, estimated
 through the multi-sample variational objective of the discretized
-model (via rounding the samples $\pi$) with $m=1000$. We trained our
-models using ADAM in Tensorflow and compared against the method of
-\cite{jang2016categorical}, finding similar results (Table 1). Our
-best results were obtained with rounding. Our results suggest our
-methods provide a viable alternative to the Gumbel-Softmax. Fig
-~\ref{fig:VAE} shows a random selection of reconstructed images using
-the different approaches.  By eye, the reconstructed images
-and the latent codes seem very comparable. 
-
-
-
+model. We compared against the methods of
+\cite{jang2016categorical, maddison2016concrete}, finding similar (although slightly worse) results (Table 1). This difference may be intepreted as the price to be paid in order to enable an extension of a relaxed distribution over categories to permutations.  In the supplement more results on this task are available.
 \begin{table}[t]
   \caption{Summary of results in VAE}
   \label{tab:vae}
@@ -749,10 +690,12 @@ and the latent codes seem very comparable.
  The goal is to recover the posterior distribution over permutations.
  For~$N=6$, we can explicitly enumerate the~$N!=720$ permutations and
  compute the posterior exactly. 
+ 
+ As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\pi_0(i)|$} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
 
  \begin{table}[h]
-  \caption{Battacharya distances in the synthetic matching experiment for various methods and observation variances.}
-  \label{sample-table}
+  \caption{BDs in the synthetic matching experiment for various methods and observation variances.}
+  \label{table:BDs}
   \centering
   \begin{tabular}{lllll}
     & \multicolumn{4}{c}{Variance $\sigma^2$} \\
@@ -770,16 +713,12 @@ and the latent codes seem very comparable.
   \end{tabular}
 \end{table}
 
- We measured the discrepancy using the Battacharya distance (BD)
+ Using the Battacharya distance (BD) we measured the discrepancy
  between true posterior and an empirical estimate of the inferred
- posterior constructed by sampling from $q(X; \theta)$ and 'rounding'
- to the nearest permutation using the Hungarian algorithm. We found
- that our methods provide reasonable approximations to the true
- posterior, allowing us to represent more complex distributions over
- permutations than, e.g., simple Mallows distribution around the MAP
- estimate. Fig ~\ref{fig:synthetic} shows
- examples of true posteriors (ranked) and their approximations, and
- quantifies the discrepancies by the distribution of the BD.
+ posteriors: in our relaxations, by sampling from $q(X; \theta)$ and `rounding'
+ to the nearest permutation using the Hungarian algorithm. Likewise, for the Mallows distribution, we set $\phi_0$ to the MAP estimate, also through the Hungarian algorithm, and sampled using MCMC.
+ 
+ We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing experiment configurations (a), examples of inferred posteriors (b) and histogram of BD's histograms (c). These are complemented by Table \ref{table:BDs}
 
 
 \section{Inferring neuron identities in \textit{C. Elegans}}
@@ -787,7 +726,7 @@ and the latent codes seem very comparable.
 
 \begin{figure*}[ht]
   \centering
-  \includegraphics[width=5.in]{../figures/figure6.pdf} 
+  \includegraphics[width=1.0\textwidth]{../figures/figure6.pdf} 
   \caption{Problem setup. (a) Hermaphrodite C.elegans reference
     connectome (from \cite{varshney2011structural,wormatlas})
     consisting of 278 somatic neurons, merging two distinct types of
@@ -809,13 +748,13 @@ This difficulty offers fertile ground for the development of new methods. Recent
 We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method, in essence, embodies the criteria of manual data curation into an algorithm: the assumption is that neural identity could be resolved if enough information were available from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, given the neural system changes little from worm to worm, one should be able to combine recording from many individuals to resolves identity in hard cases, based on a hierarchical bayesian model.
 
 \subsection{Probabilistic Model}
-We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y_{t-1}+\varepsilon_t$ (Fig ~\ref{fig:connectome}d). Each of the $Y^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see appendix for further details).
+We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y_{t-1}+\varepsilon_t$ (Fig ~\ref{fig:connectome}d). Each of the $Y^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see supplement for further details).
 
 We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for $P_m$ we consider (at training) a relaxation based on the rounding approximation, and choose the prior defined in equation ~\ref{eq:permprior}. 
 
 \begin{figure*}[ht]
   \centering
-  \includegraphics[width=5.in]{../figures/figure7.pdf} 
+  \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
   \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy on identity inference as a function of number of worms, for two values of $\nu$ ($\nu=$ for circles and $\nu=$ for squares). (c) Same as in (b), but using sub-networks of different size and $M=5$ worms. (d) Two samples of permutation matrices (left) and their noisy, non-rounded version (right) during the execution of the algorithm. The average of many samples is also shown, and existence of grey spots indicate that the sampling procedure is indeed non-deterministic.}
 \label{fig:elegantresults}
 \end{figure*}
@@ -837,9 +776,10 @@ Our results provide evidence that permutation variational inference might provid
 
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
-
+\pagebreak 
 \appendix
-\section{Supplemental result on MNIST}
+\section*{Supplement}
+\subsection*{MNIST reconstructions}
 \begin{figure*}[t]
   \centering
   \includegraphics[width=5.in]{../figures/figure4.pdf} 
@@ -848,9 +788,8 @@ Our results provide evidence that permutation variational inference might provid
 \label{fig:synthetic}
 \end{figure*}
 
+\subsection*{Limit analysis for Stick-breaking}
 
-\section{Limit analysis}
-\subsection{Stick-breaking}
 Here we state and prove that for all the stick-breaking based distributions in the simplex we consider here; based on the Logistic-gaussian, Kumaraswamy, and Beta distributions, we can arrive to any point in the interior of the simple or any categorical distribution as limiting cases (in $\tau$). First, we need some lemmas.
 
 
@@ -925,8 +864,8 @@ In both cases convergence is in distribution.
 %For $\alpha$ with zero entries the above arguments has to be extended to permit a limit process where $\mu$ goes to either infinity or infinity. It is easy to see that by that extension it is possible to represent any $\alpha$ in the border of the simplex.
 
 
-\section{Deriving  the approximation for the ELBO}
-Here we show that $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = Entropy(\psi; \theta)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].$$
+\subsection*{Deriving  the approximation for the ELBO}
+Here we show that $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = \bbH(\psi; \theta) +E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].$$
 Indeed, first, by the `Law of the Unconscious Statistician' we have:
  $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = \E_{p(\psi;\theta)} \left[- \log q(F(\psi); \theta) \right]. $$
 Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain:\begin{align}
@@ -968,6 +907,79 @@ With these two ingredients, we can write the density of~${\Pi}$,
   p(\Pi \given \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {\Pi}} \right|
   \distNormal(f^{-1}({\Pi}) \given \mu, \diag(\eta^2))
 \end{align}
+
+\subsection*{Variational inference for Permutation details}
+
+The two constructions presented here are re-parameterizable, In both constructions presented here 
+the term  can be approximated by Monte-Carlo samples, explicitly and is differentiable with respect to $\theta$
+${X = g(\Psi)}$ and~${\Psi = f(\theta,
+  \xi)}$. Moreover, both~$g$ and~$f$ are differentiable and invertible
+functions. Therefore, by the change of variable theorem and the law of
+the unconscious statistician:
+
+
+\todo[inline]{Discuss the relation to Gumbel-softmax and the analogy between relaxing one hot vectors to simplex and relaxing permutations to Birkhoff.}
+
+
+To perform variational inference in this relaxed setup we proceed as in \cite{maddison2016concrete}, by replacing the original discrete objective by a relaxed one, which is sensible as long as all computations can be extended to the continuum. 
+%\subsection{Experimental protocol}
+\label{sub:protocol}
+
+\parhead{Continuous prior distributions.} 
+For Stick-breaking
+Continuous relaxations requires
+re-thinking of the objective. As in \cite{maddison2016concrete}, we
+maximize a relaxed ELBO, for which we need to specify a new continuous
+prior $p(x)$ over the latent variables.
+\todo{this intro and sec 4.1 can be cut substantially}
+% Not sure I agree with all of this...
+% This prior should be peaked around
+% the discrete points for which inference is required, so we can
+% conceive the original discrete ELBO through a limiting process. Good,
+% peaked priors are necessary as the likelihood $p(y \given x)$ could be
+% large for points that have nothing to do with the original problem,
+% leading to nonsensical solutions. There is a trade-off, though: priors
+% that are too peaked will lead to multiple local maxima of the ELBO,
+% preventing optimizers from achieving the right solution. Then, for
+% optimal performance the prior has to be treated as a
+% hyperparameter.
+For the categorical experiments, we use a mixture of Gaussians around
+each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. For permutations, we use a mixture of Gaussians for each
+dimension,
+\begin{align}
+\label{eq:permprior}
+  p(X) &= \prod_{m=1}^N \prod_{n=1}^N
+  \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \eta^2) + \distNormal(x_{mn} \given 1, \eta^2 \right).
+  \end{align}
+Although this prior puts significant mass invalid points
+(e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
+
+\parhead{Estimating the ELBO. } Notice in all the relaxations
+discussed here,~${x = g(\psi)}$ and~${\psi = f(\theta,
+  \xi)}$. Moreover, both~$g$ and~$f$ are differentiable and invertible
+functions. Therefore, by the change of variable theorem and the law of
+the unconscious statistician:
+\begin{align}
+  \bbE_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right]
+  &= \bbH(\psi; \theta)+
+    \bbE_{r(\xi)}\left[\log \left|\frac{\partial}{\partial \psi} g(f(\theta, \xi)) \right| \right],
+  \end{align}
+where~$\bbH$ is the entropy and the term inside of the expectation
+is the (log Jacobian of $g$ evaluated at $\psi =
+f(\theta,\xi)$. Then, if this Jacobian and the entropy of $\psi$ are
+available we can consider an unbiased, Monte Carlo estimator for the ELBO.
+% \begin{align}
+%   \hat{\mcL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right].
+% \end{align}
+For example, in the rounding transformation, $g$ is piecewise linear
+\footnote{The set of discontinuities has Lebesgue measure zero so we
+  can still apply the change of variables theorem.} and
+$\log | \tfrac{\partial}{\partial \psi} g(f(\theta, \xi)) |= N\log
+\tau$. Also, if $\psi$ is Gaussian its entropy is given by
+$N\log(\eta^2 2\pi e )/2$.
+
+
+
 
 Given the density and a differentiable mapping we can perform
 variational inference with stochastic optimization of the ELBO.
