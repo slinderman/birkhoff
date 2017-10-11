@@ -503,7 +503,7 @@ Gaussian random variable and its density is,
 In the zero-temperature limit we recover a discrete distribution on
 permutation matrices, and for~$\tau \in (0,1]$, the distribution is
 continuous on~$\reals^{N \times N}$, with density concentrating near
-the vertices.
+the vertices as~${\tau \to 0}$.
 
 
 \begin{figure*}[ht] 
@@ -634,10 +634,12 @@ protocol.
 
 \subsection{Experimental protocol}
 \label{sub:protocol}
+
 \parhead{Continuous prior distributions. } Continuous relaxations requires
 re-thinking of the objective. As in \cite{maddison2016concrete}, we
 maximize a relaxed ELBO, for which we need to specify a new continuous
 prior $p(x)$ over the latent variables.
+\todo{this intro and sec 4.1 can be cut substantially}
 % Not sure I agree with all of this...
 % This prior should be peaked around
 % the discrete points for which inference is required, so we can
