@@ -636,7 +636,7 @@ when, if ever, do our proposed continuous relaxations offer
 advantages over alternative  Bayesian permutation
 inference algorithms?
 
-Before addressing those questions we start by comparing how the categorical counterparts \footnote{That is, simple stick breaking and rounding in the probability simplex} of our proposed distributions over permutations perform on a simple VAE task.  Results of this task may shed light on the usefulness of our proposed relaxations.
+Before addressing those questions we start by comparing how the categorical counterparts \footnote{That is, simple stick breaking and rounding in the probability simplex.} of our proposed distributions over permutations perform on a simple VAE task.  Results of this task may shed light on the usefulness of our proposed relaxations.
 
 \subsection{Variational Autoencoders (VAE) with categorical latent variables}
 We considered the density estimation
@@ -646,7 +646,7 @@ latent discrete code. We used the continuous ELBO for training, and
 evaluated performance based on the marginal likelihood, estimated
 through the multi-sample variational objective of the discretized
 model. We compared against the methods of
-\cite{jang2016categorical, maddison2016concrete}, finding similar (although slightly worse) results (Table 1). This difference may be intepreted as the price to be paid in order to enable an extension of a relaxed distribution over categories to permutations.  In the supplement more results on this task are available.
+\cite{jang2016categorical, maddison2016concrete}, finding similar (although slightly worse) results (Table 1). This difference may be intepreted as the price to be paid in order to enable an extension of a relaxed distribution over categories, to permutations.  In the supplement more results on this task are available.
 \begin{table}[t]
   \caption{Summary of results in VAE}
   \label{tab:vae}
@@ -718,7 +718,7 @@ model. We compared against the methods of
  posteriors: in our relaxations, by sampling from $q(X; \theta)$ and `rounding'
  to the nearest permutation using the Hungarian algorithm. Likewise, for the Mallows distribution, we set $\phi_0$ to the MAP estimate, also through the Hungarian algorithm, and sampled using MCMC.
  
- We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing experiment configurations (a), examples of inferred posteriors (b) and histogram of BD's histograms (c). These are complemented by Table \ref{table:BDs}
+ We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing experiment configurations (a), examples of inferred posteriors (b) and histogram of BD's histograms (c). These histograms are complemented by Table \ref{table:BDs}.
 
 
 \section{Inferring neuron identities in \textit{C. Elegans}}
