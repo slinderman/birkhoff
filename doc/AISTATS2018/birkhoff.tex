@@ -340,7 +340,7 @@ matrices.
 \label{fig:transforms}
 \end{figure*}
 
-\subsection{Bayesian permutation inference}
+\subsection{Related Work}
 A number of previous works have considered approximate methods of
 posterior inference over the space of permutations.
 % When a point
@@ -471,121 +471,152 @@ permutation matrices.
 
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
-The rounding-based relaxation immediately extends to the permutation
-case.  Now we simulate matrices~$\Psi \in \reals^{N \times N}$ and
-round them to the nearest permutation matrix by solving a matching
-problem.  This can be done in $O(N^3)$ time with the Hungarian
-algorithm~\citep{kuhn1955hungarian, munkres1957algorithms}.  As
-before, if~$\Psi$ is close to the Birkhoff polytope, its rounded
-value~$X$ will be as well.  Fortunately, it is easy to generate a
-distribution that concentrates near~$\mcB_N$.  We use the
-reparameterization~${\Psi = \widetilde{\Theta} + \Xi}$,
-where~${r(\vec(\Xi)) = \mathcal{N}(0, I)}$, and then we
-define~${\widetilde{\Theta}}$ to be the
-result of applying a fixed number of Sinkhorn propagation~\citep{knight2008sinkhorn} steps
-to the unconstrained matrix~$\Theta \in \reals^{N \times N}$.
-Since the Sinkhorn algorithm is differentiable, we can backpropagate
-gradients through this procedure~\citep[c.f.][]{adams2011ranking}.
-Note that even though Sinkhorn is non-invertible, we can still
-evaluate the density of~$q(X; \theta)$ since it applies \emph{before}
-the introduction of the random noise~$\Xi$. 
 
-\section{Alternative relaxations for categorical random variables}
-\label{sec:alternative}
-Here we introduce two alternative ways of conceiving a relaxed version
-of a discrete random variable, both of which are amenable to the
-reparameterization trick. However, unlike the Gumbel-Softmax, these
-relaxations enable extensions to more complex combinatorial objects
-like permutations.
-
-\subsection{Stick-breaking transformations}
-First, let us consider an alternative reparameterization of the simplex
-via a stick breaking construction. We break this into two steps. First,
-we transform the noise and parameters to a point in the~${N-1}$ dimensional
-unit hypercube,
-\begin{align}
-  \xi &\sim r(\xi), & 
-  \psi & = f(\theta, \xi),
-\end{align}
-where~${\psi \in [0,1]^{N-1}}$. Then we transform the hypercube to~$\Delta_N$
-  via a stick-breaking transformation,
-\begin{align}
-  x_n = g_n(\psi)
-  &= \begin{cases}
-    \psi_1 & n=1, \\
-    \psi_n \left(1- \sum_{m=1}^{n-1} x_m \right) & 1 < n < N, \\
-    1- \sum_{n=1}^{N-1} x_n & n=N.
-    \end{cases}
-\end{align}
-The intermediate values~$\psi_n$ can seen as the fraction of the
-remaining ``stick'' of probability mass assigned to~${\pi}_n$.  In
-addition to its use in Bayesian nonparametrics, this type of
-transformation has been used in efficient MCMC algorithms for
-multinomial and categorical inference \citep{linderman2015dependent}.
-
-We focus on standard Gaussian noise~${r(\xi) = \mathcal{N}l(0,I)}$
-and we take~$f$ to be a logistic
-transformation~${\psi_n = \sigma((\mu_n + \eta_n \xi_n) / \tau)}$,
-where ${\sigma(u) = (1+e^{-u})^{-1}}$ is the logistic function
-and~$\tau$ is a \emph{temperature} parameter.  This
-\emph{logistic-normal stick breaking} transformation is parameterized
-by~${\theta = \{\mu_n, \eta_n\}_{n=1}^{N-1}}$, and it enjoys following
-properties: i)~the density of~$x$ can be expressed in closed form as a
-function of~$\mu_n$ and~$\eta_n^2$; ii)~the temperature~$\tau$
-controls how concentrated $p(x)$ is at the vertices of the simplex;
-iii)~with appropriate choices of parameters, in the limit
-~$\tau \to 0$ we can recover any categorial distribution, i.e., the
-density becomes concentrated on atoms at the~$N$ vertices; and iv)~as
-~$\tau \to \infty$, the density concentrates on a point in the
-interior of the simplex determined by the parameters. For all
-intermediate temperatures, the density is continuous on the simplex.
-
-Note that the logistic-normal stick breaking transformation one of
-many available. For example, we could take~$r$ and $f$ to be a
-reparameterization of the Kumaraswamy of beta distributions on the
-unit interval. The former is easily reparameterizable and the
-latter---which leads to the generalized Dirichlet distribution on the
-simplex---can be reparameterized following~\citet{naesseth2017reparameterization}. We include proofs of points (i-iv) and details of the Kumaraswamy and beta stick breaking constructions in the appendix.
-
-\subsection{Rounding transformations}
-Both the Gumbel-softmax and stick-breaking relaxations consider
-distributions on the simplex, and while this
-offers an intuitive interpretation, it is not strictly required.  For
-example, first consider a distribution on~$\psi \in \reals^N$. These
-points are the rounded to the nearest vertex of the simplex via the
-operator,
-\begin{align}
-  \mathrm{round}(\psi) &= \argmin_{e_n} \| \psi - e_n \|.
-\end{align}
-% This operator partitions~$\reals^N$ into ``Voronoi'' cells
-% centered on the~$N$ vertices,
-% \begin{align}
-%   V_n &=
-%         \left\{\psi \in \reals^N: \, 
-%         \| \psi - e_n \| \leq \| \psi - e_m \| \;
-%         \forall m \in 1, \ldots, N \right\}.
-% \end{align}
-Unfortunately this rounding operator is non-invertible and
-non-differentiable.  Thus, we instead consider a map that pulls a
-point towards its rounded value, by taking a convex combination
-between both. Specifically, we consider the following reparameterization:
-\begin{align}
-  \xi &\sim p(\xi), \\
-  \psi &= f(\theta, \xi), \\
-  x &=  \tau \psi + (1-\tau) \cdot \mathrm{round}(\psi) .
-\end{align}
+While relaxing permutations to the Birkhoff polytope is intuitively
+appealing, it is not strictly required.  For example, consider the
+following procedure for sampling a point \emph{near} the Birkhoff
+polytope:
+\begin{enumerate}[label=(\roman*)]
+\item Input a point~${M \in \reals_+^{N \times N}}$;
+\item Project~$M$ onto the Birkhoff polytope (approximately) using the Sinkhorn-Knopp algorithm;
+\item Sample a Gaussian random variable~$\Psi$ with mean~$\mathrm{proj}(M)$ and variance~$\Sigma$;
+\item Find the permutation matrix~${P^*(\Psi)}$ nearest to~$\Psi$ using the Hungarian algorithm;
+  and
+\item Return~${X = \tau \Psi + (1-\tau) P^*(\Psi)}$.
+\end{enumerate}
+This procedure implicitly defines a distribution over matrices~$X$.
+Steps (i) and (ii) involve differentiable transformations of
+parameter~$M$ to set the mean close to the Birkhoff polytope; the only
+challenge in computing the density~$p(X; M, \Sigma)$ stems from step
+(iv), since the rounding operation is not differentiable.  However,
+this operation is piecewise constant with discontinuities only at
+points that are equidistant from two or more permutation matrices---a
+set of measure zero.  In practice, we find that we can safely ignore
+these discontinuities and treat~$P^*(\Psi)$ as constant
+with respect to~$\Psi$.  Furthermore, note that~${P^*(\Psi) \equiv P^*(X)}$
+so that the inverse transformation is~${\Psi = \tau^{-1}X - \tau^{-1}(1-\tau) P^*(X)}$.  Taken together,~$X$ is a linear function of a
+Gaussian random variable and its density is,
+\begin{align*}
+  p(X; M, \Sigma) = \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} P^*(X); \, \mathrm{proj}(M), \Sigma \right).
+\end{align*}
 In the zero-temperature limit we recover a discrete distribution on
-the vertices. For~$\tau > 0$, the distribution is continuous
-on~$\reals^N$. If the distribution of~$\psi$ is concentrated
-near the simplex---e.g. if~$\theta$ is a point on the simplex
-and~$\xi$ is small, additive Gaussian noise---the rounded points
-will lie close to the simplex as well. Moreover, this technique
-is easily generalized to more complex discrete polytopes. 
-% Moreover, this approach can be generalized to arbitrary discrete we
-% can represent any arbitrary categorical distribution over one-hot
-% vectors. This is shown in the appendix.
+permutation matrices, and for~$\tau \in (0,1]$, the distribution is
+continuous on~$\reals^{N \times N}$, with density concentrating near
+the vertices.
 
-\section{Results}
+
+\begin{figure*}[ht] 
+   \centering
+   \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
+   \caption{Matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding Bhattacharya distance (BD), for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration. .}
+   \label{fig:matching}
+\end{figure*}
+
+\subsection{Comparing these approaches}
+
+\todo[inline]{work in progress}
+
+\begin{itemize}
+\item Stick-breaking relaxes to~$\mcB_N$ whereas rounding is to reals; Birkhoff is intuitively nice.
+\item Stick-breaking is~$O(N^2)$ whereas rounding requires~$O(N^3)$ Hungarian call.
+\item Stick-breaking admits exact density on Birkhoff whereas rounding has weird measure-zero concerns.
+\item Rounding easily handles constraints, hard to do this with stick breaking.
+\item Rounding is more ``symmetric'' whereas stick-breaking has an implicit dependence on ordering.  This can have some pathological effects on the resulting distribution.
+\item Neither admits simple pmf on permutations (contrast with Gumbel-softax).
+\end{itemize}
+
+\subsection{Implications for discrete variational inference}
+\label{sec:alternative}
+
+\todo[inline]{Discuss the relation to Gumbel-softmax and the analogy between relaxing one hot vectors to simplex and relaxing permutations to Birkhoff.}
+
+% First, let us consider an alternative reparameterization of the simplex
+% via a stick breaking construction. We break this into two steps. First,
+% we transform the noise and parameters to a point in the~${N-1}$ dimensional
+% unit hypercube,
+% \begin{align}
+%   \xi &\sim r(\xi), & 
+%   \psi & = f(\theta, \xi),
+% \end{align}
+% where~${\psi \in [0,1]^{N-1}}$. Then we transform the hypercube to~$\Delta_N$
+%   via a stick-breaking transformation,
+% \begin{align}
+%   x_n = g_n(\psi)
+%   &= \begin{cases}
+%     \psi_1 & n=1, \\
+%     \psi_n \left(1- \sum_{m=1}^{n-1} x_m \right) & 1 < n < N, \\
+%     1- \sum_{n=1}^{N-1} x_n & n=N.
+%     \end{cases}
+% \end{align}
+% The intermediate values~$\psi_n$ can seen as the fraction of the
+% remaining ``stick'' of probability mass assigned to~${\pi}_n$.  In
+% addition to its use in Bayesian nonparametrics, this type of
+% transformation has been used in efficient MCMC algorithms for
+% multinomial and categorical inference \citep{linderman2015dependent}.
+
+% We focus on standard Gaussian noise~${r(\xi) = \mathcal{N}l(0,I)}$
+% and we take~$f$ to be a logistic
+% transformation~${\psi_n = \sigma((\mu_n + \eta_n \xi_n) / \tau)}$,
+% where ${\sigma(u) = (1+e^{-u})^{-1}}$ is the logistic function
+% and~$\tau$ is a \emph{temperature} parameter.  This
+% \emph{logistic-normal stick breaking} transformation is parameterized
+% by~${\theta = \{\mu_n, \eta_n\}_{n=1}^{N-1}}$, and it enjoys following
+% properties: i)~the density of~$x$ can be expressed in closed form as a
+% function of~$\mu_n$ and~$\eta_n^2$; ii)~the temperature~$\tau$
+% controls how concentrated $p(x)$ is at the vertices of the simplex;
+% iii)~with appropriate choices of parameters, in the limit
+% ~$\tau \to 0$ we can recover any categorial distribution, i.e., the
+% density becomes concentrated on atoms at the~$N$ vertices; and iv)~as
+% ~$\tau \to \infty$, the density concentrates on a point in the
+% interior of the simplex determined by the parameters. For all
+% intermediate temperatures, the density is continuous on the simplex.
+
+% Note that the logistic-normal stick breaking transformation one of
+% many available. For example, we could take~$r$ and $f$ to be a
+% reparameterization of the Kumaraswamy of beta distributions on the
+% unit interval. The former is easily reparameterizable and the
+% latter---which leads to the generalized Dirichlet distribution on the
+% simplex---can be reparameterized following~\citet{naesseth2017reparameterization}. We include proofs of points (i-iv) and details of the Kumaraswamy and beta stick breaking constructions in the appendix.
+
+% \parhead{Rounding}
+% Both the Gumbel-softmax and stick-breaking relaxations consider
+% distributions on the simplex, and while this
+% offers an intuitive interpretation, it is not strictly required.  For
+% example, first consider a distribution on~$\psi \in \reals^N$. These
+% points are the rounded to the nearest vertex of the simplex via the
+% operator,
+% \begin{align}
+%   \mathrm{round}(\psi) &= \argmin_{e_n} \| \psi - e_n \|.
+% \end{align}
+% % This operator partitions~$\reals^N$ into ``Voronoi'' cells
+% % centered on the~$N$ vertices,
+% % \begin{align}
+% %   V_n &=
+% %         \left\{\psi \in \reals^N: \, 
+% %         \| \psi - e_n \| \leq \| \psi - e_m \| \;
+% %         \forall m \in 1, \ldots, N \right\}.
+% % \end{align}
+% Unfortunately this rounding operator is non-invertible and
+% non-differentiable.  Thus, we instead consider a map that pulls a
+% point towards its rounded value, by taking a convex combination
+% between both. Specifically, we consider the following reparameterization:
+% \begin{align}
+%   \xi &\sim p(\xi), \\
+%   \psi &= f(\theta, \xi), \\
+%   x &=  \tau \psi + (1-\tau) \cdot \mathrm{round}(\psi) .
+% \end{align}
+% In the zero-temperature limit we recover a discrete distribution on
+% the vertices. For~$\tau > 0$, the distribution is continuous
+% on~$\reals^N$. If the distribution of~$\psi$ is concentrated
+% near the simplex---e.g. if~$\theta$ is a point on the simplex
+% and~$\xi$ is small, additive Gaussian noise---the rounded points
+% will lie close to the simplex as well. Moreover, this technique
+% is easily generalized to more complex discrete polytopes. 
+% % Moreover, this approach can be generalized to arbitrary discrete we
+% % can represent any arbitrary categorical distribution over one-hot
+% % vectors. This is shown in the appendix.
+
+\section{Synthetic Experiments}
 \label{sec:results}
 
 We are interested in two principal questions: (i) how sensitive
@@ -671,40 +702,40 @@ the different approaches.  By eye, the reconstructed images
 and the latent codes seem very comparable. 
 
 
-\begin{table*}[t]
+
+\begin{table}[t]
   \caption{Summary of results in VAE}
-  \label{sample-table}
+  \label{tab:vae}
   \centering
-  \begin{tabular}{lllll}
-
-    %\multicolumn{4}{Method}                   \\
- 
-
-    & Gumbel-Softmax    & Concrete  & Rounding & Stick-breaking\\
-    \cmidrule{2-5}
-    - $\log p(x)$ & 106.7  &111.5 & 121.1   &119.8 \\
-        \bottomrule
-  \end{tabular}
-\end{table*}
-
-
-\begin{table*}[t]
-  \caption{Battacharya distances in the synthetic matching experiment}
-  \label{sample-table}
-  \centering
-  \begin{tabular}{llllllll}
-   & \multicolumn{1}{c}{Rounding} & \multicolumn{1}{c}{Stickbreaking} & \multicolumn{5}{c}{Mallows}\\
-    \cmidrule(lr){2-2} \cmidrule(lr){3-3} \cmidrule(lr){4-8}
-    &    & &   $\theta=0.1$ &  $\theta=1$ & $\theta=2$ & $\theta=5$ & $\theta=10$ \\
-    \midrule
-    $\sigma=0.1$     & .06 & .09  &.93 &.51& .23  & .08 &.08\\
-    $\sigma=0.25$     & .21 & .23 & .92 &.53 & .33&  .27 &.27\\
-     $\sigma=0.5$     & .32 & .41 & .89 &.61 & .53&  .54& .54\\
-     $\sigma=0.75$     & .38   & .55 & .85 &.71 & .69&  .72 &.72\\
-   
+  \begin{tabular}{ll}
+    \textbf{Method} & $- \log p(x)$ \\
+    \hline
+    Gumbel-Softmax    & 106.7 \\
+    Concrete  &  111.5\\
+    Rounding &  121.1 \\
+    Stick-breaking & 119. 8\\
     \bottomrule
   \end{tabular}
-\end{table*}
+\end{table}
+
+
+% \begin{table*}[t]
+%   \caption{Battacharya distances in the synthetic matching experiment}
+%   \label{sample-table}
+%   \centering
+%   \begin{tabular}{llllllll}
+%    & \multicolumn{1}{c}{Rounding} & \multicolumn{1}{c}{Stickbreaking} & \multicolumn{5}{c}{Mallows}\\
+%     \cmidrule(lr){2-2} \cmidrule(lr){3-3} \cmidrule(lr){4-8}
+%     &    & &   $\theta=0.1$ &  $\theta=1$ & $\theta=2$ & $\theta=5$ & $\theta=10$ \\
+%     \midrule
+%     $\sigma=0.1$     & .06 & .09  &.93 &.51& .23  & .08 &.08\\
+%     $\sigma=0.25$     & .21 & .23 & .92 &.53 & .33&  .27 &.27\\
+%      $\sigma=0.5$     & .32 & .41 & .89 &.61 & .53&  .54& .54\\
+%      $\sigma=0.75$     & .38   & .55 & .85 &.71 & .69&  .72 &.72\\
+   
+%     \bottomrule
+%   \end{tabular}
+% \end{table*}
 
  \subsection{Synthetic matching experiments}
  To assess the quality of our approximations for distributions over
@@ -715,6 +746,26 @@ and the latent codes seem very comparable.
  The goal is to recover the posterior distribution over permutations.
  For~$N=6$, we can explicitly enumerate the~$N!=720$ permutations and
  compute the posterior exactly. 
+
+ \begin{table}[h]
+  \caption{Battacharya distances in the synthetic matching experiment for various methods and observation variances.}
+  \label{sample-table}
+  \centering
+  \begin{tabular}{lllll}
+    & \multicolumn{4}{c}{Variance $\sigma^2$} \\
+    \cmidrule(lr){3-4} 
+    \textbf{Method} & $.1^2$ & $.25^2$ & $.5^2$ & $.75^2$ \\
+    \hline
+    Stick-breaking & .09 & .23 & .41 & .55 \\
+    Rounding & \textbf{.06} & \textbf{.21}  & \textbf{.32}  & \textbf{.38} \\
+    Mallows $(\theta=0.1)$ & .93 & .92 & .89  & .85 \\
+    Mallows $(\theta=0.5)$ & .51 & .53  & .61 & .71 \\
+    Mallows $(\theta=2)$ & .23 & .33 & .53  & .69 \\
+    Mallows $(\theta=5)$ & .08 & .27 & .54 & .72 \\
+    Mallows $(\theta=10)$ & .08 & .27 & .54  & .72 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
  We measured the discrepancy using the Battacharya distance (BD)
  between true posterior and an empirical estimate of the inferred
@@ -727,18 +778,25 @@ and the latent codes seem very comparable.
  examples of true posteriors (ranked) and their approximations, and
  quantifies the discrepancies by the distribution of the BD.
 
- \begin{figure*}[t] 
-   \centering
-   % \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
-   \caption{Matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding Bhattacharya distance (BD), for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration. .}
-   \label{fig:VAE}
-\end{figure*}
-\label{sec:vae}
 
-\subsection{Hierarchical permutation inference}
+\section{Inferring neuron identities in \textit{C. Elegans}}
 
 \label{sec:synth_celegans}
 
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=5.in]{../figures/figure6.pdf} 
+  \caption{Problem setup. (a) Hermaphrodite C.elegans reference
+    connectome (from \cite{varshney2011structural,wormatlas})
+    consisting of 278 somatic neurons, merging two distinct types of
+    synapses: chemical and electrical (gap junctions). (b) Example of
+    matrix $W$ consistent with the connectome information (only 14
+    neurons for visibility), (c) Distribution of neuron position in
+    the body, zero means head and one means tail. From
+    \cite{white1986structure,wormatlas} (d). Examples of the dynamical
+    system sampled from matrix $W$}
+  \label{fig:connectome}
+\end{figure*}
 
 We conclude by showing an application of our method to the problem of inference of identity in a dynamical system. This example is motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of particular interest for neuroscience, as its neural network is stereotypical from animal to animal. Recent efforts have focused on establishing a self-consistent, accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural}. This diagram --- the connectome --- is utimately represented as a graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C.elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we refer to as $\mathcal{C}$.
 
@@ -748,30 +806,12 @@ This difficulty offers fertile ground for the development of new methods. Recent
 
 We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method, in essence, embodies the criteria of manual data curation into an algorithm: the assumption is that neural identity could be resolved if enough information were available from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, given the neural system changes little from worm to worm, one should be able to combine recording from many individuals to resolves identity in hard cases, based on a hierarchical bayesian model.
 
-\subsubsection{Modeling details}
+\subsection{Probabilistic Model}
 We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y_{t-1}+\varepsilon_t$ (Fig ~\ref{fig:connectome}d). Each of the $Y^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see appendix for further details).
 
 We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for $P_m$ we consider (at training) a relaxation based on the rounding approximation, and choose the prior defined in equation ~\ref{eq:permprior}. 
 
-The true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$) is then approximated by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
-
-Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, relative positions of each neuron have been documented as numbers between zero and one \cite{white1986structure,wormatlas} , under the abstraction that a worm can be represented as one-dimensional object (Fig ~\ref{fig:connectome}c). Then, given this stablished data, the estimated position of all (or some) neurons, and a tolerance $\nu$, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than $\nu$. We then enforce that constrain during inference, by ensuring that $P_{m_{i,j}}=0$ if $D^m_{i,j}=0$. This can be easily done by multiplying by zero such entries in the parameter matrix $\widetilde{\Theta}$ described in ~\ref{sub:rounding}. Besides ease in inference,  this modeling choice greatly reduces the number of effective parameters of the model, promoting scalability. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
-\subsubsection{Results}
-We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a 'hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
-
-Results show that in our data our method outperforms each of the three baselines. This is illustrated in Fig ~\ref{fig:elegantresults}: Fig \ref{fig:elegantresults}a depicts convergence to a better solutions, for a certain parameter configuration. More conclusively, Fig \~ref{fig:elegantresults}b shows a clear dominance in our method when varying the number of neurons. Likewise, Fig \~ref{fig:elegantresults}c depicts a similar finding when varying the size of the network. Here, variational inference and MCMC perform equally well in a regime where there is enough certainty about neural identity (squares), but when location information is more imprecise variational inference does better. This suggests our method might be particularly useful to  profit from this kind of side information. 
-\subsubsection{Discussion}
-Our results provide evidence that permutation variational inference might provide a helpful tool for the inference of neural identity, as it allows to properly represent shared information across animals, and different degrees of certainty based on covariates. In order to apply it to real data it is necessary to consider more realistic models of neural dynamics, which are non-linear but might be well characterized, for example, by a set of atomic low-dimensional linear dynamical systems, each of one corresponding to a certain behavioral state  \cite{Kato2015}. The methodology developed in \cite{Linderman2016} seems particularly suitable to harness that increased level of complexity. \begin{figure*}[h!]
-  \centering
-  \includegraphics[width=5.in]{../figures/figure6.pdf} 
-  \caption{Problem setup. (a) Hermaphrodite C.elegans reference connectome (from \cite{varshney2011structural,wormatlas}) consisting of 278 somatic neurons, merging two distinct types of synapses: chemical and electrical (gap junctions). (b) Example of matrix $W$ consistent with the connectome information (only 14 neurons for visibility), (c) Distribution of neuron position in the body, zero means head and one means tail. From \cite{white1986structure,wormatlas}  (d). Examples of the dynamical system sampled from matrix $W$}
-\label{fig:connectome}
-\end{figure*}
-
-
-
-
-\begin{figure*}[h!]
+\begin{figure*}[ht]
   \centering
   \includegraphics[width=5.in]{../figures/figure7.pdf} 
   \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy on identity inference as a function of number of worms, for two values of $\nu$ ($\nu=$ for circles and $\nu=$ for squares). (c) Same as in (b), but using sub-networks of different size and $M=5$ worms. (d) Two samples of permutation matrices (left) and their noisy, non-rounded version (right) during the execution of the algorithm. The average of many samples is also shown, and existence of grey spots indicate that the sampling procedure is indeed non-deterministic.}
@@ -779,8 +819,20 @@ Our results provide evidence that permutation variational inference might provid
 \end{figure*}
 
 
+The true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$) is then approximated by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
 
-\clearpage
+Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, relative positions of each neuron have been documented as numbers between zero and one \cite{white1986structure,wormatlas} , under the abstraction that a worm can be represented as one-dimensional object (Fig ~\ref{fig:connectome}c). Then, given this stablished data, the estimated position of all (or some) neurons, and a tolerance $\nu$, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than $\nu$. We then enforce that constrain during inference, by ensuring that $P_{m_{i,j}}=0$ if $D^m_{i,j}=0$. This can be easily done by multiplying by zero such entries in the parameter matrix $\widetilde{\Theta}$ described in ~\ref{sub:rounding}. Besides ease in inference,  this modeling choice greatly reduces the number of effective parameters of the model, promoting scalability. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
+
+\subsection{Results}
+
+We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a 'hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
+
+Results show that in our data our method outperforms each of the three baselines. This is illustrated in Fig ~\ref{fig:elegantresults}: Fig \ref{fig:elegantresults}a depicts convergence to a better solutions, for a certain parameter configuration. More conclusively, Fig \~ref{fig:elegantresults}b shows a clear dominance in our method when varying the number of neurons. Likewise, Fig \~ref{fig:elegantresults}c depicts a similar finding when varying the size of the network. Here, variational inference and MCMC perform equally well in a regime where there is enough certainty about neural identity (squares), but when location information is more imprecise variational inference does better. This suggests our method might be particularly useful to  profit from this kind of side information. 
+
+
+\section{Discussion}
+Our results provide evidence that permutation variational inference might provide a helpful tool for the inference of neural identity, as it allows to properly represent shared information across animals, and different degrees of certainty based on covariates. In order to apply it to real data it is necessary to consider more realistic models of neural dynamics, which are non-linear but might be well characterized, for example, by a set of atomic low-dimensional linear dynamical systems, each of one corresponding to a certain behavioral state  \cite{Kato2015}. The methodology developed in \cite{Linderman2016} seems particularly suitable to harness that increased level of complexity. \
+
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
 
