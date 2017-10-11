@@ -146,15 +146,16 @@ scalable and efficient permutation inference algorithm.
 
 % Paper structure
 Section~\ref{sec:background} lays the necessary groundwork,
-introducing definitions, prior work on permutation inference, variational
-inference, and continuous relaxations.  Section~\ref{sec:permutation}
-presents our primary contribution: a pair of transformations that
-enable variational inference over doubly-stochastic matrices, and, in
-the zero-temperature limit, permutations, via stochastic variational
-inference.  In the process, we show how these transformations connect
-to recent work on discrete variational
-inference~\citep{maddison2016concrete, jang2016categorical}.
-Section~\ref{sec:results} presents a variety of experiments that
+introducing definitions, prior work on permutation inference,
+variational inference, and continuous relaxations.
+Section~\ref{sec:permutation} presents our primary contribution: a
+pair of transformations that enable variational inference over
+doubly-stochastic matrices, and, in the zero-temperature limit,
+permutations, via stochastic variational inference.  In the process,
+we show how these transformations connect to recent work on discrete
+variational inference~\citep{maddison2016concrete,
+  jang2016categorical}.  Sections~\ref{sec:synthetic}
+and~\ref{sec:celegans} presents a variety of experiments that
 illustrate the benefits of the proposed variational approach.
   
 \section{Background}
@@ -185,13 +186,13 @@ is defined by,
 These linear row- and column-normalization constraints
 restrict~$\mcB_N$ to a~${(N-1)^2}$ dimensional subset
 of~$\reals^{N \times N}$.  Despite these constraints, we have a number
-of efficient algorithms for working with these objects.
-\emph{Sinkhorn propagation}~\citep{sinkhorn1967concerning} projects the
-positive orthant onto~$\mcB_N$ by iteratively normalizing the rows and
-columns, and the \emph{Hungarian algorithm}~\citep{kuhn1955hungarian,
-  munkres1957algorithms} solves the minimum weight bipartite matching
-problem---optimizing a linear objective over the set of permutation
-matrices---in cubic time.
+of efficient algorithms for working with these objects.  The
+\emph{Sinkhorn-Knopp algorithm}~\citep{sinkhorn1967concerning}
+projects the positive orthant onto~$\mcB_N$ by iteratively normalizing
+the rows and columns, and the \emph{Hungarian
+  algorithm}~\citep{kuhn1955hungarian, munkres1957algorithms} solves
+the minimum weight bipartite matching problem---optimizing a linear
+objective over the set of permutation matrices---in cubic time.
 
 
 
@@ -286,11 +287,11 @@ reparameterization trick to high-dimensional discrete inference problems
 %   the possible values of~$x$ and compute the normalizing
 %   constant~$p(y) = \sum_x p(y, x)$.}
 via continuous relaxation~\citep{maddison2016concrete,
-  jang2016categorical, kusner2016gans}.  The key here is a ``temperature''
-knob that controls the degree of relaxation.  As we discuss below, our
-approach can be seen as an extension of these ideas to discrete
-inference problems with more complex structure, like permutation
-matrices.
+  jang2016categorical, kusner2016gans}.  The key here is a
+``temperature'' knob that controls the degree of relaxation.  In
+Section~\ref{sec:gumbel-softmax} we discuss how our approach extends
+these ideas to discrete inference problems with more complex
+structure, like permutation matrices.
 
 % These approaches are based on the following
 % observation: one-hot vectors~$x \in \{0,1\}^N$ can alternatively be
@@ -525,8 +526,8 @@ the vertices.
 \item Neither admits simple pmf on permutations (contrast with Gumbel-softax).
 \end{itemize}
 
-\subsection{Implications for discrete variational inference}
-\label{sec:alternative}
+\subsection{Relation to discrete variational inference}
+\label{sec:gumbel-softmax}
 
 \todo[inline]{Discuss the relation to Gumbel-softmax and the analogy between relaxing one hot vectors to simplex and relaxing permutations to Birkhoff.}
 
@@ -617,7 +618,7 @@ the vertices.
 % % vectors. This is shown in the appendix.
 
 \section{Synthetic Experiments}
-\label{sec:results}
+\label{sec:synthetic}
 
 We are interested in two principal questions: (i) how sensitive
 are categorical relaxations to the choice of Gumbel-softmax,
@@ -780,8 +781,7 @@ and the latent codes seem very comparable.
 
 
 \section{Inferring neuron identities in \textit{C. Elegans}}
-
-\label{sec:synth_celegans}
+\label{sec:celegans}
 
 \begin{figure*}[ht]
   \centering
