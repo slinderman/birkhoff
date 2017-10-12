@@ -515,7 +515,7 @@ resulting density.
 \begin{figure*}[ht] 
    \centering
    \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
-   \caption{Synthetic matching experiment results. The goal is to infer the lines that match squares to circles(a). Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding BD, for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration.}
+   \caption{Synthetic matching experiment results. The goal is to infer the lines that match squares to circles. (a) Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding BD, for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration.}
    \label{fig:synthetic}
 \end{figure*}
 
@@ -726,7 +726,7 @@ model. We compared against the methods of
  For~$N=6$, we can explicitly enumerate the~$N!=720$ permutations and
  compute the posterior exactly. 
  
- As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|$} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
+ As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|$.} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
 
  \begin{table}[h]
   \caption{Mean BDs in the synthetic matching experiment for various methods and observation variances.}
@@ -770,7 +770,7 @@ model. We compared against the methods of
     neurons for visibility), (c) Distribution of neuron position in
     the body, zero means head and one means tail. From
     \cite{white1986structure,wormatlas} (d). Examples of the dynamical
-    system sampled from matrix $W$}
+    system sampled from matrix $W$.}
   \label{fig:connectome}
 \end{figure*}
 
@@ -785,7 +785,7 @@ We prototype an alternative solution that bypasses the need for such sophisticat
 \subsection{Probabilistic Model}
 We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y^m_{t-1}+\varepsilon_t,\;\varepsilon_t\sim\mathcal{N}(0,I)$ (Fig ~\ref{fig:connectome}d). Each of the $Y_t^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see supplement for further details).
 
-We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for each of the $P_m$ use the machinery developed in section \ref{sec:permutation}, and we focus on the rounding approximation. 
+We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data.}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for each of the $P_m$ use the machinery developed in section \ref{sec:permutation}, and we focus on the rounding approximation. 
 Then, we approximate the true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$)  by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
 
 
