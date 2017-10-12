@@ -487,20 +487,22 @@ Steps (i) and (ii) involve differentiable transformations of
 parameter~$M$ to set the mean close to the Birkhoff polytope; the only
 challenge in computing the density~$p(X; M, \Sigma)$ stems from step
 (iv), since the rounding operation is not differentiable.  However,
-this operation is piecewise constant with discontinuities only at
-points that are equidistant from two or more permutation matrices---a
-set of measure zero.  In practice, we find that we can safely ignore
-these discontinuities and treat~$P^*(\Psi)$ as constant
-with respect to~$\Psi$.  Furthermore, note that~${P^*(\Psi) \equiv P^*(X)}$
-so that the inverse transformation is~${\Psi = \tau^{-1}X - \tau^{-1}(1-\tau) P^*(X)}$.  Taken together,~$X$ is a linear function of a
-Gaussian random variable and its density is,
+the rounding output only changes at points that are equidistant from
+two or more permutation matrices. In other words, rounding is a
+piecewise constant function of~$\Psi$ with discontinuities only at a
+set of points with zero measure. In practice, we find that we can
+safely ignore these discontinuities.  Furthermore, note
+that~${P^*(\Psi) \equiv P^*(X)}$ so that the inverse transformation
+is~${\Psi = \tau^{-1}X - \tau^{-1}(1-\tau) P^*(X)}$.  Taken
+together,~$X$ is a linear function of a Gaussian random variable and
+its density is,
 \begin{align*}
-  p(X; M, \Sigma) = \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} P^*(X); \, \mathrm{proj}(M), \Sigma \right).
+  p(X; M, \Sigma) = \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} P^*(X); \, \mathrm{proj}(M), \Sigma \right),
 \end{align*}
-In the zero-temperature limit we recover a discrete distribution on
-permutation matrices, and for~$\tau \in (0,1]$, the distribution is
-continuous on~$\reals^{N \times N}$, with density concentrating near
-the vertices as~${\tau \to 0}$.
+for~$X$ in the image of the rounding operation.  In the
+zero-temperature limit we recover a discrete distribution on
+permutation matrices, and for~$\tau \in (0,1]$, the density
+concentrates near the vertices as~${\tau \to 0}$.
 
 
 \begin{figure*}[ht] 
@@ -510,15 +512,41 @@ the vertices as~${\tau \to 0}$.
    \label{fig:synthetic}
 \end{figure*}
 
-\todo[inline]{work in progress}
+\subsection{Theoretical considerations}
+
+Stick-breaking and rounding each have their strengths and weaknesses.
+Here we list some of their conceptual differences, and in
+Section~\ref{sec:synthetic} we evaluate the two approaches
+empirically.
 
 \begin{itemize}
-\item Stick-breaking relaxes to~$\mcB_N$ whereas rounding is to reals; Birkhoff is intuitively nice.
-\item Stick-breaking is~$O(N^2)$ whereas rounding requires~$O(N^3)$ Hungarian call.
-\item Stick-breaking admits exact density on Birkhoff whereas rounding has weird measure-zero concerns.
-\item Rounding easily handles constraints, hard to do this with stick breaking.
-\item Rounding is more ``symmetric'' whereas stick-breaking has an implicit dependence on ordering.  This can have some pathological effects on the resulting distribution.
-\item Neither admits simple pmf on permutations (contrast with Gumbel-softax).
+\item Stick-breaking relaxes to~$\mcB_N$ whereas rounding relaxes
+  to~$\reals^{N \times N}$. The Birkhoff polytope is perhaps
+  intuitively nicer, but as long as the log probability accepts
+  real-valued matrices, either may suffice.
+  
+\item Rounding uses the~$O(N^3)$ Hungarian algorithm in its sampling
+  process, whereas stick-breaking is a feed-forward,~$O(N^2)$, process.
+  \todo{but isn't the Jacobian $O(N^4)$ in both cases?}
+  
+\item Stick-breaking is a bijective mapping from~$\reals^{(N-1) \times (N-1)}$ to~$\mcB_N$, whereas rounding maps~$\reals^{N \times N}$ to a subset of~$\reals^{N \times N}$.  Consider a simple example of rounding in the one-dimensional simplex, that is, the unit interval.  If~$\tau = 0.5$, the rounding operation maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$ (the midpoint is arbitrarily rounded up); the resulting density has zero measure in the interval~$[0.25, 0.75)$.  The same is true of rounding toward permutations: the inverse mapping is only defined for points within~$\tau$ of a permutation, and the resulting density is discontinuous at the boundaries. 
+  
+\item Rounding can easily incorporate constraints.  If certain
+  mappings are invalid, e.g.~${X_{mn} \equiv 0}$, they are given an
+  infinite cost in the Hungarian algorithm.\footnote{Constraints of
+    the form~$X_{m,n} \equiv 1$ simply reduce the dimension of the
+    inference problem.}  This is hard to do this with stick breaking
+  as it would change the computation of the upper and lower bounds.
+  
+\item Stick-breaking introduces a dependence on ordering.  While the
+  mapping is bijective, a desired distribution on the Birkhoff polytope
+  may require a complex distribution for~$\Psi$.  Rounding, by contrast,
+  is more ``symmetric'' in this regard.
+  
+\item Unfortunately, neither admits a simple probability mass function
+  on permutations, in contrast to the Gumbel-softmax
+  trick~\citep{maddison2016concrete, jang2016categorical}.  This
+  complicates the computation of the ELBO, as we discuss next.
 \end{itemize}
 
 \subsection{Extending relaxation-based variational inference to permutations}
