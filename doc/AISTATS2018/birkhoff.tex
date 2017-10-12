@@ -478,13 +478,14 @@ polytope:
 \item Input a point~${M \in \reals_+^{N \times N}}$;
 \item Project~$M$ onto the Birkhoff polytope (approximately) using the Sinkhorn-Knopp algorithm;
 \item Sample a Gaussian random variable~$\Psi$ with mean~$\mathrm{proj}(M)$ and variance~$\Sigma$;
-\item Find the permutation matrix~${P^*(\Psi)}$ nearest to~$\Psi$ using the Hungarian algorithm;
+\item Round~$\Psi$ to the nearest permutation matrix,~${P^*(\Psi)}$, using the Hungarian algorithm;
   and
 \item Return~${X = \tau \Psi + (1-\tau) P^*(\Psi)}$.
 \end{enumerate}
-This procedure implicitly defines a distribution over matrices~$X$.
+This procedure implicitly defines a distribution over matrices~$X$
+parameterized by~$M$ and $\Sigma$, which we will optimize.
 Steps (i) and (ii) involve differentiable transformations of
-parameter~$M$ to set the mean close to the Birkhoff polytope; the only
+parameter~$M$ to set the mean close to the Birkhoff polytope; the
 challenge in computing the density~$p(X; M, \Sigma)$ stems from step
 (iv), since the rounding operation is not differentiable.  However,
 the rounding output only changes at points that are equidistant from
@@ -493,17 +494,23 @@ piecewise constant function of~$\Psi$ with discontinuities only at a
 set of points with zero measure. In practice, we find that we can
 safely ignore these discontinuities.  Furthermore, note
 that~${P^*(\Psi) \equiv P^*(X)}$ so that the inverse transformation
-is~${\Psi = \tau^{-1}X - \tau^{-1}(1-\tau) P^*(X)}$.  Taken
+is~${\Psi = \tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau} P^*(X)}$.  Taken
 together,~$X$ is a linear function of a Gaussian random variable and
 its density is,
 \begin{align*}
   p(X; M, \Sigma) = \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} P^*(X); \, \mathrm{proj}(M), \Sigma \right),
 \end{align*}
-for~$X$ in the image of the rounding operation.  In the
+which is valid for~$X$ in the image of the rounding operation.  In the
 zero-temperature limit we recover a discrete distribution on
-permutation matrices, and for~$\tau \in (0,1]$, the density
-concentrates near the vertices as~${\tau \to 0}$.
+permutation matrices; otherwise the density concentrates near the
+vertices as~${\tau \to 0}$.
 
+Why is step (iii) necessary? Na\"ively, we could sample a matrix and
+project it with the Sinkhorn-Knopp algorithm; the problem is that we
+could not calculate the resulting density since the Sinkhorn-Knopp
+algorithm is non-invertible.  With the algorithm above, Sinkhorn-Knopp
+is employed \emph{prior} to sampling, allowing us to compute the
+resulting density.
 
 \begin{figure*}[ht] 
    \centering
