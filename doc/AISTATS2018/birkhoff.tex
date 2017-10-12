@@ -507,7 +507,7 @@ the vertices as~${\tau \to 0}$.
    \centering
    \includegraphics[width=1.0\textwidth]{../figures/figure8.pdf}
    \caption{Synthetic matching experiment results. (a)Examples of center locations (circles) and noisy samples (squares), at different noise variances. (b) For illustration, histograms of the true and inferred posterior distribution of identities along the corresponding BD, for selected cases. Histogram indexes are sorted from the highest to lowest actual posterior probability. Only the 20 most likely configurations are shown, and the 21st bar collapses the mass of all remaining configurations. (c) Population results (histograms) across 200 experiment repetitions of each parameter configuration.}
-   \label{fig:matching}
+   \label{fig:synthetic}
 \end{figure*}
 
 \todo[inline]{work in progress}
@@ -691,10 +691,10 @@ model. We compared against the methods of
  For~$N=6$, we can explicitly enumerate the~$N!=720$ permutations and
  compute the posterior exactly. 
  
- As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\pi_0(i)|$} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
+ As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|$} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
 
  \begin{table}[h]
-  \caption{BDs in the synthetic matching experiment for various methods and observation variances.}
+  \caption{Mean BDs in the synthetic matching experiment for various methods and observation variances.}
   \label{table:BDs}
   \centering
   \begin{tabular}{lllll}
@@ -718,7 +718,7 @@ model. We compared against the methods of
  posteriors: in our relaxations, by sampling from $q(X; \theta)$ and `rounding'
  to the nearest permutation using the Hungarian algorithm. Likewise, for the Mallows distribution, we set $\phi_0$ to the MAP estimate, also through the Hungarian algorithm, and sampled using MCMC.
  
- We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing experiment configurations (a), examples of inferred posteriors (b) and histogram of BD's histograms (c). These histograms are complemented by Table \ref{table:BDs}.
+ We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing sample experiment configurations (a), examples of inferred posteriors (b) and distribution of BD's (c). These histograms are summarized by Table \ref{table:BDs}.
 
 
 \section{Inferring neuron identities in \textit{C. Elegans}}
@@ -739,58 +739,59 @@ model. We compared against the methods of
   \label{fig:connectome}
 \end{figure*}
 
-We conclude by showing an application of our method to the problem of inference of identity in a dynamical system. This example is motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of particular interest for neuroscience, as its neural network is stereotypical from animal to animal. Recent efforts have focused on establishing a self-consistent, accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural}. This diagram --- the connectome --- is utimately represented as a graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C.elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we refer to as $\mathcal{C}$.
+Finally, we consider an application motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of interest for neuroscience, as its neural network changes little from animal to animal. Recent efforts have focused on establishing an accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural} --- a connectome --- that we represent as graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C. elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we name $\mathcal{C}$.
 
-The C.elegans, then, is particularly suited from investigating how patterns of neural activity gives rise to behaviour, a question that has been recently rigorously addressed \cite{Kato2015}. However, there, intensive manual data curation was needed in order to match neural recordings from calcium imaging techniques to actual neurons. This manual analysis was based on the study of joint patterns of neural activity, and the comparison of observed linear position of recorded neurons to a reference worm. In some cases, identity could not be exactly resolved, and only putative candidates were inferred. Unfortunately, besides this lack of certainty, this manual method does not scale if one requires to do inference in real time, or perhaps in experimental protocols that includes neural stimulation (e.g., using optogenetics \cite{Grosenick2015}). 
+The C. elegans, then, is particularly suited from investigating how neural activity gives rise to behaviour, a question that has been recently rigorously addressed \cite{Kato2015}. However, there, intensive manual data curation was needed to match neural recordings from calcium imaging techniques to actual neurons. This manual analysis was based on the study of joint patterns of neural activity, and the comparison of observed linear position of recorded neurons to a reference worm. Unfortunately, in some cases, identity could not be exactly resolved, and only putative candidates were inferred. 
 
-This difficulty offers fertile ground for the development of new methods. Recently, promising approaches \cite{Aoki2017} have illustrated the plausibility of using the Brainbow technology \cite{Livet2007} for such purposes, by genetically engineering worms to express fluorescent proteins. Then, neural identification is greatly facilitated in combination with standard microscopy techniques.
+This difficulty offers fertile ground for the development of new methods. Recently, promising approaches \cite{Aoki2017} have illustrated the plausibility of using the Brainbow technology \cite{Livet2007} for such purposes, by genetically engineering worms to express fluorescent proteins. 
 
-We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method, in essence, embodies the criteria of manual data curation into an algorithm: the assumption is that neural identity could be resolved if enough information were available from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, given the neural system changes little from worm to worm, one should be able to combine recording from many individuals to resolves identity in hard cases, based on a hierarchical bayesian model.
+We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method embodies the criteria of manual data curation into an algorithm: we resolve neural identity by integrating different sources of information from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, we combine information from many individuals to facilitate identity resolution in hard cases.
 
 \subsection{Probabilistic Model}
-We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y_{t-1}+\varepsilon_t$ (Fig ~\ref{fig:connectome}d). Each of the $Y^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see supplement for further details).
+We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y^m_{t-1}+\varepsilon_t,\;\varepsilon_t\sim\mathcal{N}(0,I)$ (Fig ~\ref{fig:connectome}d). Each of the $Y_t^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see supplement for further details).
 
-We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for $P_m$ we consider (at training) a relaxation based on the rounding approximation, and choose the prior defined in equation ~\ref{eq:permprior}. 
+We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for each of the $P_m$ use the machinery developed in section \ref{sec:permutation}, and we focus on the rounding approximation. 
+Then, we approximate the true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$)  by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
+
 
 \begin{figure*}[ht]
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
-  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy on identity inference as a function of number of worms, for two values of $\nu$ ($\nu=$ for circles and $\nu=$ for squares). (c) Same as in (b), but using sub-networks of different size and $M=5$ worms. (d) Two samples of permutation matrices (left) and their noisy, non-rounded version (right) during the execution of the algorithm. The average of many samples is also shown, and existence of grey spots indicate that the sampling procedure is indeed non-deterministic.}
+  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). $\nu$. (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $P^*(\Psi)$ (right) and their noisy, non-rounded versions $Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
 \label{fig:elegantresults}
 \end{figure*}
 
 
-The true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$) is then approximated by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
-
-Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, relative positions of each neuron have been documented as numbers between zero and one \cite{white1986structure,wormatlas} , under the abstraction that a worm can be represented as one-dimensional object (Fig ~\ref{fig:connectome}c). Then, given this stablished data, the estimated position of all (or some) neurons, and a tolerance $\nu$, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than $\nu$. We then enforce that constrain during inference, by ensuring that $P_{m_{i,j}}=0$ if $D^m_{i,j}=0$. This can be easily done by multiplying by zero such entries in the parameter matrix $\widetilde{\Theta}$ described in ~\ref{sub:rounding}. Besides ease in inference,  this modeling choice greatly reduces the number of effective parameters of the model, promoting scalability. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
+Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, we utilize previously documented positions of each neuron as numbers between zero and one \cite{white1986structure,wormatlas} (under the abstraction that a worm can be represented as one-dimensional object, see Fig ~\ref{fig:connectome}c). Then, given reported positions of all (or some) neurons, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than a tolerance $\nu$. We can enforce this constrain during inference, by zeroing corresponding entries in the parameter matrix $M$ described in ~\ref{sub:rounding}.  This modeling choice greatly reduces the number parameters of the model, and facilitates inference. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
 
 \subsection{Results}
 
-We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a 'hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
+We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a `hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
 
-Results show that in our data our method outperforms each of the three baselines. This is illustrated in Fig ~\ref{fig:elegantresults}: Fig \ref{fig:elegantresults}a depicts convergence to a better solutions, for a certain parameter configuration. More conclusively, Fig \~ref{fig:elegantresults}b shows a clear dominance in our method when varying the number of neurons. Likewise, Fig \~ref{fig:elegantresults}c depicts a similar finding when varying the size of the network. Here, variational inference and MCMC perform equally well in a regime where there is enough certainty about neural identity (squares), but when location information is more imprecise variational inference does better. This suggests our method might be particularly useful to  profit from this kind of side information. 
+As shown in Fig \ref{fig:elegantresults}, our method outperforms each baseline: specifically,  first, Fig \ref{fig:elegantresults}a illustrates convergence to a better solution for a certain parameter configuration. More conclusively, Fig ~\ref{fig:elegantresults}b and  Fig ~\ref{fig:elegantresults}c shows that our method outperforms alternatives when there is much uncertainty on neural position; i.e, when there are many possible candidates (large $\nu$), and where only a small proportion of neurons are known with certitude. Fig ~\ref{fig:elegantresults}c also shows that we indeed obtain benefits from combining information of many worms (although the same applies to MCMC). 
 
-
+Altogether, these results indicate our method enables a more efficient use of information than MCMC. This might seem striking (our method is an approximation), but can be explained: MCMC proposals for permutations are too greedy and in practice lead to convergence to bad local optima. On the other hand, our parameterization allow to more freely sample the parameter space. This is observed in figure  ~\ref{fig:elegantresults}d: variability of permutation samples is high during iterations, but eventually decays to asymptotic values after more certainty of the true permutation has been accumulated.
 \section{Discussion}
 Our results provide evidence that permutation variational inference might provide a helpful tool for the inference of neural identity, as it allows to properly represent shared information across animals, and different degrees of certainty based on covariates. In order to apply it to real data it is necessary to consider more realistic models of neural dynamics, which are non-linear but might be well characterized, for example, by a set of atomic low-dimensional linear dynamical systems, each of one corresponding to a certain behavioral state  \cite{Kato2015}. The methodology developed in \cite{Linderman2016} seems particularly suitable to harness that increased level of complexity. \
-
+2.3 3.5 11
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
 \pagebreak 
 \appendix
 \section*{Supplement}
 \subsection*{MNIST reconstructions}
+In figure \ref{fig:VAE} we show some MNIST  reconstructions using Gumbel-Softmax, stick-breaking and rounding reparameterizations. In all the three cases reconstructions are reasonably accurate, and there is diversity in reconstructions.
 \begin{figure*}[t]
   \centering
   \includegraphics[width=5.in]{../figures/figure4.pdf} 
   \caption{Examples of true and reconstructed digits from their corresponding random codes using with $N=20$ categorical variables with $K=10$ possible values.
   }
-\label{fig:synthetic}
+\label{fig:VAE}
 \end{figure*}
 
 \subsection*{Limit analysis for Stick-breaking}
 
-Here we state and prove that for all the stick-breaking based distributions in the simplex we consider here; based on the Logistic-gaussian, Kumaraswamy, and Beta distributions, we can arrive to any point in the interior of the simple or any categorical distribution as limiting cases (in $\tau$). First, we need some lemmas.
+Here we state and prove that for  the stick-breaking we consider here, we can arrive to either arbitrary points in the i) simplex or ii) to any categorical distribution as limiting cases (in the temperature).  First, we need some lemmas.
 
 
 \textbf{Lemma 1.}  The following statements are true:
@@ -798,7 +799,7 @@ Here we state and prove that for all the stick-breaking based distributions in t
 \item the degenerate case where  $z_k$ are Bernoulli with parameter $p_k(\theta) \in (0,1)$ leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$; i.e, $\pi$ is categorical. We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
 \begin{align}
 \label{eq:onehotprob}
-P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_i(\theta)) p_k(\theta)  \;\; \text{for } k=2, \ldots, K-1, \quad P(\pi_K =1) = \prod_{i=1}^{K-1} (1-p_i(\theta)).
+\nonumber P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_i(\theta)) p_k(\theta)  \;\; \ k=2, \ldots, K-1,\\  \nonumber & P(\pi_K =1) = \prod_{i=1}^{K-1} (1-p_i(\theta)).
 \end{align}
 
 Moreover, if for each index $k$ any parameter of the Bernoulli variable $z_k$ can be realized through appropriate choice of $\theta$, then any categorical distribution can be realized.
@@ -826,26 +827,11 @@ Now we can state our results:
 
 Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(0,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero, from zero to $1-p$, and at one, from $1-p$ to 1. As convergence occurs at all continuity points (the interval $(0,1)$), we conclude (recall, $1-p= \Phi(-K)\rightarrow \Phi(K)=p$). Notice that the above representation only allows  to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
 
-\textbf{Lemma 3.} If $z=\mathcal{K}(a,b)$: \begin{enumerate}
-\item in the limit $a,b \rightarrow $  we converge to deterministc $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence.
-\item In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. 
-\end{enumerate}
-In both cases convergence is in probability.
-\textit{Proof}: A proof can be found in \cite{mitnik2013kumar}
-
-\textbf{Lemma 4.} If $z=Beta(a,b)$: \begin{enumerate}
-\item in the limit $a,b \rightarrow \infty $  we converge to deterministc $p$, provided that $p=bB\left(1+\frac{1}{a},b\right)$ along the limiting sequence.
-\item In the limit $a,b\rightarrow 0$ we obtain convergence to a Bernoulli random variable with parameter $p$, provided the same condition involving $p,a,b$ holds. 
-\end{enumerate}
-In both cases convergence is in distribution.
-
-\textbf{Proposition.} In all the discussed cases of re-parameterizations of the simplex via stick-breaking, arbitrary categorical distributions can be obtained in the low-temperature limit. Also, in the high-temperature convergence is to certain point(s) in the interior of the simplex.
+\textbf{Proposition.} For the stick-breaking construction, any arbitrary distribution can be realized in the low-temperature limit. Also, in the high-temperature limit convergence is to certain point(s) in the interior of the simplex.
 
 \textit{Proof}: Consider each distribution separately
-\begin{enumerate}
-\item For the logistic-normal re-parameterization $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low temperature case use Lemma 2 (b) by the always available representation  $K= \frac{\mu}{\eta^2}$and conclude by Lemma 1(b). In the high temperature case convergence is to the point $\pi = \mathcal{SB}(0.5,0.5,\ldots, 0.5)$.
-\item For Kumaraswamy $z_k=\mathcal{K}(a_k,b_k)$ the argument is similar, but here the temperature can only be defined implicitly through sequences of parameters $(a_k,b_k)$ converging to either $\infty$ or 0 along a sequence with fixed $p_k=b_kB\left(1+\frac{1}{a_k},b_k\right)$. Then in the low temperature case we conclude by Lemma 3(b) and Lemma 1(b). In the hig-temperature case we converge to the point $SB(p_1,\ldots p_{k-1}$
-\item For the Beta $z_k\sim Beta(\frac{a_k}{\tau},\frac{b_k}{\tau})$ low-temperature leads to convergence to $z_k$ Bernoulli with parameter $a_k/(a_k+b_k)$ and we conclude from Lemma 4(b) and Lemma 1(b). For high temperatures, convergence is to the point $\mathcal{SB}(a_k/(a_k+b_k),\ldots,a_{k-1}/(a_{k-1}+b_{k-1}))$.  \end{enumerate}
+
+We have $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low temperature case use Lemma 2 (b) by the always available representation  $K= \frac{\mu}{\eta^2}$and conclude by Lemma 1(b). In the high temperature case convergence is to the point $\pi = \mathcal{SB}(0.5,0.5,\ldots, 0.5)$.
 
 
 %\subsection{Rounding}
@@ -864,135 +850,92 @@ In both cases convergence is in distribution.
 %For $\alpha$ with zero entries the above arguments has to be extended to permit a limit process where $\mu$ goes to either infinity or infinity. It is easy to see that by that extension it is possible to represent any $\alpha$ in the border of the simplex.
 
 
-\subsection*{Deriving  the approximation for the ELBO}
-Here we show that $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = \bbH(\psi; \theta) +E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].$$
-Indeed, first, by the `Law of the Unconscious Statistician' we have:
- $$\E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right] = \E_{p(\psi;\theta)} \left[- \log q(F(\psi); \theta) \right]. $$
-Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain:\begin{align}
-q(F(\psi); \theta) & = p(F^{-1}(\pi) ;\theta)  |DF ^{-1}(\pi) | \\
- & = p(\psi;\theta) | DF (\psi) | ^{-1}.
- \end{align}
- To conclude we use once more the Law of the Unconscious Statistician:
- \begin{align}
- \E_{p(\xi)} \left[- \log q(F(g(\theta, \xi)); \theta) \right]  &= \E_{p(\psi;\theta)}\left[ - \log p(\psi;\theta)\right] +   \E_{p(\psi;\theta)}\left[\log | DF(\psi)|\right] \\
- &= Entropy(\psi; \theta)+E_{p(\xi)}\left[\log | DF(g(\theta, \xi))|\right].\end{align}
- 
- Notice $R^Z$ is a piecewise constant function, as maps each $V^\mathcal{P}_{m}$ to $p_m$
-
-Notice that these bounds only depend on values of~${\Pi}$ that
-have already been computed; i.e., those that are above or to the left of
-the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~${\Pi}$
-is feed-forward according to this ordering.  Consequently, the
-Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} \Pi$,
-is lower triangular, and its determinant is the product of its diagonal,
-\begin{align}
-\left| \frac{\mathrm{d} \Psi } {\mathrm{d} \Pi} \right|
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
-\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
-\left( \frac{1}{u_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
-\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
-\end{align}
-
-With these two ingredients, we can write the density of~${\Pi}$,
-\begin{align}
-  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
-  \\
-  {\Pi} &= f(\Psi) \\
-  \implies
-  p(\Pi \given \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {\Pi}} \right|
-  \distNormal(f^{-1}({\Pi}) \given \mu, \diag(\eta^2))
-\end{align}
-
 \subsection*{Variational inference for Permutation details}
 
-The two constructions presented here are re-parameterizable, In both constructions presented here 
-the term  can be approximated by Monte-Carlo samples, explicitly and is differentiable with respect to $\theta$
-${X = g(\Psi)}$ and~${\Psi = f(\theta,
-  \xi)}$. Moreover, both~$g$ and~$f$ are differentiable and invertible
-functions. Therefore, by the change of variable theorem and the law of
-the unconscious statistician:
-
-
-\todo[inline]{Discuss the relation to Gumbel-softmax and the analogy between relaxing one hot vectors to simplex and relaxing permutations to Birkhoff.}
-
-
-To perform variational inference in this relaxed setup we proceed as in \cite{maddison2016concrete}, by replacing the original discrete objective by a relaxed one, which is sensible as long as all computations can be extended to the continuum. 
-%\subsection{Experimental protocol}
-\label{sub:protocol}
-
-\parhead{Continuous prior distributions.} 
-For Stick-breaking
+\subsection*{Continuous prior distributions.} 
 Continuous relaxations requires
 re-thinking of the objective. As in \cite{maddison2016concrete}, we
 maximize a relaxed ELBO, for which we need to specify a new continuous
-prior $p(x)$ over the latent variables.
-\todo{this intro and sec 4.1 can be cut substantially}
-% Not sure I agree with all of this...
-% This prior should be peaked around
-% the discrete points for which inference is required, so we can
-% conceive the original discrete ELBO through a limiting process. Good,
-% peaked priors are necessary as the likelihood $p(y \given x)$ could be
-% large for points that have nothing to do with the original problem,
-% leading to nonsensical solutions. There is a trade-off, though: priors
-% that are too peaked will lead to multiple local maxima of the ELBO,
-% preventing optimizers from achieving the right solution. Then, for
-% optimal performance the prior has to be treated as a
-% hyperparameter.
-For the categorical experiments, we use a mixture of Gaussians around
-each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. For permutations, we use a mixture of Gaussians for each
+prior $p(x)$ over the latent variables. Moreover, it is critical to conceive sensible priors for permutations, that could serve in a variational inference routine to penalize configurations that are away from permutation matrices (i.e. close to the barycenter of the Brikhoff polytope).
+
+For our categorical experiment on MNIST we use a mixture of Gaussians around
+each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. 
+This can be extended to permutations, where use a mixture of Gaussians for each
 dimension,
 \begin{align}
 \label{eq:permprior}
-  p(X) &= \prod_{m=1}^N \prod_{n=1}^N
+  \nonumber p(X) &= \prod_{m=1}^N \prod_{n=1}^N
   \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \eta^2) + \distNormal(x_{mn} \given 1, \eta^2 \right).
   \end{align}
 Although this prior puts significant mass invalid points
 (e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
 
-\parhead{Estimating the ELBO. } Notice in all the relaxations
-discussed here,~${x = g(\psi)}$ and~${\psi = f(\theta,
-  \xi)}$. Moreover, both~$g$ and~$f$ are differentiable and invertible
-functions. Therefore, by the change of variable theorem and the law of
-the unconscious statistician:
-\begin{align}
-  \bbE_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right]
-  &= \bbH(\psi; \theta)+
-    \bbE_{r(\xi)}\left[\log \left|\frac{\partial}{\partial \psi} g(f(\theta, \xi)) \right| \right],
-  \end{align}
-where~$\bbH$ is the entropy and the term inside of the expectation
-is the (log Jacobian of $g$ evaluated at $\psi =
-f(\theta,\xi)$. Then, if this Jacobian and the entropy of $\psi$ are
-available we can consider an unbiased, Monte Carlo estimator for the ELBO.
-% \begin{align}
-%   \hat{\mcL}(\theta) = Entropy(\psi) +  \frac{1}{L}\sum_{l=1}^L \left[ \log p(y,  g(\theta, \xi_l) ) +  \log |DF(g(\theta, \xi_l)|\right].
-% \end{align}
-For example, in the rounding transformation, $g$ is piecewise linear
+\subsection*{Deriving the approximation for the ELBO}
+Here we show that if ~${x = g(\psi)}$ and~${\psi = f(\theta,
+  \xi)}$ then \begin{align} \nonumber
+\E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right] = & \bbH(\psi; \theta) +\\ \nonumber & E_{r(\xi)}\left[\log | Dg(f(\theta, \xi))|\right].\end{align}
+Indeed, first, by the `Law of the Unconscious Statistician' we have:
+ $$\E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right] = \E_{r(\psi;\theta)} \left[- \log q(g(\psi); \theta) \right]. $$
+Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain:\begin{align}
+\nonumber q(g(\psi); \theta) & = p(g^{-1}(\pi) ;\theta)  |Dg ^{-1}(\pi) | \\ \nonumber
+ & = p(\psi;\theta) | Dg (\psi) | ^{-1}.
+ \end{align}
+ To conclude we use once more the Law of the Unconscious Statistician:
+ \begin{align}
+\nonumber  \E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right]  &= \E_{r(\psi;\theta)}\left[ - \log p(\psi;\theta)\right] +   \\ & \nonumber \E_{r(\psi;\theta)}\left[\log | Dg(\psi)|\right] \\ \nonumber
+ &= \bbH(\psi; \theta)+ \\ \nonumber & E_{r(\xi)}\left[\log | Dg(f(\theta, \xi))|\right].\end{align}
+ 
+
+\subsection*{Estimating the ELBO} 
+Here we describe how to compute each of terms of the above equations, needed for ELBO computations. First, as $\Psi$ is gaussian for both rounding and stick-breaking, entropy computation is straightforward (and equal to $N\log(\eta^2 2\pi e )/2$). 
+
+Notice, however, that for stick-breaking we need to take $\Psi$ as being the random variable before applying the logistic function $\sigma$. We apply this convention in the following, to maintain the analogy between stick-breaking and rounding.
+
+The second term is estimated using Monte-Carlo samples. 
+
+\subsubsection*{Rounding}
+
+ $g$ is piecewise linear
 \footnote{The set of discontinuities has Lebesgue measure zero so we
-  can still apply the change of variables theorem.} and
+  can still apply the change of variables theorem.}. Therefore, 
 $\log | \tfrac{\partial}{\partial \psi} g(f(\theta, \xi)) |= N\log
-\tau$. Also, if $\psi$ is Gaussian its entropy is given by
-$N\log(\eta^2 2\pi e )/2$.
+\tau$. 
 
 
+\subsubsection*{Stick-breaking}
 
-
-Given the density and a differentiable mapping we can perform
-variational inference with stochastic optimization of the ELBO.
-We define a distribution over doubly stochastic matrices as a
-reparameterization of a multivariate Gaussian distribution
-over~$\Psi$. We can estimate gradients via the reparameterization
-trick.
-
-It is important to note that the transformation is only piecewise
+It is important to note that the transformation $\Psi\rightarrow X$ only piecewise
 continuous: the function is not differentiable at the points where
 the bounds change; for example, when changing~$\Psi$ causes the
 active upper bound to switch from the row to the column constraint
-or vice versa.  I think we can argue that these discontinuities
-will not have a severe effect on our stochastic gradient algorithm.
+or vice versa.  
 
+Notice that these bounds only depend on values of~$X$ that
+have already been computed; i.e., those that are above or to the left of
+the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~$X$
+is feed-forward according to this ordering.  Consequently, the
+Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} X$,
+is lower triangular, and its determinant is the product of its diagonal,
+\begin{align}
+\nonumber \left| \frac{\mathrm{d} \Psi} {\mathrm{d} X} \right|
+&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
+\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
+\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
+\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\left( \frac{1}{u_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
+\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
+\end{align}
+
+With these two ingredients, we can write the density of~${\Pi}$,
+\begin{align}
+ \nonumber  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
+  \\
+  \nonumber {X} &= f(\Psi) \\
+  \implies
+ \nonumber  p(X \given \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {X}} \right|
+\nonumber  \distNormal(f^{-1}({X}) \given \mu, \diag(\eta^2))
+\end{align}
 \end{document}
