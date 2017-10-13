@@ -81,23 +81,26 @@
 
 % Take 2 -- significantly shorter
 \begin{abstract}
-  How can we efficiently perform posterior inference over the space of
-  permutations when there are~$N!$ permutations of a set of~$N$
-  elements?  Combinatorial optimization algorithms may enable
-  efficient point estimation, but fully Bayesian inference poses a
-  severe challenge in this high-dimensional, discrete space.  We begin
-  with a common maneuver: we relax the discrete set of permutation
-  matrices---the vertices of the Birkhoff polytope---to the continuous
-  set of doubly-stochastic matrices---the interior of the polytope.
-  Our primary contribution is a pair of invertible and differentiable
-  maps from densities on unconstrained space to densities on or near
-  the Birkhoff polytope. These transformations are parameterized by a
-  ``temperature'' that controls how concentrated the resulting density
-  is at the extrema of the Birkhoff polytope; i.e. at permutation
-  matrices.  With these transformations, we perform variational
-  inference over distributions on doubly stochastic matrices (and in
-  the zero-temperature limit, on permutation matrices), leveraging
-  reparameterization gradients to guide our optimization.
+  Many matching, tracking, sorting, and ranking problems require
+  probabilistic reasoning about possible permutations, a set that
+  grows factorially with dimension. Combinatorial optimization
+  algorithms may enable efficient point estimation, but fully Bayesian
+  inference poses a severe challenge in this high-dimensional,
+  discrete space.    
+  We begin with a common maneuver: we relax the
+  discrete set of permutation matrices---the vertices of the Birkhoff
+  polytope---to the continuous set of doubly-stochastic matrices---the
+  interior of the polytope.
+  Our primary contribution is a pair of
+  invertible and differentiable maps from densities on unconstrained
+  space to densities on or near the Birkhoff polytope. These
+  transformations are parameterized by a ``temperature'' that controls
+  how concentrated the resulting density is at the extrema of the
+  Birkhoff polytope; i.e. at permutation matrices.  With these
+  transformations, we perform variational inference over distributions
+  on doubly stochastic matrices (and in the zero-temperature limit, on
+  permutation matrices), leveraging reparameterization gradients to
+  guide our optimization. 
 \end{abstract}
 
 
