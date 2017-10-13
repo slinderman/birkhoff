@@ -723,7 +723,7 @@ These latter are summarized in Table~\ref{table:BDs}.
 \begin{figure*}[ht]
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
-  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $X^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
+  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $\mathsf{round}(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
   \vspace{-1em}
 \label{fig:elegantresults}
 \end{figure*}
@@ -968,7 +968,7 @@ We have $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low tem
 
 \subsection*{Variational inference for Permutation details}
 
-\subsection*{Continuous prior distributions.} 
+\subsubsection*{Continuous prior distributions.} 
 Continuous relaxations requires
 re-thinking of the objective. As in \cite{maddison2016concrete}, we
 maximize a relaxed ELBO, for which we need to specify a new continuous
@@ -986,7 +986,7 @@ dimension,
 Although this prior puts significant mass invalid points
 (e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
 
-\subsection*{Deriving an expression for the ELBO}
+\subsubsection*{Deriving an expression for the ELBO}
 Here we show that if $X=G(\Xi;\theta)$ with $G$ differentiable one can evaluate the second term in equation \eqref{eq:elbo} \footnote{Notice that we uppercase the variables in \eqref{eq:elbo} this is in consistency to our notation in section \ref{sec:permutation}}. Moreover, here, to exploit the similarities between both methods (stick-breaking and rounding), we further factor $G$ into two functions: $G=H \circ F$, $X = H(\Psi)$ and $\Psi = F(\Xi; \theta)$ (both $H,F$ invertibles). This means all dependency of $X$ in the parameters is through $\Psi$. Under this assumption, and denoting $\Psi\sim p(\Psi,\theta)$, the second term in equation \eqref{eq:elbo} (without gradient) can be computed as:
  then \begin{align} \nonumber
 \E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = & \bbH(\Psi; \theta) +\\ \nonumber & E_{r(\Xi)}\left[\log | DH(F(\Xi,\theta))|\right].\end{align}
@@ -1004,21 +1004,21 @@ Now, by the change of variable theorem and derivative and determinant inversion 
  &= \bbH(\Psi; \theta)+ \\ \nonumber & E_{r(\xi)}\left[\log | DH(F(\Xi;\theta))|\right].\end{eqnarray}
  
 
-\subsection*{Estimating the ELBO} 
+\subsubsection*{Estimating the ELBO} 
 Here we describe how to compute each of terms of equation \eqref{eq:elbo2}, needed for ELBO computations. First, as $\Psi$ is gaussian for both rounding and stick-breaking, the entropy term is straightforward and equal to $N\log(\eta^2 2\pi e )/2$ ($\eta$ may depend on the temperature and depends on the method). 
 
 Notice that to state $\Psi$ is gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation}. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $\Psi' = \sigma(\Psi)$.
 
 The second term of equation \eqref{eq:elbo2} is estimated using Monte-Carlo samples, and its derivation depends on the method. 
 
-\subsubsection*{Rounding}
-Here 
- $H$ is piecewise linear: the set of discontinuities (border of the 'Voronoi cells' associated to each permutation) has Lebesgue measure zero. So we can still apply the change of variables theorem. Therefore, 
+\textbf{Rounding}
+
+Here $H$ is piecewise linear: the set of discontinuities (border of the 'Voronoi cells' associated to each permutation) has Lebesgue measure zero. So we can still apply the change of variables theorem. Therefore, 
 $\log |DH(F(\Xi;\theta)) |= N\log
 \tau$. This means we don't even need to take samples to compute this term.
 
 
-\subsubsection*{Stick-breaking}
+\textbf{Stick-breaking}
 
 It is important to note that the transformation $H$ that maps $\Psi'\rightarrow X$ is only piecewise
 continuous: the function is not differentiable at the points where
@@ -1046,4 +1046,13 @@ is lower triangular, and its determinant is the product of its diagonal,
 \end{align}
 
 To compute the gradient of the forward transformation $H$ one simply needs to invert the above (or put a negative sign, in the logarithm scale). Finally,  to incorporate the effect of $\sigma$ ($\Psi'=\sigma(\Psi)$, by the chain rule,  one only needs to add a term corresponding to this derivative, $d\sigma(x)/dx=\sigma(x)\sigma(-x)$. 
+\subsection*{Experiment details}
+
+Experiments were run on a High Performance Computer (HPC), allowing the execution of hundreds of processes in parallel to efficiently determine best hyperparameter configurations.
+
+For experiments with Variational Auto-encoder we used Tensorflow \citep{Abadi2016}, slightly changing the code made available in conjunction with \cite{Jang2016}. For experiments on synthetic matching and the C. elegans example we used Autograd  \citep{maclaurin2015autograd}, explicitly avoiding propagating gradients through the non-differentiable operation of solving a matching problem (the $\mathsf{round}$ in \ref{sub:rounding}).
+
+
+In all experiment we used the ADAM as optimizer, with learning rate 0.1. For rounding, the parameter vector $H$ defined in \ref{sub:rounding} (iii) was constrained to lie in the interval $[0.1, 0.5]$. The temperature was calibrated using a grid search on the interval $[0,1]$. For stick-breaking. 
+Synthetic 
 \end{document}
