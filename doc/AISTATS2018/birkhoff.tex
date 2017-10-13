@@ -86,21 +86,18 @@
   grows factorially with dimension. Combinatorial optimization
   algorithms may enable efficient point estimation, but fully Bayesian
   inference poses a severe challenge in this high-dimensional,
-  discrete space.    
-  We begin with a common maneuver: we relax the
-  discrete set of permutation matrices---the vertices of the Birkhoff
-  polytope---to the continuous set of doubly-stochastic matrices---the
-  interior of the polytope.
-  Our primary contribution is a pair of
-  invertible and differentiable maps from densities on unconstrained
-  space to densities on or near the Birkhoff polytope. These
-  transformations are parameterized by a ``temperature'' that controls
-  how concentrated the resulting density is at the extrema of the
-  Birkhoff polytope; i.e. at permutation matrices.  With these
-  transformations, we perform variational inference over distributions
-  on doubly stochastic matrices (and in the zero-temperature limit, on
-  permutation matrices), leveraging reparameterization gradients to
-  guide our optimization. 
+  discrete space.  We begin with the usual step of relaxing a discrete
+  set (here, of permutation matrices) to its convex hull, which here
+  is the Birkhoff polytope: the set of all double-stochastic matrices.
+  We then introduce two novel transformations: first, an invertible
+  and differentiable map from unconstrained space to the Birkhoff
+  polytope, and second, a similar map to a ball around the polytope.
+  Both transformations include a temperature parameter that, in the
+  limit, concentrates the densities on permutation matrices.  We then
+  exploit these transformations and reparameterization gradients to
+  introduce variational inference over permutation matrices, and we
+  show via a series of simulated and real experiments the value of
+  this approach.
 \end{abstract}
 
 
