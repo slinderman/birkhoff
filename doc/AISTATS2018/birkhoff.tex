@@ -199,6 +199,7 @@ objective over the set of permutation matrices---in cubic time.
 
 
 \subsection{Variational inference and the reparameterization trick}
+\label{sub:repa}
 Variational Bayesian inference algorithms aim to approximate the
 posterior distribution~$p(x \given y)$ with a more tractable
 distribution~$q(x; \theta)$, where ``tractable'' means that, at a
@@ -223,7 +224,7 @@ simulate from~$q$ via the following equivalence,
 \begin{align*}
   x &\sim q(x; \theta)
       & \iff & &  
-  \xi &\sim r(\xi), \quad x = g(\theta, \xi),
+  \xi &\sim r(\xi), \quad x = g(\xi;\theta),
 \end{align*}
 where~$r$ is a distribution on the ``noise''~$\xi$ and
 where~$g(\xi; \theta)$ is a deterministic and differentiable
@@ -244,54 +245,6 @@ expectation as follows,
 This gradient can be estimated with Monte Carlo, and, in practice,
 this leads to lower variance estimates of the gradient than, for
 example, the score function estimator \citep{Williams1992, Glynn1990}.
-However, for $g$ to be differentiable $x$ needs to be continuous.
-
-
-% % Gumbel-softmax motivation
-% Continuous relaxations underlie many approximate algorithms for
-% discrete optimization and inference.  After relaxation, we can
-% capitalize on local gradients and curvature information. Indeed, this
-% is the motivation for the recently proposed Gumbel-softmax method for
-% discrete variational inference~\citep{jang2016categorical,
-%   maddison2016concrete}.  It is based on the following observation:
-% categorical distributions may be viewed as atomic densities
-% on the vertices of the simplex; by relaxing this to a continuous
-% density on the interior of the simplex we can approximate the discrete
-% inference problem with a continuous one and thereby capitalize on
-% reparameterization gradients~\citep{Kingma2014, rezende2014stochastic}
-% to optimize a variational lower bound on the marginal likelihood.
-% Critically, the Gumbel-softmax method has a temperature parameter that
-% tunes the degree to which the continuous density concentrates around
-% the vertices, and recovers truly discrete inference in the
-% zero-temperature limit.
-
-% % Discrete/Simplex <-> Permutation/Birkhoff analogy 
-% Just as one-hot vectors (discrete random variables) are the vertices
-% of the simplex, permutation matrices are the vertices of the Birkhoff
-% polytope, i.e. the set of doubly stochastic matrices.  Thus, we seek
-% temperature-controlled relaxations of atomic densities on permutation
-% matrices to continuous densities on the interior of the Birkhoff
-% polytope.  Unfortunately, the dual constraints of row- and
-% column-normalization required of doubly stochastic matrices present
-% difficulties that are not faced in the categorical setting. However,
-% we derive a variety of alternative continuous relaxations for the
-% simplex and show that: (i) these relaxations achieve comparable
-% performance to the Gumbel-softmax on tractable discrete inference
-% tasks; and (ii) they naturally extend to relaxations of permutation
-% inference problems.
-
-Recently, there have been a number of proposals for extending the
-reparameterization trick to high-dimensional discrete inference problems
-% \footnote{Discrete inference is only problematic in the high
-%   dimensional case, since in low dimensional problems we can enumerate
-%   the possible values of~$x$ and compute the normalizing
-%   constant~$p(y) = \sum_x p(y, x)$.}
-via continuous relaxation~\citep{maddison2016concrete,
-  jang2016categorical, kusner2016gans}.  The key here is a
-``temperature'' knob that controls the degree of relaxation.  In
-Section~\ref{sec:gumbel-softmax} we discuss how our approach extends
-these ideas to discrete inference problems with more complex
-structure, like permutation matrices.
 
 % These approaches are based on the following
 % observation: one-hot vectors~$x \in \{0,1\}^N$ can alternatively be
@@ -344,21 +297,7 @@ structure, like permutation matrices.
 \subsection{Related Work}
 A number of previous works have considered approximate methods of
 posterior inference over the space of permutations.
-% When a point
-% estimate will suffice, convex relations are commonly
-% employed~\citep{fogel2013convex, lim2014beyond}. Given noisy
-% measurements of a sum of a small number of permutation matrices, we
-% can recover the underlying coefficients via a convex optimization
-% penalized by the norm induced by the Birkhoff
-% polytope~\citep{chandrasekaran2012convex}.  For some ranking problems,
-% we can rewrite the objective function in terms of the expected
-% assignment probabilities under a distribution over permutation
-% matrices, which in turn are points in the Birkhoff
-% polytope. \citet{adams2011ranking} leveraged this property to develop
-% stochastic gradient descent algorithms that minimize these objective
-% functions, using Sinkhorn propagation~\citep{knight2008sinkhorn} as a
-% differentiable map from the positive orthant to the Birkhoff polytope.
-% We will use the same approach in one of our proposed methods.
+
 When a point estimate will not suffice, sampling methods like Markov
 chain Monte Carlo (MCMC) algorithms may yield a reasonable approximate
 posterior for simple problems~\citep{diaconis1988group}.
@@ -384,16 +323,13 @@ density on permutation matrices.
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
 
-The key to stochastic variational inference with the reparameterization
-trick is an invertible and differentiable mapping~$x=g(\xi; \theta)$.
-With this mapping, a simple noise density~$r(\xi)$ is transformed
-into a variational posterior density~$q(x; \theta)$ that can be
-sampled and evaluated pointwise---the necessary ingredients for
-computing the stochastic gradients of the ELBO~\eqref{eq:elbo}.
-For discrete variational inference via continuous relaxation,
-we further require a temperature control.  Here we develop two
-mappings for permutation inference.
-
+Unfortunately, reparameterization-based variational inference  \ref{sub:repa} is not readily available for permutations: as samples  (permutations) are discrete, the function $g$ cannot be continuous. However, recently, there have been a number of proposals to extend the
+reparameterization trick to discrete inference problems
+via continuous relaxation~\citep{maddison2016concrete,
+  jang2016categorical, kusner2016gans}. Essentially, the method is based on replacing the original ELBO objective ~\eqref{eq:elbo} by a surrogate one, arising from replacing the original samples $x$ by a relaxation; that is, now assuming they can belong to a larger, continuous set where derivatives are well defined. This surrogate construction is controlled by a  ``temperature'' knob that dictates the degree of relaxation; how ``far''   is the relaxation from the original discrete problem.
+  
+These relaxations, however, are not suitable for permutations, as the representation of a permutation as a category requires $N!$ slots. In this section, we develop two relaxations to enable variational permutation inference. In both relaxations the Birkhoff polytope will play a fundamental role, although clear differences exist. Also, in either case we start with a noise distribution $\Xi$ (here, gaussian) and transform it to a ``relaxed" permutation $X$ using a differentiable and invertible mapping $G$, and parameters $\theta$; i.e. $X=G(X_i;\theta)$. With a suitable choice of priors this is enough to compute all terms of equation \eqref{eq:elbo}. We refer the reader to the supplemental material for details on choice of the (continuous) priors, and on how our assumptions lead to explicit expressions for the ELBO, for both relaxations introduced in the following.
+ 
 \subsection{Stick-breaking transformations of the Birkhoff polytope}
 Let~$\Psi$ be an arbitrary matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
 transform it into a doubly stochastic
@@ -555,24 +491,6 @@ empirically.
   trick~\citep{maddison2016concrete, jang2016categorical}.  This
   complicates the computation of the ELBO, as we discuss next.
 \end{itemize}
-
-\subsection{Extending relaxation-based variational inference to permutations}
-\label{sec:gumbel-softmax}
-With the above ingredients we can now conceive a variational inference routine for permutations, based on the analogy that the one hot vectors are to the probability simplex as permutation matrices are to the Birkhoff polytope, and by extending the relaxation-based framework presented in \cite{maddison2016concrete}.
-
-Namely, we consider a variational distribution $q(X;\theta)$ over `relaxed' permutations, and dependent on a temperature parameter. As our constructions are re-parameterizable; i.e.  ${X = g(\Psi)}$ and~${\Psi = f(\theta,
-  \Xi)}$, one has:
-  \begin{align}
-  \label{eq:expq}
-  \bbE_{r(\Xi)} \left[- \log q(g(f(\theta, \Xi)); \theta) \right]
-  &= \bbH(\Psi; \theta)+ \\
- \nonumber  & \bbE_{r(\Xi)}\left[\log \left|\frac{\partial}{\partial \Psi} g(f(\theta, \Xi)) \right| \right].
-  \end{align}
-The entropy term in the r.h.s. can be computed explicitly, while the expectation can be approximated using Monte-Carlo samples. Also, in either relaxation equation \ref{eq:expq} is differentiable w.r.t. $\theta$
-
-Regarding the prior $p(X;\theta)$, we use the product of $N$ mixtures of two gaussians, around $[0,1]$. This prior weights high at points close to the vertices of the hypercube $[0,1]^N$; in particular, at permutation matrices. We benefit from this simple prior to penalize points that might be rather close to the center of the Birkhoff polytope than to permutations.
-
-We refer the reader to the supplement for proofs of the claims stated here.
 
 
 % First, let us consider an alternative reparameterization of the simplex
@@ -756,7 +674,7 @@ model. We compared against the methods of
  We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing sample experiment configurations (a), examples of inferred posteriors (b) and distribution of BD's (c). These histograms are summarized by Table \ref{table:BDs}.
 
 
-\section{Inferring neuron identities in \textit{C. Elegans}}
+\section{Inferring neuron identities in \textit{C. elegans}}
 \label{sec:celegans}
 
 \begin{figure*}[ht]
@@ -905,54 +823,54 @@ dimension,
 Although this prior puts significant mass invalid points
 (e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
 
-\subsection*{Deriving the approximation for the ELBO}
-Here we show that if ~${x = g(\psi)}$ and~${\psi = f(\theta,
-  \xi)}$ then \begin{align} \nonumber
-\E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right] = & \bbH(\psi; \theta) +\\ \nonumber & E_{r(\xi)}\left[\log | Dg(f(\theta, \xi))|\right].\end{align}
-Indeed, first, by the `Law of the Unconscious Statistician' we have:
- $$\E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right] = \E_{r(\psi;\theta)} \left[- \log q(g(\psi); \theta) \right]. $$
-Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain:\begin{align}
-\nonumber q(g(\psi); \theta) & = p(g^{-1}(\pi) ;\theta)  |Dg ^{-1}(\pi) | \\ \nonumber
- & = p(\psi;\theta) | Dg (\psi) | ^{-1}.
+\subsection*{Deriving an expression for the ELBO}
+Here we show that if $X=G(\Xi;\theta)$ with $G$ differentiable one can evaluate the second term in equation \eqref{eq:elbo} \footnote{Notice that we uppercase the variables in \eqref{eq:elbo} this is in consistency to our notation in section \ref{sec:permutation}}. Moreover, here, to exploit the similarities between both methods (stick-breaking and rounding), we further factor $G$ into two functions: $G=H \circ F$, $X = H(\Psi)$ and $\Psi = F(\Xi; \theta)$ (both $H,F$ invertibles). This means all dependency of $X$ in the parameters is through $\Psi$. Under this assumption, and denoting $\Psi\sim p(\Psi,\theta)$, the second term in equation \eqref{eq:elbo} (without gradient) can be computed as:
+ then \begin{align} \nonumber
+\E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = & \bbH(\Psi; \theta) +\\ \nonumber & E_{r(\Xi)}\left[\log | DH(F(\Xi,\theta))|\right].\end{align}
+\textbf{Proof}:
+Indeed, first, it is obvious that $$\E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = \E_{r(\Xi)} \left[- \log q(H(F(\Xi,\theta)); \theta) \right] $$
+Then, by the `Law of the Unconscious Statistician' we have:
+ $$\E_{r(\Xi)} \left[- \log q(H(F(\Xi,\theta)); \theta) \right] = \E_{p(\Psi;\theta)} \left[- \log q(H(\psi); \theta) \right]. $$
+Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain ($D$ means the Jacobian, the matrix of derivatives) :\begin{align}
+\nonumber q(H(\Psi); \theta) & = p(H^{-1}(X) ;\theta)  |DH ^{-1}(X) | \\ \nonumber
+ & = p(\Psi; \theta) | DH (\Psi) | ^{-1}.
  \end{align}
  To conclude we use once more the Law of the Unconscious Statistician:
- \begin{align}
-\nonumber  \E_{r(\xi)} \left[- \log q(g(f(\theta, \xi)); \theta) \right]  &= \E_{r(\psi;\theta)}\left[ - \log p(\psi;\theta)\right] +   \\ & \nonumber \E_{r(\psi;\theta)}\left[\log | Dg(\psi)|\right] \\ \nonumber
- &= \bbH(\psi; \theta)+ \\ \nonumber & E_{r(\xi)}\left[\log | Dg(f(\theta, \xi))|\right].\end{align}
+ \begin{eqnarray}
+\nonumber \E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right]  &= \E_{p(\Psi;\theta)}\left[ - \log p(\Psi;\theta)\right] +   \\ & \nonumber \E_{p(\psi;\theta)}\left[\log | DH(\psi)|\right] \\ \label{eq:elbo2} 
+ &= \bbH(\Psi; \theta)+ \\ \nonumber & E_{r(\xi)}\left[\log | DH(F(\Xi;\theta))|\right].\end{eqnarray}
  
 
 \subsection*{Estimating the ELBO} 
-Here we describe how to compute each of terms of the above equations, needed for ELBO computations. First, as $\Psi$ is gaussian for both rounding and stick-breaking, entropy computation is straightforward (and equal to $N\log(\eta^2 2\pi e )/2$). 
+Here we describe how to compute each of terms of equation \eqref{eq:elbo2}, needed for ELBO computations. First, as $\Psi$ is gaussian for both rounding and stick-breaking, the entropy term is straightforward and equal to $N\log(\eta^2 2\pi e )/2$ ($\eta$ may depend on the temperature and depends on the method). 
 
-Notice, however, that for stick-breaking we need to take $\Psi$ as being the random variable before applying the logistic function $\sigma$. We apply this convention in the following, to maintain the analogy between stick-breaking and rounding.
+Notice that to state $\Psi$ is gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation}. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $\Psi' = \sigma(\Psi)$.
 
-The second term is estimated using Monte-Carlo samples. 
+The second term of equation \eqref{eq:elbo2} is estimated using Monte-Carlo samples, and its derivation depends on the method. 
 
 \subsubsection*{Rounding}
-
- $g$ is piecewise linear
-\footnote{The set of discontinuities has Lebesgue measure zero so we
-  can still apply the change of variables theorem.}. Therefore, 
-$\log | \tfrac{\partial}{\partial \psi} g(f(\theta, \xi)) |= N\log
-\tau$. 
+Here 
+ $H$ is piecewise linear: the set of discontinuities (border of the 'Voronoi cells' associated to each permutation) has Lebesgue measure zero. So we can still apply the change of variables theorem. Therefore, 
+$\log |DH(F(\Xi;\theta)) |= N\log
+\tau$. This means we don't even need to take samples to compute this term.
 
 
 \subsubsection*{Stick-breaking}
 
-It is important to note that the transformation $\Psi\rightarrow X$ only piecewise
+It is important to note that the transformation $H$ that maps $\Psi'\rightarrow X$ is only piecewise
 continuous: the function is not differentiable at the points where
-the bounds change; for example, when changing~$\Psi$ causes the
+the bounds change; for example, when changing~$\Psi'$ causes the
 active upper bound to switch from the row to the column constraint
 or vice versa.  
 
 Notice that these bounds only depend on values of~$X$ that
 have already been computed; i.e., those that are above or to the left of
-the~$(i,j)$-th entry. Thus, the transformation from~$\Psi$ to~$X$
+the~$(i,j)$-th entry. Thus, the transformation from ~$\Psi'$ to~$X$
 is feed-forward according to this ordering.  Consequently, the
-Jacobian of the inverse transformation,~$\mathrm{d}\Psi / \mathrm{d} X$,
+Jacobian of the inverse transformation $H^{-1}$ ,~$\mathrm{d}\Psi' / \mathrm{d} X$,
 is lower triangular, and its determinant is the product of its diagonal,
 \begin{align}
-\nonumber \left| \frac{\mathrm{d} \Psi} {\mathrm{d} X} \right|
+\nonumber \left| \frac{\mathrm{d} \Psi'} {\mathrm{d} X} \right|
 &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
 \nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
 \sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
@@ -964,13 +882,5 @@ is lower triangular, and its determinant is the product of its diagonal,
 \frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
 \end{align}
 
-With these two ingredients, we can write the density of~${\Pi}$,
-\begin{align}
- \nonumber  \text{vec} (\Psi) &\sim \distNormal(\mu, \diag(\eta^2))
-  \\
-  \nonumber {X} &= f(\Psi) \\
-  \implies
- \nonumber  p(X \given \mu, \diag(\eta^2)) &= \left|\frac{\mathrm{d} \Psi }{\mathrm{d} {X}} \right|
-\nonumber  \distNormal(f^{-1}({X}) \given \mu, \diag(\eta^2))
-\end{align}
+To compute the gradient of the forward transformation $H$ one simply needs to invert the above (or put a negative sign, in the logarithm scale). Finally,  to incorporate the effect of $\sigma$ ($\Psi'=\sigma(\Psi)$, by the chain rule,  one only needs to add a term corresponding to this derivative, $d\sigma(x)/dx=\sigma(x)\sigma(-x)$. 
 \end{document}
