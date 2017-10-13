@@ -654,15 +654,15 @@ cluster centers.  The goal is to recover the posterior distribution
 over permutations.  For~$N=6$, we can explicitly enumerate
 the~$N!=720$ permutations and compute the posterior exactly.
  
- As a baseline, we consider the Mallows distribution
- \cite{Mallows1957} with density over a permutations $\phi$ given by
- $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where
- $\phi_0$ is a central permutation,
- ${d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|}$ is a distance
- between permutations, and $\theta$ controls the spread around
- $\phi_0$. This is the most popular exponential family model for
- permutations, but it can fail to capture complex features of
- distributions.
+As a baseline, we consider the Mallows distribution \cite{Mallows1957}
+with density over a permutations $\phi$ given by
+$p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where
+$\phi_0$ is a central permutation,
+${d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|}$ is a distance
+between permutations, and $\theta$ controls the spread around
+$\phi_0$. This is the most popular exponential family model for
+permutations, but since it is necessarily unimodal, it can fail to
+capture complex permutation distributions.
 
  \begin{table}[h]
   \caption{Mean BDs in the synthetic matching experiment for various methods and observation variances.}
@@ -708,12 +708,13 @@ Hungarian algorithm. For the Mallows distribution, we set $\phi_0$ to
 the MAP estimate, also found with the Hungarian algorithm, and sampled
 using MCMC.
  
-We found our method outperforms the simple Mallows distribution
-and reasonably approximates non-trivial distributions
-over permutations. Fig~\ref{fig:synthetic} illustrates our findings
-by showing sample experiment configurations (a), examples of inferred
-posteriors (b) and distribution of BD's (c). These results are
-summarized in Table~\ref{table:BDs}.
+We found our method outperforms the simple Mallows distribution and
+reasonably approximates non-trivial distributions over
+permutations. Fig~\ref{fig:synthetic} illustrates our findings,
+showing (a) sample experiment configurations; (b) examples of
+inferred, discrete, posteriors for stick breaking (top), rounding
+(middle), and Mallows (bottom); and (c) histogram of Battacharya distance.
+These latter are summarized in Table~\ref{table:BDs}.
 
 
 \section{Inferring neuron identities in \textit{C. elegans}}
@@ -728,7 +729,16 @@ summarized in Table~\ref{table:BDs}.
 \end{figure*}
 
 
-Finally, we consider an application motivated by the study of the neural dynamics in \textit{C. elegans}. This worm is a model organism in neuroscience as its neural network is stereotyped from animal to animal and its complete neural wiring diagram is known~\citep{varshney2011structural}.  We represent this network, or connectome, as a binary adjacency matrix~${A \in \{0,1\}^{N \times N}}$, shown in Fig.~\ref{fig:connectome}a. It has ~${N=278}$ nodes, one for each somatic neuron; edges, denoted by~$A_{mn}=1$, indicate the presence of a synapse between neurons~$m$ and~$n$.
+Finally, we consider an application motivated by the study of the
+neural dynamics in \textit{C. elegans}. This worm is a model organism
+in neuroscience as its neural network is stereotyped from animal to
+animal and its complete neural wiring diagram is
+known~\citep{varshney2011structural}.  We represent this network, or
+connectome, as a binary adjacency
+matrix~${A \in \{0,1\}^{N \times N}}$, shown in
+Fig.~\ref{fig:connectome}a. The hermaphrodyte has~${N=278}$ somatic
+neurons, and (undirected) synaptic connections between neurons~$m$
+and~$n$ are denoted by~$A_{mn}=1$.
 
 
 Modern recording technology enables simultaneous measurements of
