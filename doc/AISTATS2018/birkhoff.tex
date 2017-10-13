@@ -303,7 +303,7 @@ in or near the Birkhoff polytope.\footnote{While Gumbel-softmax does
   not immediately extend to permutation inference, the methods
   presented herein easily extend to categorical inference.  We
   explored this direction experimentally and show results in the
-  supplment.}  Like the Gumbel-softmax method, these transformations
+  supplement.}  Like the Gumbel-softmax method, these transformations
 will be controlled by a temperature that concentrates the resulting
 density near permutation matrices.  The first method is a novel
 ``stick-breaking'' construction; the second rounds points toward
@@ -645,7 +645,7 @@ animal and its complete neural wiring diagram is
 known~\citep{varshney2011structural}.  We represent this network, or
 connectome, as a binary adjacency
 matrix~${A \in \{0,1\}^{N \times N}}$, shown in
-Fig.~\ref{fig:connectome}a. The hermaphrodyte has~${N=278}$ somatic
+Fig.~\ref{fig:connectome}a. The hermaphrodite has~${N=278}$ somatic
 neurons, and (undirected) synaptic connections between neurons~$m$
 and~$n$ are denoted by~$A_{mn}=1$.
 
@@ -708,7 +708,7 @@ parameters of the model, and facilitates inference.
 variational inference, where we do not enforce the constraint that
 $X^{(j)}$ be a permutation and instead treat each row of~$X^{(j)}$ as
 a Dirichlet distributed vector; (ii) MCMC, where we alternate between
-sampling from the conditionals of $W$ (gaussian) and ${X^{(j)}}$, from
+sampling from the conditionals of $W$ (Gaussian) and ${X^{(j)}}$, from
 which one can sample by proposing local swaps, as described in
 \cite{Diaconis2009}, and (iii) maximum a posteriori estimation (MAP).
 Our MAP algorithm alternates between the optimizing estimate of $W$ given~$\{X^{(m)}, Y^{(m)}\}$ using linear regression and finding the optimal ${X^{(j)}}$. The second step requires solving a quadratic assignment
@@ -771,7 +771,7 @@ marginal likelihood, estimated through the multi-sample variational
 objective of the discretized model. We compared against the methods of
 \cite{jang2016categorical, maddison2016concrete}, finding similar
 (although slightly worse) results (Table~\ref{tab:vae}). This difference may be
-intepreted as the price to be paid in order to enable an extension of
+interpreted as the price to be paid in order to enable an extension of
 a relaxed distribution over categories, to permutations.
 
 \begin{table}[h]
@@ -795,7 +795,7 @@ a relaxed distribution over categories, to permutations.
 %   \label{sample-table}
 %   \centering
 %   \begin{tabular}{llllllll}
-%    & \multicolumn{1}{c}{Rounding} & \multicolumn{1}{c}{Stickbreaking} & \multicolumn{5}{c}{Mallows}\\
+%    & \multicolumn{1}{c}{Rounding} & \multicolumn{1}{c}{Stick-breaking} & \multicolumn{5}{c}{Mallows}\\
 %     \cmidrule(lr){2-2} \cmidrule(lr){3-3} \cmidrule(lr){4-8}
 %     &    & &   $\theta=0.1$ &  $\theta=1$ & $\theta=2$ & $\theta=5$ & $\theta=10$ \\
 %     \midrule
@@ -854,7 +854,7 @@ Now we can state our results:
 &= \Phi( \sigma^{-1}(x)K/\mu_n - K) 
 \end{align}
 
-Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(0,1)$. On the other hand, the cdf of a bernoulli random $F$ variable is given by  a step function that abruptly changes at zero, from zero to $1-p$, and at one, from $1-p$ to 1. As convergence occurs at all continuity points (the interval $(0,1)$), we conclude (recall, $1-p= \Phi(-K)\rightarrow \Phi(K)=p$). Notice that the above representation only allows  to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
+Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(0,1)$. On the other hand, the cdf of a Bernoulli random $F$ variable is given by  a step function that abruptly changes at zero, from zero to $1-p$, and at one, from $1-p$ to 1. As convergence occurs at all continuity points (the interval $(0,1)$), we conclude (recall, $1-p= \Phi(-K)\rightarrow \Phi(K)=p$). Notice that the above representation only allows  to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
 
 \textbf{Proposition.} For the stick-breaking construction, any arbitrary distribution can be realized in the low-temperature limit. Also, in the high-temperature limit convergence is to certain point(s) in the interior of the simplex.
 
@@ -864,15 +864,15 @@ We have $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low tem
 
 
 %\subsection{Rounding}
-%Here we have two extremes: at $\tau =1$ we obtain a continuous distribution in the space (here, gaussian). If $\tau=0$ the resulting distribution has only atoms in the one-hot vectors $p_n$, in this proof assumed to be the one-hot vectors. We show that in this case it is possible to represent any arbitrary categorical distribution through a judicious choice of the parameters.
+%Here we have two extremes: at $\tau =1$ we obtain a continuous distribution in the space (here, Gaussian). If $\tau=0$ the resulting distribution has only atoms in the one-hot vectors $p_n$, in this proof assumed to be the one-hot vectors. We show that in this case it is possible to represent any arbitrary categorical distribution through a judicious choice of the parameters.
 
 
-%\textbf{Proposition:} In the zero temperature case, i.e., $\pi  = R^\mathcal{P}(\psi)$ it is possible to represent any arbitrary distribution i.e, for any $\alpha$ in the $N-1$ simplex there exists gaussian parameters $(\mu, \eta)$ so that   $P(\pi = p_n)  = \alpha_n$. Points inside the simplex are realized directly, while distributions with some $\alpha_k=0$ are realized through a limiting process in the parameters.
+%\textbf{Proposition:} In the zero temperature case, i.e., $\pi  = R^\mathcal{P}(\psi)$ it is possible to represent any arbitrary distribution i.e, for any $\alpha$ in the $N-1$ simplex there exists Gaussian parameters $(\mu, \eta)$ so that   $P(\pi = p_n)  = \alpha_n$. Points inside the simplex are realized directly, while distributions with some $\alpha_k=0$ are realized through a limiting process in the parameters.
 
 %\textit{Proof:} First set $\eta_n=1$. By representing $\psi = \mu + \xi$ where $\xi\sim\distNormal(0, I)$ we see that
 %$$\alpha_n = P(R^\mathcal{P}(\mu + \xi) = p_n ) = P(\mu + \xi \in V^\mathcal{P}_{n}) = P(\xi \in V^\mathcal{P}_{n} - \mu) =  \int_{V^\mathcal{P}_{n} - \mu} \frac{1}{(2\pi)^\frac{N}{2}}e^{-\frac{||x||^2}{2}} dx.$$
-%Three conclusions are drawn from the above: first, we see that probabilities are ultimately gaussian integrals over a new partition, a translation of the Voronoi regions $V^\mathcal{P}_{n}$. Second,
-%the map $(\mu_1,\ldots,  \mu_n)\xrightarrow{m} (\alpha_1,\ldots, \alpha_n)$ is continuous by virtue of the dominated convergence theorem \cite{browder2012mathematical}: indeed, if $\mu_i\rightarrow \mu$ then $(\alpha^i_1,\ldots, \alpha^i_n) \rightarrow (\alpha_1,\ldots, \alpha_n)$, as the $\alpha^i_n$ are integrals that can be expressed using indicator functions in the integrands (which are all bounded by the integrable gaussian density), and as pointwise convergence of the indicators holds because of the continuity of the translation operator $f_\mu(\cdot) = \cdot + \mu$. Third, for each $q\in(0,1)$ it is possible to choose $\mu$ so that $\alpha_n =q$ and $\alpha_m = (1-q)/(n-1)$. Indeed, by moving $\mu_n$ between $-\infty$ and $\infty$ while keeping the other $\mu_k$ fixed then $V^\mathcal{P}_{n} - \mu$ fluctuates between the empty set ($\alpha_n =0$) and the entire space ($\alpha_n=1$). Therefore, by the continuity of $m$ and the intermediate value theorem, every value in $\alpha_n\in (0,1)$ is realized, and by symmetry the other $\alpha_k$ occupy the remaining mass uniformly. 
+%Three conclusions are drawn from the above: first, we see that probabilities are ultimately Gaussian integrals over a new partition, a translation of the Voronoi regions $V^\mathcal{P}_{n}$. Second,
+%the map $(\mu_1,\ldots,  \mu_n)\xrightarrow{m} (\alpha_1,\ldots, \alpha_n)$ is continuous by virtue of the dominated convergence theorem \cite{browder2012mathematical}: indeed, if $\mu_i\rightarrow \mu$ then $(\alpha^i_1,\ldots, \alpha^i_n) \rightarrow (\alpha_1,\ldots, \alpha_n)$, as the $\alpha^i_n$ are integrals that can be expressed using indicator functions in the integrands (which are all bounded by the integrable Gaussian density), and as pointwise convergence of the indicators holds because of the continuity of the translation operator $f_\mu(\cdot) = \cdot + \mu$. Third, for each $q\in(0,1)$ it is possible to choose $\mu$ so that $\alpha_n =q$ and $\alpha_m = (1-q)/(n-1)$. Indeed, by moving $\mu_n$ between $-\infty$ and $\infty$ while keeping the other $\mu_k$ fixed then $V^\mathcal{P}_{n} - \mu$ fluctuates between the empty set ($\alpha_n =0$) and the entire space ($\alpha_n=1$). Therefore, by the continuity of $m$ and the intermediate value theorem, every value in $\alpha_n\in (0,1)$ is realized, and by symmetry the other $\alpha_k$ occupy the remaining mass uniformly. 
 
 %To conclude, we use the fact that the image of a convex set through a continuous function is also convex \cite{Rockafellar70}. We also showed that for each tolerance $\epsilon$ the image of $m$ contains these $\epsilon$-one-hot vectors: that is, the points with $(1-\epsilon)$ in one coordinate and $\epsilon/ (n-1)$ in the rest. Then, given a point in the interior of the simplex choose $\epsilon$ small enough so it is in the convex hull of the $\epsilon$-one vectors. Then, by the above theorem there must be a pre-image $\mu$ that realizes this point.
 
@@ -885,7 +885,7 @@ We have $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low tem
 Continuous relaxations requires
 re-thinking of the objective. As in \cite{maddison2016concrete}, we
 maximize a relaxed ELBO, for which we need to specify a new continuous
-prior $p(x)$ over the latent variables. Moreover, it is critical to conceive sensible priors for permutations, that could serve in a variational inference routine to penalize configurations that are away from permutation matrices (i.e. close to the barycenter of the Brikhoff polytope).
+prior $p(x)$ over the latent variables. Moreover, it is critical to conceive sensible priors for permutations, that could serve in a variational inference routine to penalize configurations that are away from permutation matrices (i.e. close to the barycenter of the Birkhoff polytope).
 
 For our categorical experiment on MNIST we use a mixture of Gaussians around
 each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. 
@@ -900,7 +900,7 @@ Although this prior puts significant mass invalid points
 (e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
 
 \subsubsection*{Deriving an expression for the ELBO}
-Here we show that if $X=G(\Xi;\theta)$ with $G$ differentiable one can evaluate the second term in equation \eqref{eq:elbo} \footnote{Notice that we uppercase the variables in \eqref{eq:elbo} this is in consistency to our notation in section \ref{sec:permutation}}. Moreover, here, to exploit the similarities between both methods (stick-breaking and rounding), we further factor $G$ into two functions: $G=H \circ F$, $X = H(\Psi)$ and $\Psi = F(\Xi; \theta)$ (both $H,F$ invertibles). This means all dependency of $X$ in the parameters is through $\Psi$. Under this assumption, and denoting $\Psi\sim p(\Psi,\theta)$, the second term in equation \eqref{eq:elbo} (without gradient) can be computed as:
+Here we show that if $X=G(\Xi;\theta)$ with $G$ differentiable one can evaluate the second term in equation \eqref{eq:elbo} \footnote{Notice that we uppercase the variables in \eqref{eq:elbo} this is in consistency to our notation in section \ref{sec:permutation}}. Moreover, here, to exploit the similarities between both methods (stick-breaking and rounding), we further factor $G$ into two functions: $G=H \circ F$, $X = H(\Psi)$ and $\Psi = F(\Xi; \theta)$ (both $H,F$ invertible). This means all dependency of $X$ in the parameters is through $\Psi$. Under this assumption, and denoting $\Psi\sim p(\Psi,\theta)$, the second term in equation \eqref{eq:elbo} (without gradient) can be computed as:
  then \begin{align} \nonumber
 \E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = & \bbH(\Psi; \theta) +\\ \nonumber & E_{r(\Xi)}\left[\log | DH(F(\Xi,\theta))|\right].\end{align}
 \textbf{Proof}:
@@ -918,9 +918,9 @@ Now, by the change of variable theorem and derivative and determinant inversion 
  
 
 \subsubsection*{Estimating the ELBO} 
-Here we describe how to compute each of terms of equation \eqref{eq:elbo2}, needed for ELBO computations. First, as $\Psi$ is gaussian for both rounding and stick-breaking, the entropy term is straightforward and equal to $N\log(\eta^2 2\pi e )/2$ ($\eta$ may depend on the temperature and depends on the method). 
+Here we describe how to compute each of terms of equation \eqref{eq:elbo2}, needed for ELBO computations. First, as $\Psi$ is Gaussian for both rounding and stick-breaking, the entropy term is straightforward and equal to $N\log(\eta^2 2\pi e )/2$ ($\eta$ may depend on the temperature and depends on the method). 
 
-Notice that to state $\Psi$ is gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation}. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $\Psi' = \sigma(\Psi)$.
+Notice that to state $\Psi$ is Gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation}. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $\Psi' = \sigma(\Psi)$.
 
 The second term of equation \eqref{eq:elbo2} is estimated using Monte-Carlo samples, and its derivation depends on the method. 
 
