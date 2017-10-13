@@ -171,10 +171,10 @@ illustrate the benefits of the proposed variational approach.
 % discussion related work.
 
 \subsection{Definitions and notation.}  A permutation is a bijective
-mapping of a set~$\mcX$ onto itself.
-When~${\mcX = \{x_1, \ldots, x_N\}}$, this mapping is conveniently
+mapping of a set onto itself.
+When this set is finite, the mapping is conveniently
 represented as a binary matrix~${X \in \{0,1\}^{N \times N}}$
-where~${X_{m,n}=1}$ implies that~$x_m$ is mapped to~$x_n$.  Since
+where~${X_{m,n}=1}$ implies that element~$m$ is mapped to element~$n$.  Since
 permutations are bijections, both the rows and columns of~$X$ must
 sum to one.  From a geometric perspective, the Birkhoff-von Neumann
 theorem states that permutation matrices are vertices of the convex
@@ -251,37 +251,28 @@ This gradient can be estimated with Monte Carlo, and, in practice,
 this leads to lower variance estimates of the gradient than, for
 example, the score function estimator \citep{Williams1992, Glynn1990}.
 
-% These approaches are based on the following
-% observation: one-hot vectors~$x \in \{0,1\}^N$ can alternatively be
-% viewed as vertices of the simplex~$\Delta_N$; likewise, discrete
-% probability mass functions~$q(x; \theta)$ can be seen as atomic
-% densities on the vertices of the simplex.  This motivates a natural
-% relaxation: let~$x$ assume any value in the simplex, not just the
-% vertices, and let~$q(x; \theta)$ be a density on the interior of the
-% simplex.  One way to define such a density is via the following
-% reparameterization,
-% \begin{align}
-%   \xi &\sim r(\xi), \\
-%   g(\theta, \xi) &= \left[ \frac{\theta_1 + \xi_1}{\sum_{n=1}^N \theta_n + \xi_n},
-%       \ldots,
-%       \frac{\theta_N + \xi_N}{\sum_{n=1}^N \theta_n + \xi_n}
-%       \right]
-%     \triangleq \mathrm{softmax}(\theta + \xi),
-% \end{align}
-% where~${\xi, \theta \in \reals^N}$.  
-
-% In the aforementioned papers, the noise is assumed to be a vector of
-% independent Gumbel random variables,
-% i.e.~${p(\xi) = \prod_{n=1}^N \mathrm{Gumbel}(\xi_n \given 0, 1)}$.
-% This choice leads to a nicely interpretable model: adding Gumbel noise
-% and taking the \emph{argmax} of~$\theta + \xi$ yields an exact sample from~$\pi = \mathrm{softmax}(\theta)$, thus
-% the \emph{softmax} of~$\theta + \xi$ is a natural relaxation. Ultimately,
-% however, this is just a continuous relaxation of an atomic density to
-% a continuous density.
+Critically, the gradients in~\eqref{eq:elbo} can only be computed
+if~$x$ is continuous. Recently, \citep{maddison2016concrete} and
+\citep{jang2016categorical} proposed a method for discrete variational
+inference based on the following observation: one-hot
+vectors~${x \in \{0,1\}^N}$ can alternatively be viewed as vertices of
+the simplex~$\Delta_N$; likewise, discrete probability mass
+functions~$q(x; \theta)$ can be seen as atomic densities on the
+vertices of the simplex.  This motivates a natural relaxation: let
+$q(x; \theta)$ be a density on the interior of the simplex instead and
+anneal this density such that it converges to an atomic density on the
+vertices. Figure~\ref{fig:transforms}a and b illustrate this
+idea. Real-valued random variables, e.g. Gumbel random variates,
+are mapped through a temperature-controlled softmax function,
+${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_K /
+    \tau}/Z \big]}$, where~$Z=\sum_{k=1}^K e^{\psi_k / \tau}$, to
+obtain points in the simplex. As~$\tau$ goes to zero, the density
+concentrates on one-hot vectors.  We extend this idea to the Birkhoff
+polytope.
 
 \begin{figure*}[ht!]
   \centering
-  \includegraphics[width=5.in]{../figures/figure1.pdf} 
+  \includegraphics[width=4.75in]{../figures/figure1.pdf} 
   \caption{Reparameterizations of discrete polytopes.  (a,b) The
     Gumbel-softmax, or ``Concrete'' transformation maps points
     ${\psi \in \reals^N}$ to points~${x \in \Delta_{N}}$ by adding
@@ -302,7 +293,6 @@ example, the score function estimator \citep{Williams1992, Glynn1990}.
 \subsection{Related Work}
 A number of previous works have considered approximate methods of
 posterior inference over the space of permutations.
-
 When a point estimate will not suffice, sampling methods like Markov
 chain Monte Carlo (MCMC) algorithms may yield a reasonable approximate
 posterior for simple problems~\citep{diaconis1988group}.
@@ -327,7 +317,6 @@ density on permutation matrices.
 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
-
 Unfortunately, reparameterization-based variational inference  \ref{sub:repa} is not readily available for permutations: as samples  (permutations) are discrete, the function $g$ cannot be continuous. However, recently, there have been a number of proposals to extend the
 reparameterization trick to discrete inference problems
 via continuous relaxation~\citep{maddison2016concrete,
