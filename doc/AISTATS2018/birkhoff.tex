@@ -407,7 +407,7 @@ Let~${\Xi \in \reals^{(N-1) \times (N-1)}}$ be a matrix of standard
 Gaussian random variables.  We
 define,
 \begin{align*}
-  \psi_{mn} &= \sigma\left( \frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} \right),
+  \psi_{mn} &= \sigma\left( \frac{\mu_{mn} + \eta_{mn} \xi_{mn}}{\tau} \right),
 \end{align*}
 where~${\theta = \{\mu_{mn}, \eta^2_{mn}\}_{m,n=1}^N}$ are the mean
 and variance parameters of the
@@ -421,9 +421,9 @@ permutation matrices.  This map is illustrated in
 Figure~\ref{fig:transforms}e and f for permutations of~${N=3}$
 elements.
 
-To our knowledge, this map is a novel
-transformation to the Birkhoff polytope and is essential to allow
-gradient-based variational permutation inference. 
+To our knowledge, this map is a novel transformation to the Birkhoff
+polytope with the essential properties for gradient-based variational
+permutation inference.
 
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
@@ -433,42 +433,68 @@ appealing, it is not strictly required.  For example, consider the
 following procedure for sampling a point \emph{near} the Birkhoff
 polytope:
 \begin{enumerate}[label=(\roman*)]
-\item Input a point~${M \in \reals_+^{N \times N}}$;
-\item Project~$M$ onto the Birkhoff polytope (approximately) using the Sinkhorn-Knopp algorithm;
-\item Sample a Gaussian random variable~$\Psi$ with mean~$\mathrm{proj}(M)$ and variance~$\Sigma$;
-\item Round~$\Psi$ to the nearest permutation matrix,~${P^*(\Psi)}$, using the Hungarian algorithm;
-  and
-\item Return~${X = \tau \Psi + (1-\tau) P^*(\Psi)}$.
+\item Input~${\Xi \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${H \in \reals_+^{N \times N}}$;
+\item Map~$M \to \mathsf{sinkhorn}(M)$, a point near the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
+\item Set~${\Psi = \mathsf{sinkhorn}(M) + H \odot \Xi}$ where~$\odot$ denotes elementwise multiplication;
+\item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix to~$\Psi$, using the Hungarian algorithm;
+\item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
-This procedure implicitly defines a distribution over matrices~$X$
-parameterized by~$M$ and $\Sigma$, which we will optimize.
-Steps (i) and (ii) involve differentiable transformations of
-parameter~$M$ to set the mean close to the Birkhoff polytope; the
-challenge in computing the density~$p(X; M, \Sigma)$ stems from step
-(iv), since the rounding operation is not differentiable.  However,
-the rounding output only changes at points that are equidistant from
-two or more permutation matrices. In other words, rounding is a
-piecewise constant function of~$\Psi$ with discontinuities only at a
-set of points with zero measure. In practice, we find that we can
-safely ignore these discontinuities.  Furthermore, note
-that~${P^*(\Psi) \equiv P^*(X)}$ so that the inverse transformation
-is~${\Psi = \tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau} P^*(X)}$.  Taken
-together,~$X$ is a linear function of a Gaussian random variable and
-its density is,
-\begin{align*}
-  p(X; M, \Sigma) = \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} P^*(X); \, \mathrm{proj}(M), \Sigma \right),
-\end{align*}
-which is valid for~$X$ in the image of the rounding operation.  In the
-zero-temperature limit we recover a discrete distribution on
-permutation matrices; otherwise the density concentrates near the
-vertices as~${\tau \to 0}$.
+This procedure is a mapping~$X = g(\Xi; M, H)$, and when the elements
+of~$\Xi$ are independent sampled from a standard normal distribution,
+it implicitly defines a distribution over matrices~$X$ parameterized
+by~$M$ and~$H$. Furthermore, as~$\tau$ goes to zero, the density
+concentrates on permutation matrices.  We use this procedure to define
+a variational distribution with density~$q(X; M, H)$.
 
-Why is step (iii) necessary? Na\"ively, we could sample a matrix and
-project it with the Sinkhorn-Knopp algorithm; the problem is that we
-could not calculate the resulting density since the Sinkhorn-Knopp
-algorithm is non-invertible.  With the algorithm above, Sinkhorn-Knopp
-is employed \emph{prior} to sampling, allowing us to compute the
-resulting density.
+To compute the ELBO and its gradient~\eqref{eq:elbo}, we need to
+evaluate~$q(X; M, H)$.  By construction, steps (i) and (ii) involve
+differentiable transformations of parameter~$M$ to set the mean close
+to the Birkhoff polytope, but since these do not influence the
+distribution of~$\Xi$, the non-invertibility of
+the~$\mathsf{sinkhorn}$ function poses no problems.  Had
+we applied~$\mathsf{sinkhorn}$ directly to~$\Xi$, this would not be true.
+The challenge in computing the density stems from the rounding in
+steps (iv) and (v).
+
+To compute~$q(X; M, H)$, we need the inverse~$g^{-1}(X; M, H)$ and its
+Jacobian.  The inverse is straightforward: when~${\tau \in [0,1)}$,
+$\mathsf{round}(\Psi)$ outputs a point strictly closer to the nearest
+permutation, implying
+${\mathsf{round}(\Psi) \equiv \mathsf{round}(X)}$.  Thus, the inverse
+is~${\Psi = \tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau}
+  \mathsf{round}(X)}$.  A slight wrinkle arises from the fact that
+step (v) maps to a subset~$\mcX_\tau \subset \reals^{N \times N}$, but
+this inverse is valid for all~$X \in \mcX_\tau$.\footnote{Consider a
+  simple example of rounding in the one-dimensional simplex, that is,
+  the unit interval.  If~$\tau = 0.5$, the rounding operation
+  maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$; the resulting density
+  has zero measure in the interval~$[0.25, 0.75)$.  The same is true
+  of rounding toward permutations: the inverse mapping is only defined
+  for points within~$\tau$ of a permutation, and the resulting density
+  is discontinuous at the boundaries. }
+
+The Jacobian is more challenging due to the non-differentiability
+of~$\mathsf{round}$. However, since the nearest permutation output
+only changes at points that are equidistant from two or more
+permutation matrices, $\mathsf{round}$ is a piecewise constant
+function with discontinuities only at a set of points with
+zero measure. In practice, we find that we can safely ignore these
+discontinuities.
+
+With the inverse and its Jacobian, we have
+\begin{multline*}
+  q(X; M, \Sigma) = \\
+  \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sinkhorn}(M), \Sigma \right),
+\end{multline*}
+for~${X \in \mcX_\tau}$.
+In the zero-temperature limit we recover a discrete
+distribution on permutation matrices; otherwise the density
+concentrates near the vertices as~${\tau \to 0}$.  This
+transformation leverages computationally efficient algorithms
+like Sinkhorn-Knopp and the Hungarian algorithm to define a
+temperature-controlled variational distribution near the
+Birkhoff polytope, and it enjoys many theoretical and practical
+benefits.
 
 \begin{figure*}[ht] 
    \centering
@@ -493,9 +519,7 @@ empirically.
 \item Rounding uses the~$O(N^3)$ Hungarian algorithm in its sampling
   process, whereas stick-breaking is a feed-forward,~$O(N^2)$, process.
   \todo{but isn't the Jacobian $O(N^4)$ in both cases?}
-  
-\item Stick-breaking is a bijective mapping from~$\reals^{(N-1) \times (N-1)}$ to~$\mcB_N$, whereas rounding maps~$\reals^{N \times N}$ to a subset of~$\reals^{N \times N}$.  Consider a simple example of rounding in the one-dimensional simplex, that is, the unit interval.  If~$\tau = 0.5$, the rounding operation maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$ (the midpoint is arbitrarily rounded up); the resulting density has zero measure in the interval~$[0.25, 0.75)$.  The same is true of rounding toward permutations: the inverse mapping is only defined for points within~$\tau$ of a permutation, and the resulting density is discontinuous at the boundaries. 
-  
+    
 \item Rounding can easily incorporate constraints.  If certain
   mappings are invalid, e.g.~${X_{mn} \equiv 0}$, they are given an
   infinite cost in the Hungarian algorithm.\footnote{Constraints of
@@ -732,7 +756,7 @@ Then, we approximate the true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)
 \begin{figure*}[ht]
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
-  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $P^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
+  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $X^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
 \label{fig:elegantresults}
 \end{figure*}
 
