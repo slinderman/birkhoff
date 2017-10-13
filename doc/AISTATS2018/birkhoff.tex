@@ -434,8 +434,8 @@ following procedure for sampling a point \emph{near} the Birkhoff
 polytope:
 \begin{enumerate}[label=(\roman*)]
 \item Input~${\Xi \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${H \in \reals_+^{N \times N}}$;
-\item Map~$M \to \mathsf{sinkhorn}(M)$, a point near the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
-\item Set~${\Psi = \mathsf{sinkhorn}(M) + H \odot \Xi}$ where~$\odot$ denotes elementwise multiplication;
+\item Map~$M \to \mathsf{sink}(M)$, a point near the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
+\item Set~${\Psi = \mathsf{sink}(M) + H \odot \Xi}$ where~$\odot$ denotes elementwise multiplication;
 \item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix to~$\Psi$, using the Hungarian algorithm;
 \item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
@@ -451,8 +451,8 @@ evaluate~$q(X; M, H)$.  By construction, steps (i) and (ii) involve
 differentiable transformations of parameter~$M$ to set the mean close
 to the Birkhoff polytope, but since these do not influence the
 distribution of~$\Xi$, the non-invertibility of
-the~$\mathsf{sinkhorn}$ function poses no problems.  Had
-we applied~$\mathsf{sinkhorn}$ directly to~$\Xi$, this would not be true.
+the~$\mathsf{sink}$ function poses no problems.  Had
+we applied~$\mathsf{sink}$ directly to~$\Xi$, this would not be true.
 The challenge in computing the density stems from the rounding in
 steps (iv) and (v).
 
@@ -470,8 +470,7 @@ this inverse is valid for all~$X \in \mcX_\tau$.\footnote{Consider a
   maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$; the resulting density
   has zero measure in the interval~$[0.25, 0.75)$.  The same is true
   of rounding toward permutations: the inverse mapping is only defined
-  for points within~$\tau$ of a permutation, and the resulting density
-  is discontinuous at the boundaries. }
+  for points within~$\tau$ of a permutation. }
 
 The Jacobian is more challenging due to the non-differentiability
 of~$\mathsf{round}$. However, since the nearest permutation output
@@ -482,10 +481,10 @@ zero measure. In practice, we find that we can safely ignore these
 discontinuities.
 
 With the inverse and its Jacobian, we have
-\begin{multline*}
-  q(X; M, \Sigma) = \\
-  \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sinkhorn}(M), \Sigma \right),
-\end{multline*}
+\begin{align*}
+  q(X; M, \Sigma) = 
+  \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), \Sigma \right),
+\end{align*}
 for~${X \in \mcX_\tau}$.
 In the zero-temperature limit we recover a discrete
 distribution on permutation matrices; otherwise the density
@@ -522,7 +521,7 @@ performance, which we study in Section~\ref{sec:synthetic}.
   the stick-breaking computations are slightly more efficient.
     
 \item Rounding can easily incorporate constraints.  If certain
-  mappings are invalid, e.g.~${X_{mn} \equiv 0}$, they are given an
+  mappings are invalid, i.e.~${X_{mn} \equiv 0}$, they are given an
   infinite cost in the Hungarian algorithm.\footnote{Constraints of
     the form~$X_{m,n} \equiv 1$ simply reduce the dimension of the
     inference problem.}  This is hard to do this with stick breaking
@@ -633,22 +632,183 @@ We are interested in two principal questions:
  (i) how well can the stick-breaking and rounding re-parameterizations
 of the Birkhoff polytope approximate the true posterior distribution
 over permutations in tractable, low-dimensional cases? and (ii)
-when, if ever, do our proposed continuous relaxations offer
+when do our proposed continuous relaxations offer
 advantages over alternative  Bayesian permutation
 inference algorithms?
 
-Before addressing those questions we start by comparing how the categorical counterparts \footnote{That is, simple stick breaking and rounding in the probability simplex.} of our proposed distributions over permutations perform on a simple VAE task.  Results of this task may shed light on the usefulness of our proposed relaxations.
+We first studied how stick-breaking and rounding perform in simple
+categorical inference tasks, where they offer an alternative to the
+Gumbel-softmax method.  We found that our methods were comparable,
+though slightly inferior; this is the price paid for techniques that
+extend to more complicated discrete inference problems. Since our
+main interest lies in permutation inference, we defer these results
+to the supplement. 
 
-\subsection{Variational Autoencoders (VAE) with categorical latent variables}
-We considered the density estimation
-task on MNIST digits, as in \cite{maddison2016concrete,
-  jang2016categorical}, where observed digits are reconstructed from a
-latent discrete code. We used the continuous ELBO for training, and
-evaluated performance based on the marginal likelihood, estimated
-through the multi-sample variational objective of the discretized
-model. We compared against the methods of
-\cite{jang2016categorical, maddison2016concrete}, finding similar (although slightly worse) results (Table 1). This difference may be intepreted as the price to be paid in order to enable an extension of a relaxed distribution over categories, to permutations.  In the supplement more results on this task are available.
-\begin{table}[t]
+To assess the quality of our approximations for distributions over
+permutations, we considered a toy matching problem in which we are
+given the locations of~$N$ cluster centers and a corresponding set
+of~$N$ observations, one for each cluster, corrupted by Gaussian
+noise.  Moreover, the observations are permuted so there is no
+correspondence between the order of observations and the order of the
+cluster centers.  The goal is to recover the posterior distribution
+over permutations.  For~$N=6$, we can explicitly enumerate
+the~$N!=720$ permutations and compute the posterior exactly.
+ 
+ As a baseline, we consider the Mallows distribution
+ \cite{Mallows1957} with density over a permutations $\phi$ given by
+ $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where
+ $\phi_0$ is a central permutation,
+ ${d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|}$ is a distance
+ between permutations, and $\theta$ controls the spread around
+ $\phi_0$. This is the most popular exponential family model for
+ permutations, but it can fail to capture complex features of
+ distributions.
+
+ \begin{table}[h]
+  \caption{Mean BDs in the synthetic matching experiment for various methods and observation variances.}
+  \label{table:BDs}
+  \centering
+  \begin{tabular}{lllll}
+    & \multicolumn{4}{c}{Variance $\sigma^2$} \\
+    \cmidrule(lr){3-4} 
+    \textbf{Method} & $.1^2$ & $.25^2$ & $.5^2$ & $.75^2$ \\
+    \hline
+    Stick-breaking & .09 & .23 & .41 & .55 \\
+    Rounding & \textbf{.06} & \textbf{.21}  & \textbf{.32}  & \textbf{.38} \\
+    Mallows $(\theta=0.1)$ & .93 & .92 & .89  & .85 \\
+    Mallows $(\theta=0.5)$ & .51 & .53  & .61 & .71 \\
+    Mallows $(\theta=2)$ & .23 & .33 & .53  & .69 \\
+    Mallows $(\theta=5)$ & .08 & .27 & .54 & .72 \\
+    Mallows $(\theta=10)$ & .08 & .27 & .54  & .72 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{../figures/figure6.pdf} 
+  \caption{Problem setup. (a) Hermaphrodite C.elegans reference
+    connectome (from \cite{varshney2011structural,wormatlas})
+    consisting of 278 somatic neurons, merging two distinct types of
+    synapses: chemical and electrical (gap junctions). (b) Example of
+    matrix $W$ consistent with the connectome information (only 14
+    neurons for visibility), (c) Distribution of neuron position in
+    the body, zero means head and one means tail. From
+    \cite{white1986structure,wormatlas} (d). Examples of the dynamical
+    system sampled from matrix $W$.}
+  \label{fig:connectome}
+\end{figure*}
+
+We measured the discrepancy between true posterior and an empirical
+estimate of the inferred posteriors using using the Battacharya
+distance (BD). We fit $q(X; \theta)$ for both stick-breaking and
+rounding transformations, sampled the variational posterior, and
+rounded the samples to the nearest permutation matrix with the
+Hungarian algorithm. For the Mallows distribution, we set $\phi_0$ to
+the MAP estimate, also found with the Hungarian algorithm, and sampled
+using MCMC.
+ 
+We found our method outperforms the simple Mallows distribution
+and reasonably approximates non-trivial distributions
+over permutations. Fig~\ref{fig:synthetic} illustrates our findings
+by showing sample experiment configurations (a), examples of inferred
+posteriors (b) and distribution of BD's (c). These results are
+summarized in Table~\ref{table:BDs}.
+
+
+\section{Inferring neuron identities in \textit{C. elegans}}
+\label{sec:celegans}
+
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
+  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $X^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
+\label{fig:elegantresults}
+\end{figure*}
+
+
+Finally, we consider an application motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of interest for neuroscience, as its neural network changes little from animal to animal. Recent efforts have focused on establishing an accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural} --- a connectome --- that we represent as graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C. elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we name $\mathcal{C}$.
+
+The C. elegans, then, is particularly suited from investigating how neural activity gives rise to behaviour, a question that has been recently rigorously addressed \cite{Kato2015}. However, there, intensive manual data curation was needed to match neural recordings from calcium imaging techniques to actual neurons. This manual analysis was based on the study of joint patterns of neural activity, and the comparison of observed linear position of recorded neurons to a reference worm. Unfortunately, in some cases, identity could not be exactly resolved, and only putative candidates were inferred. 
+
+This difficulty offers fertile ground for the development of new methods. Recently, promising approaches \cite{Aoki2017} have illustrated the plausibility of using the Brainbow technology \cite{Livet2007} for such purposes, by genetically engineering worms to express fluorescent proteins. 
+
+We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method embodies the criteria of manual data curation into an algorithm: we resolve neural identity by integrating different sources of information from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, we combine information from many individuals to facilitate identity resolution.
+
+\subsection{Probabilistic Model}
+We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems
+recorded during $t=1,\ldots, T$ time-steps
+$Y^m_t=P_mWP_m^\top
+Y^m_{t-1}+\varepsilon_t,\;\varepsilon_t\sim\mathcal{N}(0,I)$ (Fig
+~\ref{fig:connectome}d). Each of the $Y_t^m$ is a $N=278$ dimensional
+vector representing the recorded activity of the entire nervous
+system. These recordings are a permutation (represented by $P_n$) of
+the dynamics in a canonical order.  Entries of
+$W$ are chosen consistently with the connectome: i.e.,
+$W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries
+are then independently sampled from a normal distribution, and scaled
+by a factor of the spectral radius to ensure stability (see Fig
+~\ref{fig:connectome}b for an example of $W$, and see supplement for
+further details).
+
+We perform variational inference on this model for the joint
+estimation of the posterior probability of $P_m$ and $W$ given
+$Y_m$. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0,
+I)$. Also, for each of the $P_m$ use the machinery developed in
+section \ref{sec:permutation}, and we focus on the rounding
+approximation.  Then, we approximate the true posterior
+$p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$) by a
+variational family $q$ of the form
+$q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian
+and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}.
+
+Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, we utilize previously documented positions of each neuron as numbers between zero and one \cite{white1986structure,wormatlas} (under the abstraction that a worm can be represented as one-dimensional object, see Fig ~\ref{fig:connectome}c). Then, given reported positions of all (or some) neurons, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than a tolerance $\nu$. We can enforce this constrain during inference, by zeroing corresponding entries in the parameter matrix $M$ described in ~\ref{sub:rounding}.  This modeling choice greatly reduces the number parameters of the model, and facilitates inference. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
+
+\subsection{Results}
+
+We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a `hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
+
+As shown in Fig \ref{fig:elegantresults}, our method outperforms each baseline: specifically,  first, Fig \ref{fig:elegantresults}a illustrates convergence to a better solution for a certain parameter configuration. More conclusively, Fig ~\ref{fig:elegantresults}b and  Fig ~\ref{fig:elegantresults}c shows that our method outperforms alternatives when there is much uncertainty on neural position; i.e, when there are many possible candidates (large $\nu$), and where only a small proportion of neurons are known with certitude. Fig ~\ref{fig:elegantresults}c also shows that we indeed obtain benefits from combining information of many worms (although the same applies to MCMC). 
+
+Altogether, these results indicate our method enables a more efficient use of information than MCMC. We interpret this in terms of the observation that in practice variational inference converges faster than MCMC \cite{Blei2017}: we expect MCMC would eventually converge, but in practice it does so slow that asymptotic values are not achieved in reasonable time, as changes in $P$ are very local and proposals (local swipes) are usually rejected. On the other hand, our parameterization allows to more freely sample the parameter space. This is observed in Fig  ~\ref{fig:elegantresults}d: variability of permutation samples is high during iterations (see variability in Fig ~\ref{fig:elegantresults}e), but eventually decays to asymptotic values after more certainty of the true permutation has been accumulated.
+\section{Discussion}
+Our results provide evidence that permutation variational inference
+might provide a helpful tool for the inference of neural identity, as
+it allows to properly represent shared information across animals, and
+different degrees of certainty based on covariates. In order to apply
+it to real data it is necessary to consider more realistic models of
+neural dynamics, which are non-linear but might be well characterized,
+for example, by a set of atomic low-dimensional linear dynamical
+systems, each of one corresponding to a certain behavioral state
+\cite{Kato2015}. The methodology developed in \cite{Linderman2016}
+seems particularly suitable to harness that increased level of
+complexity.
+
+\bibliography{refs}
+\bibliographystyle{abbrvnat}
+
+
+\pagebreak 
+\appendix
+
+
+\section*{Supplement}
+
+
+\subsection*{Variational Autoencoders (VAE) with categorical latent variables}
+We considered the density estimation task on MNIST digits, as in
+\cite{maddison2016concrete, jang2016categorical}, where observed
+digits are reconstructed from a latent discrete code. We used the
+continuous ELBO for training, and evaluated performance based on the
+marginal likelihood, estimated through the multi-sample variational
+objective of the discretized model. We compared against the methods of
+\cite{jang2016categorical, maddison2016concrete}, finding similar
+(although slightly worse) results (Table~\ref{tab:vae}). This difference may be
+intepreted as the price to be paid in order to enable an extension of
+a relaxed distribution over categories, to permutations.  Since this
+task is ancillary to our goal of permutation inference, we defer most
+details to the supplement.
+\begin{table}[h]
   \caption{Summary of results in VAE}
   \label{tab:vae}
   \centering
@@ -682,104 +842,6 @@ model. We compared against the methods of
 %   \end{tabular}
 % \end{table*}
 
- \subsection{Synthetic matching experiments}
- To assess the quality of our approximations for distributions over
- permutations, we considered a toy matching problem in which we are given the locations of~$N$ cluster centers and a corresponding set of~$N$
- observations, one for each cluster, corrupted by Gaussian noise.
- Moreover, the observations are permuted so there is no correspondence
- between the order of observations and the order of the cluster centers.
- The goal is to recover the posterior distribution over permutations.
- For~$N=6$, we can explicitly enumerate the~$N!=720$ permutations and
- compute the posterior exactly. 
- 
- As a baseline, we consider the Mallows distribution  \cite{Mallows1957} with density over a permutations $\phi$ given by $p_{\theta, \phi_0}(\phi)\propto \exp(-\theta d(\phi,\phi_0))$, where $\phi_0$ is a central permutation, $d$ is a distance between permutations \footnote{Here, $d(\phi,\phi_0)=\sum_{i=1}^N |\phi(i)-\phi_0(i)|$.} and $\theta$ controls the spread around $\phi_0$. This is perhaps the most popular exponential family model for permutations; however, it is too simple and might fail to capture complex features of distributions.
-
- \begin{table}[h]
-  \caption{Mean BDs in the synthetic matching experiment for various methods and observation variances.}
-  \label{table:BDs}
-  \centering
-  \begin{tabular}{lllll}
-    & \multicolumn{4}{c}{Variance $\sigma^2$} \\
-    \cmidrule(lr){3-4} 
-    \textbf{Method} & $.1^2$ & $.25^2$ & $.5^2$ & $.75^2$ \\
-    \hline
-    Stick-breaking & .09 & .23 & .41 & .55 \\
-    Rounding & \textbf{.06} & \textbf{.21}  & \textbf{.32}  & \textbf{.38} \\
-    Mallows $(\theta=0.1)$ & .93 & .92 & .89  & .85 \\
-    Mallows $(\theta=0.5)$ & .51 & .53  & .61 & .71 \\
-    Mallows $(\theta=2)$ & .23 & .33 & .53  & .69 \\
-    Mallows $(\theta=5)$ & .08 & .27 & .54 & .72 \\
-    Mallows $(\theta=10)$ & .08 & .27 & .54  & .72 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
- Using the Battacharya distance (BD) we measured the discrepancy
- between true posterior and an empirical estimate of the inferred
- posteriors: in our relaxations, by sampling from $q(X; \theta)$ and `rounding'
- to the nearest permutation using the Hungarian algorithm. Likewise, for the Mallows distribution, we set $\phi_0$ to the MAP estimate, also through the Hungarian algorithm, and sampled using MCMC.
- 
- We found our method outperforms the simple Mallows distribution, suggesting it might reasonably approximate non-trivial distributions over permutations. Fig ~\ref{fig:synthetic} illustrates our findings by showing sample experiment configurations (a), examples of inferred posteriors (b) and distribution of BD's (c). These histograms are summarized by Table \ref{table:BDs}.
-
-
-\section{Inferring neuron identities in \textit{C. elegans}}
-\label{sec:celegans}
-
-\begin{figure*}[ht]
-  \centering
-  \includegraphics[width=1.0\textwidth]{../figures/figure6.pdf} 
-  \caption{Problem setup. (a) Hermaphrodite C.elegans reference
-    connectome (from \cite{varshney2011structural,wormatlas})
-    consisting of 278 somatic neurons, merging two distinct types of
-    synapses: chemical and electrical (gap junctions). (b) Example of
-    matrix $W$ consistent with the connectome information (only 14
-    neurons for visibility), (c) Distribution of neuron position in
-    the body, zero means head and one means tail. From
-    \cite{white1986structure,wormatlas} (d). Examples of the dynamical
-    system sampled from matrix $W$.}
-  \label{fig:connectome}
-\end{figure*}
-
-Finally, we consider an application motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of interest for neuroscience, as its neural network changes little from animal to animal. Recent efforts have focused on establishing an accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural} --- a connectome --- that we represent as graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C. elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we name $\mathcal{C}$.
-
-The C. elegans, then, is particularly suited from investigating how neural activity gives rise to behaviour, a question that has been recently rigorously addressed \cite{Kato2015}. However, there, intensive manual data curation was needed to match neural recordings from calcium imaging techniques to actual neurons. This manual analysis was based on the study of joint patterns of neural activity, and the comparison of observed linear position of recorded neurons to a reference worm. Unfortunately, in some cases, identity could not be exactly resolved, and only putative candidates were inferred. 
-
-This difficulty offers fertile ground for the development of new methods. Recently, promising approaches \cite{Aoki2017} have illustrated the plausibility of using the Brainbow technology \cite{Livet2007} for such purposes, by genetically engineering worms to express fluorescent proteins. 
-
-We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method embodies the criteria of manual data curation into an algorithm: we resolve neural identity by integrating different sources of information from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, we combine information from many individuals to facilitate identity resolution in hard cases.
-
-\subsection{Probabilistic Model}
-We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems recorded during $t=1,\ldots, T$ time-steps $Y^m_t=P_mWP_m^\top Y^m_{t-1}+\varepsilon_t,\;\varepsilon_t\sim\mathcal{N}(0,I)$ (Fig ~\ref{fig:connectome}d). Each of the $Y_t^m$ is a $N=278$ dimensional vector representing the recorded activity of the entire nervous system. These recordings are a permutation (represented by $P_n$) of the dynamics in a canonical order.  Entries of $W$\footnote{Alternatively, one could have chosen a hierarchical model of $W_m\sim p(W)$, a direction that we avoided here for the sake of simplicity.} are chosen consistently with the connectome: i.e., $W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries are then independently sampled from a normal distribution, and scaled by a factor of the spectral radius to ensure stability (see Fig ~\ref{fig:connectome}b for an example of $W$, and see supplement for further details).
-
-We perform variational inference on this model for the joint estimation of the posterior probability of $P_m$ and $W$ given  $Y_m$ \footnote{$\varepsilon$ is assumed known for simplicity, but could otherwise be included in the posterior, or be directly estimated from data.}. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0, I)$. Also, for each of the $P_m$ use the machinery developed in section \ref{sec:permutation}, and we focus on the rounding approximation. 
-Then, we approximate the true posterior $p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$)  by a variational family $q$ of the form $q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}. 
-
-
-\begin{figure*}[ht]
-  \centering
-  \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
-  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $X^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
-\label{fig:elegantresults}
-\end{figure*}
-
-
-Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, we utilize previously documented positions of each neuron as numbers between zero and one \cite{white1986structure,wormatlas} (under the abstraction that a worm can be represented as one-dimensional object, see Fig ~\ref{fig:connectome}c). Then, given reported positions of all (or some) neurons, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than a tolerance $\nu$. We can enforce this constrain during inference, by zeroing corresponding entries in the parameter matrix $M$ described in ~\ref{sub:rounding}.  This modeling choice greatly reduces the number parameters of the model, and facilitates inference. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
-
-\subsection{Results}
-
-We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a `hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
-
-As shown in Fig \ref{fig:elegantresults}, our method outperforms each baseline: specifically,  first, Fig \ref{fig:elegantresults}a illustrates convergence to a better solution for a certain parameter configuration. More conclusively, Fig ~\ref{fig:elegantresults}b and  Fig ~\ref{fig:elegantresults}c shows that our method outperforms alternatives when there is much uncertainty on neural position; i.e, when there are many possible candidates (large $\nu$), and where only a small proportion of neurons are known with certitude. Fig ~\ref{fig:elegantresults}c also shows that we indeed obtain benefits from combining information of many worms (although the same applies to MCMC). 
-
-Altogether, these results indicate our method enables a more efficient use of information than MCMC. We interpret this in terms of the observation that in practice variational inference converges faster than MCMC \cite{Blei2017}: we expect MCMC would eventually converge, but in practice it does so slow that asymptotic values are not achieved in reasonable time, as changes in $P$ are very local and proposals (local swipes) are usually rejected. On the other hand, our parameterization allows to more freely sample the parameter space. This is observed in Fig  ~\ref{fig:elegantresults}d: variability of permutation samples is high during iterations (see variability in Fig ~\ref{fig:elegantresults}e), but eventually decays to asymptotic values after more certainty of the true permutation has been accumulated.
-\section{Discussion}
-Our results provide evidence that permutation variational inference might provide a helpful tool for the inference of neural identity, as it allows to properly represent shared information across animals, and different degrees of certainty based on covariates. In order to apply it to real data it is necessary to consider more realistic models of neural dynamics, which are non-linear but might be well characterized, for example, by a set of atomic low-dimensional linear dynamical systems, each of one corresponding to a certain behavioral state  \cite{Kato2015}. The methodology developed in \cite{Linderman2016} seems particularly suitable to harness that increased level of complexity. \
-2.3 3.5 11
-\bibliography{refs}
-\bibliographystyle{abbrvnat}
-\pagebreak 
-\appendix
-\section*{Supplement}
 \subsection*{MNIST reconstructions}
 In figure \ref{fig:VAE} we show some MNIST  reconstructions using Gumbel-Softmax, stick-breaking and rounding reparameterizations. In all the three cases reconstructions are reasonably accurate, and there is diversity in reconstructions.
 \begin{figure*}[t]
