@@ -177,8 +177,7 @@ represented as a binary matrix~${X \in \{0,1\}^{N \times N}}$
 where~${X_{m,n}=1}$ implies that element~$m$ is mapped to element~$n$.  Since
 permutations are bijections, both the rows and columns of~$X$ must
 sum to one.  From a geometric perspective, the Birkhoff-von Neumann
-theorem states that permutation matrices are vertices of the convex
-hull of doubly stochastic matrices; i.e. non-negative square matrices
+theorem states that the convex hull of the set of permutation matrices are the set of doubly stochastic matrices; i.e. non-negative square matrices
 whose rows and columns sum to one. The set of doubly
 stochastic matrices is known as the \emph{Birkhoff polytope}, and it
 is defined by,
@@ -193,7 +192,7 @@ restrict~$\mcB_N$ to a~${(N-1)^2}$ dimensional subset
 of~$\reals^{N \times N}$.  Despite these constraints, we have a number
 of efficient algorithms for working with these objects.  The
 \emph{Sinkhorn-Knopp algorithm}~\citep{sinkhorn1967concerning}
-projects the positive orthant onto~$\mcB_N$ by iteratively normalizing
+maps the positive orthant onto~$\mcB_N$ by iteratively normalizing
 the rows and columns, and the \emph{Hungarian
   algorithm}~\citep{kuhn1955hungarian, munkres1957algorithms} solves
 the minimum weight bipartite matching problem---optimizing a linear
@@ -205,25 +204,24 @@ objective over the set of permutation matrices---in cubic time.
 
 \subsection{Variational inference and the reparameterization trick}
 \label{sub:repa}
-Variational Bayesian inference algorithms aim to approximate the
-posterior distribution~$p(x \given y)$ with a more tractable
-distribution~$q(x; \theta)$, where ``tractable'' means that, at a
-minimum, we can sample~$q$ and evaluate it pointwise (including
-its normalization constant).  We find this approximate distribution
-by searching for the parameters~$\theta$ that minimize the Kullback-Leibler (KL)
-divergence between~$q$ and the true posterior, or equivalently,
-maximize the evidence lower bound (ELBO),
+Given an intractable model with data~$y$, likelihood~$p(y \given x)$,
+and prior~$p(x)~$, variational Bayesian inference algorithms aim to
+approximate the posterior distribution~$p(x \given y)$ with a more
+tractable distribution~$q(x; \theta)$, where ``tractable'' means that,
+at a minimum, we can sample~$q$ and evaluate it pointwise (including
+its normalization constant)~\citep{Blei2017}.  We find this
+approximate distribution by searching for the parameters~$\theta$ that
+minimize the Kullback-Leibler (KL) divergence between~$q$ and the true
+posterior, or equivalently, maximize the evidence lower bound~(ELBO),
 \begin{align*}
   \mcL(\theta) &\triangleq \bbE_q \left[ \log p(x, y) - \log q(x; \theta) \right].
 \end{align*}
 Perhaps the simplest method of optimizing the ELBO is stochastic
-gradient ascent. 
-However, computing~$\nabla_\theta \mcL(\theta)$ requires some care
-since the ELBO contains an expectation with respect to a distribution
-that depends on these parameters.
+gradient ascent.  However, computing~$\nabla_\theta \mcL(\theta)$
+requires some care since the ELBO contains an expectation with respect
+to a distribution that depends on these parameters.
 
-When~$x$ is a continuous random variable, we can often go one step
-further and leverage the \emph{reparameterization trick}
+When~$x$ is a continuous random variable, we can sometimes leverage the \emph{reparameterization trick}
 \citep{Salimans2013, Kingma2014}.  Specifically, in some cases we can
 simulate from~$q$ via the following equivalence,
 \begin{align*}
@@ -233,12 +231,13 @@ simulate from~$q$ via the following equivalence,
 \end{align*}
 where~$r$ is a distribution on the ``noise''~$\xi$ and
 where~$g(\xi; \theta)$ is a deterministic and differentiable
-function. For example,
-if~${q(x; \theta) = \mathcal{N}(x \given \theta, 1)}$, we can
-reparameterize by setting the noise distribution
-to~${r(\xi) = \mathcal{N}(\xi \given 0, 1)}$ and using the
-transformation~${g(\xi; \theta) = \xi + \theta}$.  The
-reparameterization trick effectively ``factors out'' the randomness
+function.
+% For example,
+% if~${q(x; \theta) = \mathcal{N}(x \given \theta, 1)}$, we can
+% reparameterize by setting the noise distribution
+% to~${r(\xi) = \mathcal{N}(\xi \given 0, 1)}$ and using the
+% transformation~${g(\xi; \theta) = \xi + \theta}$.
+The reparameterization trick effectively ``factors out'' the randomness
 of~$q$. With this transformation, we can bring the gradient inside the
 expectation as follows,
 \begin{multline}
