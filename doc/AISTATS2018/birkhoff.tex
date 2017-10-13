@@ -199,6 +199,32 @@ the minimum weight bipartite matching problem---optimizing a linear
 objective over the set of permutation matrices---in cubic time.
 
 
+\subsection{Related Work}
+A number of previous works have considered approximate methods of
+posterior inference over the space of permutations.
+When a point estimate will not suffice, sampling methods like Markov
+chain Monte Carlo (MCMC) algorithms may yield a reasonable approximate
+posterior for simple problems~\citep{diaconis1988group}.
+\citet{harrison2013importance} developed an importance sampling
+algorithm that fills in count matrices one row at a time, showing
+promising results for matrices with~$O(100)$ rows and columns.  It may
+also be possible to turn the Hungarian algorithm into an efficient
+sampling algorithms using Perturb-and-MAP \citep{li2013efficient}.
+Another line of work considers inference in the spectral domain,
+approximating distributions over permutations with the low frequency
+Fourier components~\citep{kondor2007multi, huang2009fourier}.  Perhaps
+most relevant to this work, \citet{plis2011directional} propose a
+continuous relaxation from permutation matrices to points on a
+hypersphere, and then use the von Mises-Fisher (vMF) distribution to
+model distributions on the sphere's surface.  
+% While the vMF
+% distribution does have a concentration parameter, as the concentration
+% goes to infinity, the distribution converges to a point on the sphere.
+We will relax permutations to points in the Birkhoff polytope and
+derive temperature-controlled densities such that as the
+temperature goes to zero, the distribution converges to an atomic
+density on permutation matrices.  This will enable efficient variational
+inference with the reparameterization trick, which we describe next. 
 
 
 
@@ -220,6 +246,27 @@ Perhaps the simplest method of optimizing the ELBO is stochastic
 gradient ascent.  However, computing~$\nabla_\theta \mcL(\theta)$
 requires some care since the ELBO contains an expectation with respect
 to a distribution that depends on these parameters.
+
+
+\begin{figure*}[ht!]
+  \centering
+  \includegraphics[width=4.75in]{../figures/figure1.pdf} 
+  \caption{Reparameterizations of discrete polytopes.  (a,b) The
+    Gumbel-softmax, or ``Concrete'' transformation maps points
+    ${\psi \in \reals^N}$ to points~${x \in \Delta_{N}}$ by adding
+    noise and applying the softmax.  Here we show a slice for~$N=3$
+    with~$\psi_3=0$. Colored points are aids to visualize the
+    transformation.  (c,d) Stick-breaking offers and alternative
+    transformation, here from points~$\psi \in [0,1]^{N-1}$ to~$\Delta_N$.
+    The ordering of the stick-breaking induces an asymmetry in the
+    transformation.  (e,f) We extend this stick-breaking transformation
+    to reparameterize the Birkhoff polytope, i.e. the set of doubly
+    stochastic matrices. Here,~$\mcB_3$ is reparameterized in terms
+    of matrices~$\Psi \in [0,1]^{2 \times 2}$, of which three coordinates
+    are shown in (e).  These points are mapped to doubly stochastic
+    matrices, which we have projected onto~$\reals^2$ in panel~(f).}
+\label{fig:transforms}
+\end{figure*}
 
 When~$x$ is a continuous random variable, we can sometimes leverage the \emph{reparameterization trick}
 \citep{Salimans2013, Kingma2014}.  Specifically, in some cases we can
@@ -252,77 +299,44 @@ example, the score function estimator \citep{Williams1992, Glynn1990}.
 
 Critically, the gradients in~\eqref{eq:elbo} can only be computed
 if~$x$ is continuous. Recently, \citep{maddison2016concrete} and
-\citep{jang2016categorical} proposed a method for discrete variational
-inference based on the following observation: one-hot
-vectors~${x \in \{0,1\}^N}$ can alternatively be viewed as vertices of
-the simplex~$\Delta_N$; likewise, discrete probability mass
-functions~$q(x; \theta)$ can be seen as atomic densities on the
-vertices of the simplex.  This motivates a natural relaxation: let
-$q(x; \theta)$ be a density on the interior of the simplex instead and
-anneal this density such that it converges to an atomic density on the
-vertices. Figure~\ref{fig:transforms}a and b illustrate this
-idea. Real-valued random variables, e.g. Gumbel random variates,
-are mapped through a temperature-controlled softmax function,
+\citep{jang2016categorical} proposed the ``Gumbel-softmax'' method for
+discrete variational inference. It is based on the following
+observation: one-hot vectors~${x \in \{0,1\}^N}$ can be
+viewed as vertices of the simplex~$\Delta_N$; likewise, discrete
+probability mass functions~$q(x; \theta)$ can be seen as atomic
+densities on the vertices of the simplex.  This motivates a natural
+relaxation: let $q(x; \theta)$ be a density on the interior of the
+simplex instead and anneal this density such that it converges to an
+atomic density on the vertices. Figure~\ref{fig:transforms}a and b
+illustrate this idea. Real-valued random variables, e.g. Gumbel random
+variates, are mapped through a temperature-controlled softmax
+function,
 ${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_K /
     \tau}/Z \big]}$, where~$Z=\sum_{k=1}^K e^{\psi_k / \tau}$, to
 obtain points in the simplex. As~$\tau$ goes to zero, the density
 concentrates on one-hot vectors.  We extend this idea to the Birkhoff
-polytope.
-
-\begin{figure*}[ht!]
-  \centering
-  \includegraphics[width=4.75in]{../figures/figure1.pdf} 
-  \caption{Reparameterizations of discrete polytopes.  (a,b) The
-    Gumbel-softmax, or ``Concrete'' transformation maps points
-    ${\psi \in \reals^N}$ to points~${x \in \Delta_{N}}$ by adding
-    noise and applying the softmax.  Here we show a slice for~$N=3$
-    with~$\psi_3=0$. Colored points are aids to visualize the
-    transformation.  (c,d) Stick-breaking offers and alternative
-    transformation, here from points~$\psi \in [0,1]^{N-1}$ to~$\Delta_N$.
-    The ordering of the stick-breaking induces an asymmetry in the
-    transformation.  (e,f) We extend this stick-breaking transformation
-    to reparameterize the Birkhoff polytope, i.e. the set of doubly
-    stochastic matrices. Here,~$\mcB_3$ is reparameterized in terms
-    of matrices~$\Psi \in [0,1]^{2 \times 2}$, of which three coordinates
-    are shown in (e).  These points are mapped to doubly stochastic
-    matrices, which we have projected onto~$\reals^2$ in panel~(f).}
-\label{fig:transforms}
-\end{figure*}
-
-\subsection{Related Work}
-A number of previous works have considered approximate methods of
-posterior inference over the space of permutations.
-When a point estimate will not suffice, sampling methods like Markov
-chain Monte Carlo (MCMC) algorithms may yield a reasonable approximate
-posterior for simple problems~\citep{diaconis1988group}.
-\citet{harrison2013importance} developed an importance sampling
-algorithm that fills in count matrices one row at a time, showing
-promising results for matrices with~$O(100)$ rows and columns.  It may
-also be possible to turn the Hungarian algorithm into an efficient
-sampling algorithms using Perturb-and-MAP \citep{li2013efficient}.
-Another line of work considers inference in the spectral domain,
-approximating distributions over permutations with the low frequency
-Fourier components~\citep{kondor2007multi, huang2009fourier}.  Perhaps
-most relevant to this work, \citet{plis2011directional} propose a
-continuous relaxation from permutation matrices to points on a
-hypersphere, and then use the von Mises-Fisher (vMF) distribution to
-model distributions on the sphere's surface. While the vMF
-distribution does have a concentration parameter, as the concentration
-goes to infinity, the distribution converges to a point on the sphere.
-By contrast, we will derive temperature-controlled densities over
-points inside or near the Birkhoff polytope such that as the
-temperature goes to zero, the distribution converges to an atomic
-density on permutation matrices.
+polytope for variational permutation inference.
 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
-Unfortunately, reparameterization-based variational inference  \ref{sub:repa} is not readily available for permutations: as samples  (permutations) are discrete, the function $g$ cannot be continuous. However, recently, there have been a number of proposals to extend the
-reparameterization trick to discrete inference problems
-via continuous relaxation~\citep{maddison2016concrete,
-  jang2016categorical, kusner2016gans}. Essentially, the method is based on replacing the original ELBO objective ~\eqref{eq:elbo} by a surrogate one, arising from replacing the original samples $x$ by a relaxation; that is, now assuming they can belong to a larger, continuous set where derivatives are well defined. This surrogate construction is controlled by a  ``temperature'' knob that dictates the degree of relaxation; how ``far''   is the relaxation from the original discrete problem.
+% Unfortunately, reparameterization-based variational inference  \ref{sub:repa} is not readily available for permutations: as samples  (permutations) are discrete, the function $g$ cannot be continuous. However, recently, there have been a number of proposals to extend the
+% reparameterization trick to discrete inference problems
+% via continuous relaxation~\citep{maddison2016concrete,
+%   jang2016categorical, kusner2016gans}. Essentially, the method is based on replacing the original ELBO objective ~\eqref{eq:elbo} by a surrogate one, arising from replacing the original samples $x$ by a relaxation; that is, now assuming they can belong to a larger, continuous set where derivatives are well defined. This surrogate construction is controlled by a  ``temperature'' knob that dictates the degree of relaxation; how ``far''   is the relaxation from the original discrete problem.
   
-These relaxations, however, are not suitable for permutations, as the representation of a permutation as a category requires $N!$ slots. In this section, we develop two relaxations to enable variational permutation inference. In both relaxations the Birkhoff polytope will play a fundamental role, although clear differences exist. Also, in either case we start with a noise distribution $\Xi$ (here, gaussian) and transform it to a ``relaxed" permutation $X$ using a differentiable and invertible mapping $G$, and parameters $\theta$; i.e. $X=G(\Xi;\theta)$. With a suitable choice of priors this is enough to compute all terms of equation \eqref{eq:elbo}. We refer the reader to the supplemental material for details on choice of the (continuous) priors, and on how our assumptions lead to explicit expressions for the ELBO, for both relaxations introduced in the following.
- 
+% These relaxations, however, are not suitable for permutations, as the representation of a permutation as a category requires $N!$ slots. In this section, we develop two relaxations to enable variational permutation inference. In both relaxations the Birkhoff polytope will play a fundamental role, although clear differences exist. Also, in either case we start with a noise distribution $\Xi$ (here, gaussian) and transform it to a ``relaxed" permutation $X$ using a differentiable and invertible mapping $G$, and parameters $\theta$; i.e. $X=G(\Xi;\theta)$. With a suitable choice of priors this is enough to compute all terms of equation \eqref{eq:elbo}. We refer the reader to the supplemental material for details on choice of the (continuous) priors, and on how our assumptions lead to explicit expressions for the ELBO, for both relaxations introduced in the following.
+
+The Gumbel-softmax method scales linearly with the support of the
+discrete distribution, rendering it prohibitively expensive for direct
+use on the set of~$N!$ permutations.  Instead, we develop two
+transformations to map~$O(N^2)$-dimensional random variates to points in
+or near the Birkhoff polytope.  Like the Gumbel-softmax method, these
+transformations will be controlled by a temperature that concentrates
+the resulting density near permutation matrices.  The first method is
+a novel ``stick-breaking'' construction; the second rounds points
+toward permutations with the Hungarian algorithm.  We present these in
+turn and then discuss their relative merits. 
+
 \subsection{Stick-breaking transformations of the Birkhoff polytope}
 Let~$\Psi$ be an arbitrary matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
 transform it into a doubly stochastic
