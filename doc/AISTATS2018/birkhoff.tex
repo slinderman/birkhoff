@@ -338,25 +338,34 @@ toward permutations with the Hungarian algorithm.  We present these in
 turn and then discuss their relative merits. 
 
 \subsection{Stick-breaking transformations of the Birkhoff polytope}
-Let~$\Psi$ be an arbitrary matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
+Let~$\Psi$ be a matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
 transform it into a doubly stochastic
-matrix,~$X \in [0,1]^{N \times N}$ by filling in entry by entry, starting
+matrix,~${X \in [0,1]^{N \times N}}$ by filling in entry by entry, starting
 in the top left and raster scanning left to right then top to
 bottom. Denote the~$(m,n)$-th entries of~$\Psi$ and~$X$ by~$\psi_{mn}$
 and~${x}_{mn}$, respectively.
 
 Each row and column has an associated unit-length ``stick'' that we
-allot to its entries.  The first entry in the matrix is given by,
-$x_{11} = \psi_{11}$.  As we work left to right in the first row, the
-remaining stick length decreases as we add new entries. This reflects
-the row normalization constraints.  Formally, the stick-breaking
-transformation for the first row is given by,
+allot to its entries, analogously to the stick-breaking construction
+of the Dirichlet process~\citep{sethuraman1994constructive}.  The
+first entry in the matrix is given by, $x_{11} = \psi_{11}$.  As we
+work left to right in the first row, the remaining stick length
+decreases as we add new entries. This reflects the row normalization
+constraints.  The first row follows the standard stick-breaking
+construction,
 \begin{align*}
   x_{1n} &= \psi_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
   x_{1N} &= 1 - \sum_{n=1}^{N-1} x_{1n}.
 \end{align*}
-However, the remaining rows must now conform to both row- and
-column-constraints. That is,
+This is illustrated in Figure~\ref{fig:transforms}c and d, where points
+in the unit square map to points in the simplex. 
+
+Subsequent rows are more interesting, requiring a novel advance on the
+typical uses of stick breaking. Here we the need to conform to row and
+column sums (which introduces an upper bound), and a lower bound
+induced by stick remainders that must allow completion of subsequent
+sum constraints.  Specifically, the remaining rows must now conform to
+both row- and column-constraints. That is,
 \begin{align*}
 x_{mn} &\leq 1- \sum_{k=1}^{n-1} x_{mk} & & \text{(row sum)} \\
 x_{mn} &\leq 1- \sum_{k=1}^{m-1} x_{kn} & & \text{(column sum)}.
@@ -408,7 +417,13 @@ of~$\psi_{mn}$ are pushed to either zero or one, depending on whether
 the input to the logistic function is negative or positive,
 respectively.  As a result, the doubly-stochastic output matrix~$X$ is
 pushed toward the extreme points of the Birkhoff polytope, the
-permutation matrices.
+permutation matrices.  This map is illustrated in
+Figure~\ref{fig:transforms}e and f for permutations of~${N=3}$
+elements.
+
+To our knowledge, this map is a novel
+transformation to the Birkhoff polytope and is essential to allow
+gradient-based variational permutation inference. 
 
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
