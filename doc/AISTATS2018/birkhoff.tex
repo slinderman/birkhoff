@@ -335,9 +335,10 @@ transformations will be controlled by a temperature that concentrates
 the resulting density near permutation matrices.  The first method is
 a novel ``stick-breaking'' construction; the second rounds points
 toward permutations with the Hungarian algorithm.  We present these in
-turn and then discuss their relative merits. 
+turn and then discuss their relative merits. Also, in the supplement, we provide implementation details (how to compute equation\eqref{eq:elbo}) for both methods. 
 
 \subsection{Stick-breaking transformations of the Birkhoff polytope}
+\label{sub:stickbreaking}
 Let~$\Psi$ be a matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
 transform it into a doubly stochastic
 matrix,~${X \in [0,1]^{N \times N}}$ by filling in entry by entry, starting
@@ -642,7 +643,7 @@ Gumbel-softmax method.  We found that our methods were comparable,
 though slightly inferior; this is the price paid for techniques that
 extend to more complicated discrete inference problems. Since our
 main interest lies in permutation inference, we defer these results
-to the supplement. 
+to the supplement. There, we also provide further details about all experiments described hereafter.
 
 To assess the quality of our approximations for distributions over
 permutations, we considered a toy matching problem in which we are
@@ -1048,11 +1049,11 @@ is lower triangular, and its determinant is the product of its diagonal,
 To compute the gradient of the forward transformation $H$ one simply needs to invert the above (or put a negative sign, in the logarithm scale). Finally,  to incorporate the effect of $\sigma$ ($\Psi'=\sigma(\Psi)$, by the chain rule,  one only needs to add a term corresponding to this derivative, $d\sigma(x)/dx=\sigma(x)\sigma(-x)$. 
 \subsection*{Experiment details}
 
-Experiments were run on a High Performance Computer (HPC), allowing the execution of hundreds of processes in parallel to efficiently determine best hyperparameter configurations.
+Experiments were run on a High Performance Computing (HPC) cluster, allowing the execution of hundreds of processes in parallel to efficiently determine best hyperparameter configurations.
 
 For experiments with Variational Auto-encoder we used Tensorflow \citep{Abadi2016}, slightly changing the code made available in conjunction with \cite{Jang2016}. For experiments on synthetic matching and the C. elegans example we used Autograd  \citep{maclaurin2015autograd}, explicitly avoiding propagating gradients through the non-differentiable operation of solving a matching problem (the $\mathsf{round}$ in \ref{sub:rounding}).
 
-
-In all experiment we used the ADAM as optimizer, with learning rate 0.1. For rounding, the parameter vector $H$ defined in \ref{sub:rounding} (iii) was constrained to lie in the interval $[0.1, 0.5]$. The temperature was calibrated using a grid search on the interval $[0,1]$. For stick-breaking. 
-Synthetic 
+In all experiment we used the ADAM as optimizer, with learning rate 0.1. For rounding, the parameter vector $H$ defined in \ref{sub:rounding}(iii) was constrained to lie in the interval $[0.1, 0.5]$. Also, for rounding, we used ten iterations of the Sinkhorn-Knopp algorithm, to obtain points in the Birkhoff polytope. For stick-breaking the variances $\nu$ defined in \ref{sub:stickbreaking} was constrained between $1e-8$ and 1.0. In either case, the temperature parameter was calibrated using a grid search.
+ 
+In the C. elegans example we considered the symmetrized version of the adjacency matrix described in \citep{varshney2011structural} (i.e. we used $A'=(A+A^\top)/2$, and the matrix $W$ was chosen antisymmetric, with entries sampled randomly with the sparsity pattern dictated by $A'$. To avoid divergence, the matrix $W$ was then re-scaled by 1.1 times its spectral radius. This choice, although not essential, induced a reasonably well behaved linear dynamical system, rich in non-damped oscillations. We used a time window of $T=1000$ time samples, and added spherical standard noise at each time 
 \end{document}
