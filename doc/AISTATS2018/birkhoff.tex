@@ -506,38 +506,40 @@ benefits.
 \subsection{Theoretical considerations}
 
 Stick-breaking and rounding each have their strengths and weaknesses.
-Here we list some of their conceptual differences, and in
-Section~\ref{sec:synthetic} we evaluate the two approaches
-empirically.
+Here we list some of their conceptual differences.  While these
+considerations aid in understanding the differences between the
+two transformations, the ultimate test is in their empirical
+performance, which we study in Section~\ref{sec:synthetic}.
 
 \begin{itemize}
 \item Stick-breaking relaxes to~$\mcB_N$ whereas rounding relaxes
-  to~$\reals^{N \times N}$. The Birkhoff polytope is perhaps
-  intuitively nicer, but as long as the log probability accepts
-  real-valued matrices, either may suffice.
+  to~$\reals^{N \times N}$. The Birkhoff polytope is
+  intuitively appealing, but as long as the likelihood,~$p(y \given X)$,
+  accepts real-valued matrices, either may suffice. 
   
 \item Rounding uses the~$O(N^3)$ Hungarian algorithm in its sampling
-  process, whereas stick-breaking is a feed-forward,~$O(N^2)$, process.
-  \todo{but isn't the Jacobian $O(N^4)$ in both cases?}
+  process, whereas stick-breaking has~$O(N^2)$ complexity. In practice,
+  the stick-breaking computations are slightly more efficient.
     
 \item Rounding can easily incorporate constraints.  If certain
   mappings are invalid, e.g.~${X_{mn} \equiv 0}$, they are given an
   infinite cost in the Hungarian algorithm.\footnote{Constraints of
     the form~$X_{m,n} \equiv 1$ simply reduce the dimension of the
     inference problem.}  This is hard to do this with stick breaking
-  as it would change the computation of the upper and lower bounds.
+  as it would change the computation of the upper and lower bounds. 
   
 \item Stick-breaking introduces a dependence on ordering.  While the
   mapping is bijective, a desired distribution on the Birkhoff polytope
   may require a complex distribution for~$\Psi$.  Rounding, by contrast,
   is more ``symmetric'' in this regard.
   
-\item Unfortunately, neither admits a simple probability mass function
-  on permutations, in contrast to the Gumbel-softmax
-  trick~\citep{maddison2016concrete, jang2016categorical}.  This
-  complicates the computation of the ELBO, as we discuss next.
 \end{itemize}
 
+In summary, stick-breaking offers an intuitive advantage---an exact
+relaxation to the Birkhoff polytope---but it suffers from its
+sensitivity to ordering and its inability to easily incorporate
+constraints.  As we show next, these concerns ultimately lead us to
+favor the rounding based methods in practice.
 
 % First, let us consider an alternative reparameterization of the simplex
 % via a stick breaking construction. We break this into two steps. First,
