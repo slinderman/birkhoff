@@ -112,18 +112,23 @@ Permutation inference is central to many modern machine learning
 problems.  Identity management ~\citep{guibas2008identity} and
 multiple-object tracking~\citep{shin2005lazy, kondor2007multi} are
 fundamentally concerned with finding a permutation that maps an
-observed set of items to a set of canonical labels.
-Ranking problems, critical to search and recommender systems, require
-inference over the space of item orderings \citep{meilua2007consensus,
-  lebanon2008non, adams2011ranking}.  Moreover, many probabilistic models, like
+observed set of items to a set of canonical labels.  Ranking problems,
+critical to search and recommender systems, require inference over the
+space of item orderings \citep{meilua2007consensus, lebanon2008non,
+  adams2011ranking}.  Furthermore, many probabilistic models, like
 preferential attachment network models~\citep{bloem2016random} and
 repulsive point process models~\citep{rao2016bayesian}, incorporate a
 latent permutation into their generative processes; inference over
 model parameters requires integrating over the set of permutations
-that could have given rise to the observed data.  In many of these
-settings, permutation inference is just one component of a larger
-estimation problem involving unknown model parameters and hierarchical
-structure.
+that could have given rise to the observed data.  In neuroscience,
+experimentalists now measure whole-brain recordings in
+\textit{C. Elegans}~\citep{Kato2015, nguyen2016whole}, a model
+organism with a known synaptic network~\citep{white1986structure}; a
+current challenge is matching the observed neurons to corresponding
+nodes in the reference network.  In Section~\ref{sec:celegans}, we
+address this problem from a Bayesian perspective in which permutation
+inference is a central component of a larger inference problem involving
+unknown model parameters and hierarchical structure.
 
 % Emphasize the importance of Bayesian approach and recent advances
 % in variational inference
@@ -131,7 +136,7 @@ The task of computing optimal point estimates of permutations under
 various loss functions has been well studied in the combinatorial
 optimization literature ~\citep{kuhn1955hungarian,
   munkres1957algorithms, lawler1963quadratic}. However, many
-probabilistic tasks require reasoning about uncertainty regarding
+probabilistic tasks require reasoning about the posterior distribution over
 permutation matrices.  A variety of Bayesian permutation inference
 algorithms have been proposed, leveraging sampling methods
 \citep{diaconis1988group, miller2013exact, harrison2013importance},
@@ -154,7 +159,7 @@ doubly-stochastic matrices, and, in the zero-temperature limit,
 permutations, via stochastic variational inference.  In the process,
 we show how these transformations connect to recent work on discrete
 variational inference~\citep{maddison2016concrete,
-  jang2016categorical}.  Sections~\ref{sec:synthetic}
+  jang2016categorical, balog2017lost}.  Sections~\ref{sec:synthetic}
 and~\ref{sec:celegans} presents a variety of experiments that
 illustrate the benefits of the proposed variational approach.
   
