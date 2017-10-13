@@ -723,66 +723,109 @@ summarized in Table~\ref{table:BDs}.
   \centering
   \includegraphics[width=1.0\textwidth]{../figures/figure7.pdf} 
   \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.2$ (circles) and $\nu=0.1$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $X^*(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) during the execution of the algorithm. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
+  \vspace{-1em}
 \label{fig:elegantresults}
 \end{figure*}
 
 
-Finally, we consider an application motivated by the study of the neural dynamics in the \textit{Caenorhabditis elegans} (C.elegans)  \cite{Kato2015}, a nematode (worm) of interest for neuroscience, as its neural network changes little from animal to animal. Recent efforts have focused on establishing an accurate and complete neural wiring diagram from anatomical data ~\citep{varshney2011structural} --- a connectome --- that we represent as graph whose nodes are neurons (there are 278 somatic neurons for the hermaphrodyte C. elegans) and whose edges are synapses. Fig ~\ref{fig:connectome}a shows the corresponding adjacency matrix, that we name $\mathcal{C}$.
+Finally, we consider an application motivated by the study of the neural dynamics in \textit{C. elegans}. This worm is a model organism in neuroscience as its neural network is stereotyped from animal to animal and its complete neural wiring diagram is known~\citep{varshney2011structural}.  We represent this network, or connectome, as a binary adjacency matrix~${A \in \{0,1\}^{N \times N}}$, shown in Fig.~\ref{fig:connectome}a. It has ~${N=278}$ nodes, one for each somatic neuron; edges, denoted by~$A_{mn}=1$, indicate the presence of a synapse between neurons~$m$ and~$n$.
 
-The C. elegans, then, is particularly suited from investigating how neural activity gives rise to behaviour, a question that has been recently rigorously addressed \cite{Kato2015}. However, there, intensive manual data curation was needed to match neural recordings from calcium imaging techniques to actual neurons. This manual analysis was based on the study of joint patterns of neural activity, and the comparison of observed linear position of recorded neurons to a reference worm. Unfortunately, in some cases, identity could not be exactly resolved, and only putative candidates were inferred. 
 
-This difficulty offers fertile ground for the development of new methods. Recently, promising approaches \cite{Aoki2017} have illustrated the plausibility of using the Brainbow technology \cite{Livet2007} for such purposes, by genetically engineering worms to express fluorescent proteins. 
+Modern recording technology enables simultaneous measurements of
+hundreds of these neurons simultaneously \citep{Kato2015,
+  nguyen2016whole}.  However, matching the observed neurons to nodes
+in the reference connectome is still a manual task.  Experimenters
+consider the location of the neuron along with its pattern of activity
+to perform this matching, but the process is laborious and the results
+prone to error. We prototype an alternative solution, leveraging the
+location of neurons and their activity in a probabilistic model. We
+resolve neural identity by integrating different sources of
+information from the connectome, some covariates (e.g. position) and
+neural dynamics. Moreover, we combine information from many
+individuals to facilitate identity resolution.
 
-We prototype an alternative solution that bypasses the need for such sophisticated genetic engineering. Our method embodies the criteria of manual data curation into an algorithm: we resolve neural identity by integrating different sources of information from the connectome, some covariates (e.g. position) and neural dynamics. Moreover, we combine information from many individuals to facilitate identity resolution.
+\parhead{Probabilistic Model.}
+Let~$J$ denote the number of worms
+and~${Y^{(j)} \in \reals^{T_j \times N}}$ denote a recording of worm~$j$
+with~$T_j$ time steps and~$N$ neurons.  We model the neural activity
+with a linear dynamical system,
+${Y^{(j)}_t = {X^{(j)}} W {X^{(j)}}^\trans
+  Y^{(j)}_{t-1}+\varepsilon^{(j)}_t}$ where~$X^{(j)}$ is a latent
+permutation of neurons that must be inferred, and~$W$ is a weight
+matrix reflecting the influence of one neuron on another (with neurons ordered as in the reference connectome~$A$), and
+$\varepsilon^{(j)}_t\sim\mathcal{N}(0,I)$ is noise.
+The reference connectome tells us which entries of~$W$ may be non-zero;
+specifically,~${A_{mn}=0}$ implies~${W_{mn}=0}$. However, the synaptic
+weights must be inferred for entries where~$A_{mn}=1$.
+Fig.~\ref{fig:connectome}d shows simulated traces from a network that
+respects the connectivity of~$A$ and has random Gaussian weights.
 
-\subsection{Probabilistic Model}
-We consider $n=1,\ldots, M$ linear (for simplicity) dynamical systems
-recorded during $t=1,\ldots, T$ time-steps
-$Y^m_t=P_mWP_m^\top
-Y^m_{t-1}+\varepsilon_t,\;\varepsilon_t\sim\mathcal{N}(0,I)$ (Fig
-~\ref{fig:connectome}d). Each of the $Y_t^m$ is a $N=278$ dimensional
-vector representing the recorded activity of the entire nervous
-system. These recordings are a permutation (represented by $P_n$) of
-the dynamics in a canonical order.  Entries of
-$W$ are chosen consistently with the connectome: i.e.,
-$W_{i,j}=0$ if $\mathcal{C}_{i,j}=0$. The remaining non-zero entries
-are then independently sampled from a normal distribution, and scaled
-by a factor of the spectral radius to ensure stability (see Fig
-~\ref{fig:connectome}b for an example of $W$, and see supplement for
-further details).
+Our goal is to infer~$W$ and~$\{X^{(j)}\}$ given~$\{Y^{(j)}\}$ using
+variational permutation inference.  We place a standard Gaussian prior
+on~$W$ and a uniform prior on~$X^{(j)}$, and we use the rounding
+transformation to approximate the posterior,
+$p(W,\{X^{(j)}\} \given \{Y^{(j)}\})\propto p(W) \prod_m p(Y^{(j)} \given W, {X^{(j)}}) \,  p({X^{(j)}}$).
 
-We perform variational inference on this model for the joint
-estimation of the posterior probability of $P_m$ and $W$ given
-$Y_m$. For $W$ we use a gaussian prior $p(W)\sim \mathcal{N}(0,
-I)$. Also, for each of the $P_m$ use the machinery developed in
-section \ref{sec:permutation}, and we focus on the rounding
-approximation.  Then, we approximate the true posterior
-$p(W,P_m|Y)\propto p(Y|W,P_m)\times p(W)\prod_{m=1}^M p(P_m$) by a
-variational family $q$ of the form
-$q(W,P_m)\equiv q(W)\prod_m^M q(P_m)$, where $q(W)$ is also gaussian
-and $q(P_m)$ has the distribution described in ~\ref{sub:rounding}.
+Finally, we use neural position along the worm's body to constrain the
+possible neural identities for a given neuron.
+We use the known positions of each neuron~\citep{wormatlas}, approximating
+the worm as a one-dimensional object with neurons locations distributed
+as in Fig.~\ref{fig:connectome}c. Then, given reported positions of the
+neurons, we can conceive a binary \textit{constraint} matrix
+$C^{(j)}$ so that $C^{(j)}_{mn}=1$ if (observed) neuron $m$ is close enough
+to (canonical) neuron $n$; i.e., if their distance is smaller than a
+tolerance $\nu$. We enforce this constrain during inference by
+zeroing corresponding entries in the parameter matrix $M$ described in
+~\ref{sub:rounding}.  This modeling choice greatly reduces the number
+parameters of the model, and facilitates inference. 
 
-Finally, we use neural position along the worm's body to constrain the number of possible neural identities for a given neuron: specifically, we utilize previously documented positions of each neuron as numbers between zero and one \cite{white1986structure,wormatlas} (under the abstraction that a worm can be represented as one-dimensional object, see Fig ~\ref{fig:connectome}c). Then, given reported positions of all (or some) neurons, we can conceive a binary \textit{confusion} matrix $D^m$ so that $D^m_{i,j}=1$ if (observed) neuron $i$ is close enough to (canonical) neuron $j$; i.e., if their distance is smaller than a tolerance $\nu$. We can enforce this constrain during inference, by zeroing corresponding entries in the parameter matrix $M$ described in ~\ref{sub:rounding}.  This modeling choice greatly reduces the number parameters of the model, and facilitates inference. Also, we allow for a certain number of neural identities to be known beforehand, easily encoded in $D^m$ as well.
+\parhead{Results.} We compared against three methods: (i) naive
+variational inference, where we do not enforce the constraint that
+$X^{(j)}$ be a permutation and instead treat each row of~$X^{(j)}$ as
+a Dirichlet distributed vector; (ii) MCMC, where we alternate between
+sampling from the conditionals of $W$ (gaussian) and ${X^{(j)}}$, from
+which one can sample by proposing local swaps, as described in
+\cite{Diaconis2009}, and (iii) maximum a posteriori estimation (MAP).
+Our MAP algorithm alternates between the optimizing estimate of $W$ given~$\{X^{(m)}, Y^{(m)}\}$ using linear regression and finding the optimal ${X^{(j)}}$. The second step requires solving a quadratic assignment
+problem (QAP) in ${X^{(j)}}$; that is, it can be expressed as
+$\mathrm{Tr}(AXBX^\trans)$ for matrices $A,B$. We used the QAP solver
+proposed by~\citet{Vogelstein2015}.
 
-\subsection{Results}
 
-We compared against three methods: i) naive variational inference, where we don't enforce the constraint that $P$ is a permutation but allow many neurons to be mapped to the same one, ii) MCMC, where one alternates between sampling from the conditionals of $W$ (gaussian) and $P_m$, from which one can sample by proposing local swipes, as described in \cite{Diaconis2009}, and iii) MAP estimator, which can be understood as a `hard' version of ii); instead of iteratively sampling, we alternate between the MAP estimate of $W$ (a ridge regression-like expression) and the MAP of the $P_m$'s. For the $P_m$'s we notice the objective is a quadratic assignment problem (QAP) in $P_m$, that is, it can be expressed as $Trace(APBP^\top)$ for some matrices $A,B$. We used the QAP solver proposed in \cite{Vogelstein2015}. 
+We find that our method outperforms each
+baseline. Fig.~\ref{fig:elegantresults}a illustrates convergence to a
+better solution for a certain parameter configuration. Moreover,
+Fig.~\ref{fig:elegantresults}b and Fig.~\ref{fig:elegantresults}c show
+that our method outperforms alternatives when there is much
+uncertainty on neural position; i.e, when there are many possible
+candidates (large $\nu$), and where only a small proportion of neurons
+are known with certitude. Fig.~\ref{fig:elegantresults}c also shows
+that we indeed obtain benefits from combining information of many
+worms.
 
-As shown in Fig \ref{fig:elegantresults}, our method outperforms each baseline: specifically,  first, Fig \ref{fig:elegantresults}a illustrates convergence to a better solution for a certain parameter configuration. More conclusively, Fig ~\ref{fig:elegantresults}b and  Fig ~\ref{fig:elegantresults}c shows that our method outperforms alternatives when there is much uncertainty on neural position; i.e, when there are many possible candidates (large $\nu$), and where only a small proportion of neurons are known with certitude. Fig ~\ref{fig:elegantresults}c also shows that we indeed obtain benefits from combining information of many worms (although the same applies to MCMC). 
+Altogether, these results indicate our method enables a more efficient
+use of information than its alternatives. This is consistent with
+other results showing faster convergence of variational inference over
+MCMC \cite{Blei2017}, especially with simple Metropolis-Hastings
+proposals. In our experiments, MCMC would eventually obtain similar if
+not better results, but the local proposals---swapping pairs of
+labels---leads to slow convergence. On the other hand, our
+parameterization allows to more freely explore the parameter
+space. This is observed in Fig ~\ref{fig:elegantresults}d: variability
+of permutation samples is high during iterations (see variability in
+Fig ~\ref{fig:elegantresults}e), but eventually shrinks as it settles
+on a small number of likely permutations.
 
-Altogether, these results indicate our method enables a more efficient use of information than MCMC. We interpret this in terms of the observation that in practice variational inference converges faster than MCMC \cite{Blei2017}: we expect MCMC would eventually converge, but in practice it does so slow that asymptotic values are not achieved in reasonable time, as changes in $P$ are very local and proposals (local swipes) are usually rejected. On the other hand, our parameterization allows to more freely sample the parameter space. This is observed in Fig  ~\ref{fig:elegantresults}d: variability of permutation samples is high during iterations (see variability in Fig ~\ref{fig:elegantresults}e), but eventually decays to asymptotic values after more certainty of the true permutation has been accumulated.
 \section{Discussion}
+
 Our results provide evidence that permutation variational inference
-might provide a helpful tool for the inference of neural identity, as
-it allows to properly represent shared information across animals, and
-different degrees of certainty based on covariates. In order to apply
-it to real data it is necessary to consider more realistic models of
-neural dynamics, which are non-linear but might be well characterized,
-for example, by a set of atomic low-dimensional linear dynamical
-systems, each of one corresponding to a certain behavioral state
-\cite{Kato2015}. The methodology developed in \cite{Linderman2016}
-seems particularly suitable to harness that increased level of
-complexity.
+provides a valuable tool, especially in complex problems like neural
+identity inference where information must be aggregated from disparate
+sources in a hierarchical model.  As we apply this to real neural recordings,
+we must consider more realistic, nonlinear models of
+neural dynamics. Here, again, we expect variational methods to shine,
+leveraging automatic gradients of the relaxed ELBO to efficiently explore
+the space of variational posterior distributions. 
 
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
