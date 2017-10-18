@@ -288,8 +288,8 @@ atomic density on the vertices. Fig.~\ref{fig:transforms}a and b
 illustrate this idea. Real-valued random variables, e.g. Gumbel random
 variates, are mapped through a temperature-controlled softmax
 function,
-${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_K /
-    \tau}/Z \big]}$, where~$Z=\sum_{k=1}^K e^{\psi_k / \tau}$, to
+${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_N /
+    \tau}/Z \big]}$, where~$Z=\sum_{n=1}^N e^{\psi_n / \tau}$, to
 obtain points in the simplex. As~$\tau$ goes to zero, the density
 concentrates on one-hot vectors.  We extend this idea to the Birkhoff
 polytope for variational permutation inference.
@@ -463,7 +463,7 @@ discontinuities.
 With the inverse and its Jacobian, we have
 \begin{align*}
   q(X; \theta) = 
-  \frac{1}{\tau} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), \Sigma \right),
+  \frac{1}{\tau^{N^2}} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), H \right),
 \end{align*}
 for~${X \in \mcX_\tau}$.
 In the zero-temperature limit we recover a discrete
@@ -728,17 +728,17 @@ worms.
 Altogether, these results indicate our method enables a more efficient
 use of information than its alternatives. This is consistent with
 other results showing faster convergence of variational inference over
-MCMC \cite{Blei2017}, especially with simple Metropolis-Hastings
+MCMC \citep{Blei2017}, especially with simple Metropolis-Hastings
 proposals. We conjecture that MCMC would eventually obtain similar if
 not better results, but the local proposals---swapping pairs of
 labels---leads to slow convergence. On the other hand,
 Fig~\ref{fig:elegantresults}a shows that our method converges much
 more quickly while still capturing a distribution over permutations,
-as shown by the overall variance of the samples in Fig~\ref{fig:elegantresults}d and the individual samples in Fig~\ref{fig:elegantresults}e).
+as shown by the overall variance of the samples in Fig~\ref{fig:elegantresults}d and the individual samples in Fig~\ref{fig:elegantresults}e.
 
 \section{Conclusion}
 
-Our results provide evidence that permutation
+Our results provide evidence that variational permutation
 variational inference is a valuable tool, especially in complex
 problems like neural identity inference where information must be
 aggregated from disparate sources in a hierarchical model.  As we
