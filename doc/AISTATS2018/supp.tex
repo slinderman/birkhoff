@@ -477,7 +477,7 @@ Now we appeal once more to the law of the unconcious statistician,
 \subsubsection*{Estimating the ELBO} 
 Here we describe how to compute each of terms of equation \eqref{eq:elbo2}, needed for ELBO computations. First, as $\Psi$ is Gaussian for both rounding and stick-breaking, the entropy term is straightforward and equal to $N\log(\eta^2 2\pi e )/2$ ($\eta$ may depend on the temperature and depends on the method). 
 
-Notice that to state $\Psi$ is Gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation}. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $\Psi' = \sigma(\Psi)$.
+Notice that to state $\Psi$ is Gaussian in the stick-breaking case we slightly deviate from \ref{sec:permutation} in the main text. Specifically, here we call $\Psi=\frac{\mu_{mn} + \eta_{mn} \Xi_{mn}}{\tau} $ and define $Z = \sigma(\Psi)$.
 
 The second term of equation \eqref{eq:elbo2} is estimated using Monte-Carlo samples, and its derivation depends on the method. 
 
@@ -490,32 +490,32 @@ $\log \left| \frac{\mathrm{d}h(\Psi; \theta)}{\mathrm{d}\Psi} \right|_{\Psi = f(
 
 \textbf{Stick-breaking}
 
-It is important to note that the transformation $h$ that maps $\Psi'\rightarrow X$ is only piecewise
+It is important to note that the transformation $h$ that maps $Z\rightarrow X$ is only piecewise
 continuous: the function is not differentiable at the points where
-the bounds change; for example, when changing~$\Psi'$ causes the
+the bounds change; for example, when changing~$Z$ causes the
 active upper bound to switch from the row to the column constraint
 or vice versa.  
 
 Notice that these bounds only depend on values of~$X$ that
 have already been computed; i.e., those that are above or to the left of
-the~$(i,j)$-th entry. Thus, the transformation from ~$\Psi'$ to~$X$
+the~$(i,j)$-th entry. Thus, the transformation from ~$Z$ to~$X$
 is feed-forward according to this ordering.  Consequently, the
-Jacobian of the inverse transformation $h^{-1}$ ,~$\mathrm{d}\Psi' / \mathrm{d} X$,
+Jacobian of the inverse transformation $h^{-1}$ ,~$\mathrm{d}Z / \mathrm{d} X$,
 is lower triangular, and its determinant is the product of its diagonal,
 \begin{align}
-\nonumber \left| \frac{\mathrm{d} \Psi'} {\mathrm{d} X} \right|
-&= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial \psi_{ij} }{\partial {\pi}_{ij}} \\
-\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1} \frac{\partial}{\partial {\pi}_{ij}}
-\sigma^{-1} \left( \frac{{\pi}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
-\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
+\nonumber \left| \frac{\mathrm{d} Z} {\mathrm{d} X} \right|
+&= \prod_{i=1}^{N-1} \prod_{j=1}^{N-1} \frac{\partial \psi_{ij} }{\partial {x}_{ij}} \\
+\nonumber &= \prod_{i=1}^{N-1} \prod_{j=1}^{N-1} \frac{\partial}{\partial {x}_{ij}}
+\sigma^{-1} \left( \frac{{x}_{ij} - \ell_{ij}}{u_{ij} - \ell_{ij}} \right ) \\
+\nonumber &= \prod_{i=1}^{N-1} \prod_{j=1}^{N-1}
 \left( \frac{1}{u_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{{\pi}_{ij} - \ell_{ij}} \right )
-\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {\pi}_{ij}} \right ) \\
-\nonumber &= \prod_{i=1}^{n-1} \prod_{j=1}^{n-1}
-\frac{u_{ij} - \ell_{ij}}{({\pi}_{ij} - \ell_{ij}) (u_{ij} - {\pi}_{ij})}
+\left( \frac{u_{ij} - \ell_{ij}}{{x}_{ij} - \ell_{ij}} \right )
+\left( \frac{u_{ij} - \ell_{ij}}{u_{ij} - {x}_{ij}} \right ) \\
+\nonumber &= \prod_{i=1}^{N-1} \prod_{j=1}^{N-1}
+\frac{u_{ij} - \ell_{ij}}{({x}_{ij} - \ell_{ij}) (u_{ij} - {x}_{ij})}
 \end{align}
 
-To compute the gradient of the forward transformation $h$, one simply needs to invert the above (or put a negative sign, in the logarithm scale). Finally,  to incorporate the effect of $\sigma$ ($\Psi'=\sigma(\Psi)$), by the chain rule,  one only needs to add a term corresponding to this derivative, $d\sigma(x)/dx=\sigma(x)\sigma(-x)$. 
+To compute the gradient of the forward transformation $h$, one simply needs to invert the above (or put a negative sign, in the logarithm scale). Finally,  to incorporate the effect of $\sigma$ ($Z=\sigma(\Psi)$), by the chain rule,  one only needs to add a term corresponding to this derivative, $d\sigma(x)/dx=\sigma(x)\sigma(-x)$. 
 \subsection*{Experiment details}
 
 Experiments were run on a High Performance Computing (HPC) cluster, allowing the execution of hundreds of processes in parallel to efficiently determine best hyperparameter configurations.
