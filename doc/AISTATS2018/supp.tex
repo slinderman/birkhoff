@@ -354,10 +354,11 @@ digits are reconstructed from a latent discrete code. We used the
 continuous ELBO for training, and evaluated performance based on the
 marginal likelihood, estimated through the multi-sample variational
 objective of the discretized model. We compared against the methods of
-\cite{jang2016categorical, maddison2016concrete}, finding similar
-(although slightly worse) results (Table~\ref{tab:vae}). This difference may be
-interpreted as the price to be paid in order to enable an extension of
-a relaxed distribution over categories, to permutations.
+\cite{jang2016categorical, maddison2016concrete} and obtained the
+results in Table~\ref{tab:vae}.  While stick-breaking and rounding
+fare slightly worse than the Gumbel-softmax method, they are readily
+extensible to more complex discrete objects, as shown in the main
+paper.
 
 \begin{table}[h]
   \caption{Summary of results in VAE}
@@ -393,53 +394,83 @@ a relaxed distribution over categories, to permutations.
 %   \end{tabular}
 % \end{table*}
 
-\subsection*{MNIST reconstructions}
-In figure \ref{fig:VAE} we show some MNIST  reconstructions using Gumbel-Softmax, stick-breaking and rounding reparameterizations. In all the three cases reconstructions are reasonably accurate, and there is diversity in reconstructions.
+Figure~\ref{fig:VAE} shows MNIST reconstructions using Gumbel-Softmax,
+stick-breaking and rounding reparameterizations. In all the three
+cases reconstructions are reasonably accurate, and there is diversity
+in reconstructions.
 \begin{figure*}[t]
   \centering
   \includegraphics[width=5.in]{../figures/figure4.pdf} 
-  \caption{Examples of true and reconstructed digits from their corresponding random codes using with $N=20$ categorical variables with $K=10$ possible values.
+  \caption{Examples of true and reconstructed digits from their corresponding random codes using with $K=20$ categorical variables with $N=10$ possible values.
   }
 \label{fig:VAE}
 \end{figure*}
 
 
-\section{Variational inference for Permutation details}
+\section{Variational permutation inference details}
 
-\subsubsection*{Continuous prior distributions.} 
-Continuous relaxations requires
-re-thinking of the objective. As in \cite{maddison2016concrete}, we
-maximize a relaxed ELBO, for which we need to specify a new continuous
-prior $p(x)$ over the latent variables. Moreover, it is critical to conceive sensible priors for permutations, that could serve in a variational inference routine to penalize configurations that are away from permutation matrices (i.e. close to the barycenter of the Birkhoff polytope).
+Here we discuss more of the subtleties of variational permutation
+inference and present the mathematical derivations in more detail. 
 
-For our categorical experiment on MNIST we use a mixture of Gaussians around
-each vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k, \eta^2)}$. 
-This can be extended to permutations, where use a mixture of Gaussians for each
-dimension,
+\subsection{Continuous prior distributions.} 
+Continuous relaxations require re-thinking the objective. As in
+\cite{maddison2016concrete}, we maximize a relaxed ELBO, for which we
+need to specify a new continuous prior $p(X)$ over the relaxed
+discrete latent variables, here, over relaxations of permutation
+matrices. Moreover, it is critical to design sensible priors for
+relaxed permutations.  Ideally, this prior should penalize values
+of~$X$ that are far from permutation matrices.
+
+For our categorical experiment on MNIST we use a mixture of Gaussians
+around each
+vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k,
+  \eta^2)}$.  This can be extended to permutations, where use a
+mixture of Gaussians for each dimension,
 \begin{align}
 \label{eq:permprior}
   \nonumber p(X) &= \prod_{m=1}^N \prod_{n=1}^N
   \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \eta^2) + \distNormal(x_{mn} \given 1, \eta^2 \right).
   \end{align}
-Although this prior puts significant mass invalid points
+Although this prior puts significant mass around invalid points
 (e.g.~$\bone$), it penalizes $X$ that far from~$\mcB_N$.
 
-\subsubsection*{Deriving an expression for the ELBO}
-Here we show that if $X=G(\Xi;\theta)$ with $G$ differentiable one can evaluate the second term in equation \eqref{eq:elbo} \footnote{Notice that we uppercase the variables in \eqref{eq:elbo} this is in consistency to our notation in section \ref{sec:permutation}}. Moreover, here, to exploit the similarities between both methods (stick-breaking and rounding), we further factor $G$ into two functions: $G=H \circ F$, $X = H(\Psi)$ and $\Psi = F(\Xi; \theta)$ (both $H,F$ invertible). This means all dependency of $X$ in the parameters is through $\Psi$. Under this assumption, and denoting $\Psi\sim p(\Psi,\theta)$, the second term in equation \eqref{eq:elbo} (without gradient) can be computed as:
- then \begin{align} \nonumber
-\E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = & \bbH(\Psi; \theta) +\\ \nonumber & E_{r(\Xi)}\left[\log | DH(F(\Xi,\theta))|\right].\end{align}
-\textbf{Proof}:
-Indeed, first, it is obvious that $$\E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right] = \E_{r(\Xi)} \left[- \log q(H(F(\Xi,\theta)); \theta) \right] $$
-Then, by the `Law of the Unconscious Statistician' we have:
- $$\E_{r(\Xi)} \left[- \log q(H(F(\Xi,\theta)); \theta) \right] = \E_{p(\Psi;\theta)} \left[- \log q(H(\psi); \theta) \right]. $$
-Now, by the change of variable theorem and derivative and determinant inversion rules, we obtain ($D$ means the Jacobian, the matrix of derivatives) :\begin{align}
-\nonumber q(H(\Psi); \theta) & = p(H^{-1}(X) ;\theta)  |DH ^{-1}(X) | \\ \nonumber
- & = p(\Psi; \theta) | DH (\Psi) | ^{-1}.
- \end{align}
- To conclude we use once more the Law of the Unconscious Statistician:
- \begin{eqnarray}
-\nonumber \E_{r(\Xi)} \left[- \log q(G(\Xi;\theta)); \theta) \right]  &= \E_{p(\Psi;\theta)}\left[ - \log p(\Psi;\theta)\right] +   \\ & \nonumber \E_{p(\psi;\theta)}\left[\log | DH(\psi)|\right] \\ \label{eq:elbo2} 
- &= \bbH(\Psi; \theta)+ \\ \nonumber & E_{r(\xi)}\left[\log | DH(F(\Xi;\theta))|\right].\end{eqnarray}
+\subsection{Deriving an expression for the ELBO}
+Here we show that if $X=g(\Xi;\theta)$ with $g$ differentiable one can
+evaluate the second term in equation \eqref{eq:elbo}.  Moreover, both
+the stick-breaking and rounding transformations factor as
+${g=h \circ f}$ with ${X = h(\Psi)}$ and ${\Psi = f(\Xi; \theta)}$.
+(Both $h$ and $f$ are invertible.) This means all dependency of $X$ in
+the parameters is through the random variable~$\Psi$ with implicit
+density~$p(\Psi; \theta)$.
+
+We compute the entropy of~$q(X; \theta)$ (the second term in the ELBO)
+by,
+
+\begin{align*}
+  \E_{q(X; \theta)} \left[- \log q(X; \theta) \right]
+  &=
+    \E_{r(\Xi)} \left[- \log q(h(f(\Xi,\theta)); \theta) \right] \\
+  &= \E_{p(\Psi;\theta)} \left[- \log q(h(\psi); \theta) \right]. 
+\end{align*}
+where the second equality follows by the ``law of the unconscious statistician.''
+
+Now, by the change of variable theorem and derivative and determinant
+inversion rules,
+\begin{align*}
+  q(X; \theta)
+  &= p(h^{-1}(X) ;\theta) \,
+    \left| \frac{\mathrm{d} h^{-1}(X)}{\mathrm{d}X} \right| \\
+  &= p(h^{-1}(X); \theta)
+    \left| \frac{\mathrm{d}h(\Psi)}{\mathrm{d}\Psi} \right|^{-1}_{\Psi = h^{-1}(X)}.
+ \end{align*}
+Now we appeal once more to the law of the unconcious statistician,
+\begin{align*}
+  \E_{q(X; \theta)}& \left[- \log q(X; \theta) \right] \\
+  &= \E_{p(\Psi;\theta)} \left[ - \log p(\Psi;\theta) +
+     \log \left| \frac{\mathrm{d} h(\Psi)}{\mathrm{d}\Psi} \right| \right] \\
+  &= \bbH(\Psi; \theta)  +
+  \E_{r(\Xi)}\left[\left| \frac{\mathrm{d}h(\Psi; \theta)}{\mathrm{d}\Psi} \right|_{\Psi = f(\Xi; \theta)} \right].
+\end{align*}
  
 
 \subsubsection*{Estimating the ELBO} 
