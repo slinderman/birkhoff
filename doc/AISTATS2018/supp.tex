@@ -193,8 +193,8 @@ We define a map that pulls points toward their rounded values,
 \end{proposition}
 
 \begin{proof}
-  Note that the Voronoi cells are defined by linear inequalities,
-  making them convex sets.  Since~$x$ is a convex combination
+  Note that the Voronoi cells are intersections of halfspaces
+  and, as such, are convex sets.  Since~$x$ is a convex combination
   of~$\psi$ and~$e_{n^*}$, both of which belong to the convex
   set~$V_{n^*}$, $x$~must belong to~$V_{n^*}$ as well.
 \end{proof}
@@ -235,63 +235,113 @@ permutation inference.
 
 \section{Limit analysis for stick-breaking}
 
-Here we state and prove that for  the stick-breaking we consider here, we can arrive to either arbitrary points in the i) simplex or ii) to any categorical distribution as limiting cases (in the temperature).  First, we need some lemmas.
+We show that stick-breaking for discrete variational inference can
+converge to any categorical distribution in the zero-temperature
+limit.  We do so with a sequence of propositions: first we show that
+in the zero-temperature limit, the distribution
+of~${\sigma(\psi_n / \tau)}$ converges to a Bernoulli distribution.
+The we show that when~$\sigma(\psi_n / \tau)$ is Bernoulli (rather
+than a continuous density on the unit interval), the distribution
+on~$x$ obtained by applying the stick-breaking transformation
+to~$\psi$ is categorical.
 
+\begin{proposition}
+  \label{prop:bernoulli}
+  Let~${z=\sigma(\psi / \tau)}$
+  with~${\psi\sim\mathcal{N}(\mu,\eta^2)}$.  In the
+  limit~${\tau \to
+    0}$ we have~${z \sim \distBernoulli(\Phi(-\tfrac{\mu}{\eta}))}$,
+  where~$\Phi(\cdot)$ denotes the Gaussian cumulative distribution
+  function (cdf). 
+\end{proposition}
 
-\textbf{Lemma 1.}  The following statements are true:
-\begin{enumerate} \item the degenerate case where  $z_k$ is deterministic leads to $\pi\sim \delta(\tilde{\pi})$  (i.e, single atom in the point $\tilde{\pi}$). Also, if $z_k$ can be any in $(0,1)$ then any deterministic $\pi$ in the interior of the simplex can be realized.
-\item the degenerate case where  $z_k$ are Bernoulli with parameter $p_k(\theta) \in (0,1)$ leads to $\pi$ having an atomic distribution with atoms in the vertices of $\Delta^{k-1}$; i.e, $\pi$ is categorical. We have the following expression for the probabilities of the atoms $\pi_k=1$ (one hot vectors):
-\begin{align}
-\label{eq:onehotprob}
-\nonumber P(\pi_k =1)&= \prod_{i=1}^{k-1} (1-p_i(\theta)) p_k(\theta)  \;\; \ k=2, \ldots, K-1,\\  \nonumber & P(\pi_K =1) = \prod_{i=1}^{K-1} (1-p_i(\theta)).
-\end{align}
+\begin{proof}
+  Let~$F_z$ be the cdf of the random variable~$z$. Since~$z$ is a random
+  variable on the unit interval, $F_z$ is a non-decreasing function
+  on~$[0,1]$ with~${F_z(0)=0}$ and~${F_z(1)=1}$.
+  Reparameterize~${\psi = \mu + \eta \xi}$
+  where~${\xi \sim \distNormal(0,1)}$. Then we have,
+  \begin{align*}
+    F_z(u) &= \Pr(\sigma(\psi / \tau) < u) \\
+         &= \Pr(\psi < \tau \sigma^{-1}(u)) \\
+         &= \Pr(\xi < \tfrac{\tau}{\eta} \sigma^{-1}(u) - \tfrac{\mu}{\eta}))\\
+         &= \Phi(-\tfrac{\tau}{\eta}\sigma^{-1}(u) - \tfrac{\mu}{\eta}).
+  \end{align*}
+  By the continuity of~$\Phi$ we have,
+  \begin{align*}
+    \lim_{\tau \to 0} F_z(u) &= \Phi(-\tfrac{\mu}{\eta}) &
+    \text{for } u &\in (0,1).
+  \end{align*}
+  This is the cdf of a Bernoulli random with
+  probability~${\rho = \Phi(-\tfrac{\mu}{\eta})}$.
+\end{proof}
 
-Moreover, if for each index $k$ any parameter of the Bernoulli variable $z_k$ can be realized through appropriate choice of $\theta$, then any categorical distribution can be realized.
+\begin{proposition}
+  \label{prop:categorical}
+  As above, let~${z_n=\sigma(\psi_n / \tau)}$.
+  When~${z_n \sim \distBernoulli(\rho_n)}$
+  with~${\rho_n \in [0,1]}$ for~${n=1, \ldots, N}$, the random
+  variable~$x$ obtained from applying the stick-breaking
+  transformation to~$z$ will have an atomic distribution with atoms
+  in the vertices of $\Delta_{N}$; i.e,
+  ${x \sim \distCategorical(\pi)}$ where
+  \begin{align*}
+    \pi_1 &= \rho_1 \\
+    \pi_n &=  \rho_n \prod_{m=1}^{n-1} (1-\rho_m)  \qquad
+          n=2, \ldots, N-1, \\
+    \pi_N &= \prod_{m=1}^{N-1} (1-\rho_m).
+\end{align*}
+\end{proposition}
 
-\end{enumerate}
-\textit{Proof}: (a) both claims are obvious and come from the invertibility of the function $\mathcal{SB} \circ h (\cdot)$. (b) the formulae for $P(\pi_k =1)$ comes from expressing the event $\pi_k=1$ equivalently as $\pi_k=1,\pi_i=0, i<k$ and then, conditioning backwards successively. The second statement comes from the following expression, which easily follows  from \eqref{eq:onehotprob}:
-$$ p_k(\theta)=\frac{P(\pi_k =1)}{P(\pi_{k-1} =1)}\frac{p_{k-1}(\theta)}{1-p_{k-1}(\theta)},\quad k =1,\ldots, K-1.$$
-The recursive nature of the above equation gives a recipe to iteratively determine the required $p_k(\theta)$, given  $P(\pi_k =1), P(\pi_{k-1} =1)$ and the already computed $p_{k-1}(\theta)$.
+\begin{proof}
+  From the stick-breaking definition,~${x_1 = z_1}$,
+  ${x_n = z_n (1- \sum_{m < n} x_m)}$,
+  and~${x_N = 1-\sum_{m < N} x_m}$.
+  When~${z_n \in \{0,1\}}$ for all~${n = 1, \ldots, N-1}$,
+  we have the following equivalencies. For the first element,
+  \begin{align*}
+    x_1 = 1 &\iff z_1 = 1;
+  \end{align*}
+  for~${1 < n < N-1}:$
+  \begin{align*}
+    x_n = 1 &\iff (z_n = 1) \bigwedge_{m=1}^{n-1} (z_m = 0);
+  \end{align*}
+  and for the last element,
+  \begin{align*}
+    x_N = 1 &\iff \bigwedge_{m=1}^{N-1} (z_m = 0).
+  \end{align*}
+  These events are mutually exclusive, implying that~$x$ will
+  necessarily be a one-hot vector, i.e. a categorical random variable.
+  Since~$z_1, \ldots, z_{N-1}$ are independent Bernoulli random
+  variables, the probabilities of these events are given
+  by the~${\pi, \ldots, \pi_N}$ stated in the proposition. 
+\end{proof}
 
+These two propositions, combined with the invertibility of the
+stick-breaking procedure, lead to our main result.
 
-Now we can state our results:
+\begin{lemma}
+  In the zero-temperature limit, stick-breaking of logistic-normal
+  random variables can realize any categorical distribution on~$x$.
+\end{lemma}
 
-\textbf{Lemma 2.} If $z=\sigma(\psi),\psi\sim\mathcal{N}(\mu,\eta^2)$, then
-\begin{enumerate} \item the  limit $\eta\rightarrow 0$ and $\mu$ fixed leads to the deterministic $z=\sigma(\mu)$. 
-\item the limit $\mu\rightarrow \infty, \eta^2=\mu/K$ with K constant leads to $z\sim \text{Bernoulli}(\Phi(K))$, with $\Phi(\cdot)$ denoting the standard normal cdf.
-\end{enumerate} In both cases the convergence is in distribution 
-
-\textit{Proof}. The first convergence is obvious. To see the second, let's index $\mu_n$ and  study the cdf $F$ of $z_n$ on the interval (0,1) (it evaluates zero below zero and one above one).
-\begin{align}F_{z_n}(x)&= P(\sigma(\psi_n)<x) \\
-&=P(\psi_n< \sigma^{-1}(x))\\
-&=P(\mu_n +\mu_n/K\xi <\sigma^{-1}(x)),\\\
-&= P( \xi <\sigma^{-1}(x)K/\mu_n - K)\\
-&= \Phi( \sigma^{-1}(x)K/\mu_n - K) 
-\end{align}
-
-Therefore, by continuity of $\Phi$ we obtain $F_{\Psi_n}(x)\rightarrow \Phi(-K)$ for all points $x\in(0,1)$. On the other hand, the cdf of a Bernoulli random $F$ variable is given by  a step function that abruptly changes at zero, from zero to $1-p$, and at one, from $1-p$ to 1. As convergence occurs at all continuity points (the interval $(0,1)$), we conclude (recall, $1-p= \Phi(-K)\rightarrow \Phi(K)=p$). Notice that the above representation only allows  to converge to $p>0.5$, as $K$ has to be positive. This can be fixed by choosing sequence with negative $\mu$ instead.
-
-\textbf{Proposition.} For the stick-breaking construction, any arbitrary distribution can be realized in the low-temperature limit. Also, in the high-temperature limit convergence is to certain point(s) in the interior of the simplex.
-
-\textit{Proof}: Consider each distribution separately
-
-We have $z_k = \sigma\left( \frac{\mu_k+\eta_k\xi}{\tau}\right)$, in the low temperature case use Lemma 2 (b) by the always available representation  $K= \frac{\mu}{\eta^2}$and conclude by Lemma 1(b). In the high temperature case convergence is to the point $\pi = \mathcal{SB}(0.5,0.5,\ldots, 0.5)$.
-
-
-%\subsection{Rounding}
-%Here we have two extremes: at $\tau =1$ we obtain a continuous distribution in the space (here, Gaussian). If $\tau=0$ the resulting distribution has only atoms in the one-hot vectors $p_n$, in this proof assumed to be the one-hot vectors. We show that in this case it is possible to represent any arbitrary categorical distribution through a judicious choice of the parameters.
-
-
-%\textbf{Proposition:} In the zero temperature case, i.e., $\pi  = R^\mathcal{P}(\psi)$ it is possible to represent any arbitrary distribution i.e, for any $\alpha$ in the $N-1$ simplex there exists Gaussian parameters $(\mu, \eta)$ so that   $P(\pi = p_n)  = \alpha_n$. Points inside the simplex are realized directly, while distributions with some $\alpha_k=0$ are realized through a limiting process in the parameters.
-
-%\textit{Proof:} First set $\eta_n=1$. By representing $\psi = \mu + \xi$ where $\xi\sim\distNormal(0, I)$ we see that
-%$$\alpha_n = P(R^\mathcal{P}(\mu + \xi) = p_n ) = P(\mu + \xi \in V^\mathcal{P}_{n}) = P(\xi \in V^\mathcal{P}_{n} - \mu) =  \int_{V^\mathcal{P}_{n} - \mu} \frac{1}{(2\pi)^\frac{N}{2}}e^{-\frac{||x||^2}{2}} dx.$$
-%Three conclusions are drawn from the above: first, we see that probabilities are ultimately Gaussian integrals over a new partition, a translation of the Voronoi regions $V^\mathcal{P}_{n}$. Second,
-%the map $(\mu_1,\ldots,  \mu_n)\xrightarrow{m} (\alpha_1,\ldots, \alpha_n)$ is continuous by virtue of the dominated convergence theorem \cite{browder2012mathematical}: indeed, if $\mu_i\rightarrow \mu$ then $(\alpha^i_1,\ldots, \alpha^i_n) \rightarrow (\alpha_1,\ldots, \alpha_n)$, as the $\alpha^i_n$ are integrals that can be expressed using indicator functions in the integrands (which are all bounded by the integrable Gaussian density), and as pointwise convergence of the indicators holds because of the continuity of the translation operator $f_\mu(\cdot) = \cdot + \mu$. Third, for each $q\in(0,1)$ it is possible to choose $\mu$ so that $\alpha_n =q$ and $\alpha_m = (1-q)/(n-1)$. Indeed, by moving $\mu_n$ between $-\infty$ and $\infty$ while keeping the other $\mu_k$ fixed then $V^\mathcal{P}_{n} - \mu$ fluctuates between the empty set ($\alpha_n =0$) and the entire space ($\alpha_n=1$). Therefore, by the continuity of $m$ and the intermediate value theorem, every value in $\alpha_n\in (0,1)$ is realized, and by symmetry the other $\alpha_k$ occupy the remaining mass uniformly. 
-
-%To conclude, we use the fact that the image of a convex set through a continuous function is also convex \cite{Rockafellar70}. We also showed that for each tolerance $\epsilon$ the image of $m$ contains these $\epsilon$-one-hot vectors: that is, the points with $(1-\epsilon)$ in one coordinate and $\epsilon/ (n-1)$ in the rest. Then, given a point in the interior of the simplex choose $\epsilon$ small enough so it is in the convex hull of the $\epsilon$-one vectors. Then, by the above theorem there must be a pre-image $\mu$ that realizes this point.
-
-%For $\alpha$ with zero entries the above arguments has to be extended to permit a limit process where $\mu$ goes to either infinity or infinity. It is easy to see that by that extension it is possible to represent any $\alpha$ in the border of the simplex.
+\begin{proof}
+  There is a one-to-one correspondence between~${\pi \in \Delta_N}$
+  and~${\rho \in [0,1]^{N-1}}$.  Specifically,
+  \begin{align*}
+    \rho_1 &= \pi_1 \\
+    \rho_n &= \frac{\pi_n}{\prod_{m=1}^{n=1} 1-\rho_m}
+             \quad \text{for } n = 2, \ldots, N-1.
+  \end{align*}
+  Since these are recursively defined, we can substitute the definition
+  of~$\rho_m$ to obtain an expression for~$\rho_n$ in terms of~$\pi$ only.
+  Thus, by Proposition~\ref{prop:categorical}, any desired categorical
+  distribution~$\pi$ implies a set of Bernoulli parameters~$\rho$.
+  From Proposition~\ref{prop:bernoulli}, in the zero temperature limit,
+  any desired~$\rho_n$ can be obtained with appropriate choice of
+  Gaussian mean~$\mu_n$ and variance~$\eta_n^2$. Thus, stick-breaking
+  can realize any categorical distribution when~${\tau \to 0}$.
+\end{proof}
 
 
 \section{Variational Autoencoders (VAE) with categorical latent variables}
