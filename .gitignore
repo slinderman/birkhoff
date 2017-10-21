@@ -12,3 +12,5 @@ MANIFEST
 *.log
 *.out
 *.fdb_latexmk
+*.synctex.gz
+*.DS_store
