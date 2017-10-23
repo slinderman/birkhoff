@@ -279,21 +279,20 @@ Critically, the gradients in~\eqref{eq:elbo} can only be computed
 if~$x$ is continuous. Recently, \citet{maddison2016concrete} and
 \citet{jang2016categorical} proposed the ``Gumbel-softmax'' method for
 discrete variational inference. It is based on the following
-observation: one-hot vectors~${x \in \{0,1\}^N}$ can be
-viewed as vertices of the simplex~$\Delta_N$; likewise, discrete
-probability mass functions~$q(x; \theta)$ can be seen as atomic
-densities on the vertices of the simplex.  This motivates a natural
-relaxation: let $q(x; \theta)$ be a density on the interior of the
-simplex instead and anneal this density such that it converges to an
-atomic density on the vertices. Fig.~\ref{fig:transforms}a and b
-illustrate this idea. Real-valued random variables, e.g. Gumbel random
-variates, are mapped through a temperature-controlled softmax
+observation: one-hot vectors~${x \in \{0,1\}^N}$ can be viewed as
+vertices of the simplex~$\Delta_N$; likewise, discrete probability
+mass functions~$q(x; \theta)$ can be seen as atomic densities on the
+vertices of the simplex.  This motivates a natural relaxation: let
+$q(x; \theta)$ be a density on the interior of the simplex instead and
+anneal this density such that it converges to an atomic density on the
+vertices. Fig.~\ref{fig:transforms}a illustrates this idea. Gumbel
+random variates, are mapped through a temperature-controlled softmax
 function,
 ${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_N /
     \tau}/Z \big]}$, where~$Z=\sum_{n=1}^N e^{\psi_n / \tau}$, to
 obtain points in the simplex. As~$\tau$ goes to zero, the density
-concentrates on one-hot vectors.  We extend this idea to the Birkhoff
-polytope for variational permutation inference.
+concentrates on one-hot vectors.  We build on these ideas
+for variational permutation inference.
 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
@@ -334,7 +333,7 @@ stick-breaking construction,
   x_{1n} &= \psi_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
   x_{1N} &= 1 - \sum_{n=1}^{N-1} x_{1n}.
 \end{align*}
-This is illustrated in Fig.~\ref{fig:transforms}c and d, where points
+This is illustrated in Fig.~\ref{fig:transforms}b, where points
 in the unit square map to points in the simplex. 
 
 Subsequent rows are more interesting, requiring a novel advance on the
@@ -395,7 +394,7 @@ the input to the logistic function is negative or positive,
 respectively.  As a result, the doubly-stochastic output matrix~$X$ is
 pushed toward the extreme points of the Birkhoff polytope, the
 permutation matrices.  This map is illustrated in
-Fig.~\ref{fig:transforms}e and f for permutations of~${N=3}$
+Fig.~\ref{fig:transforms}c for permutations of~${N=3}$
 elements.
 
 We compute gradients of this transformation with automatic
@@ -421,11 +420,14 @@ polytope:
 \item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
 This procedure is a mapping~$X = g(\Xi; M, H)$, and when the elements
-of~$\Xi$ are independently sampled from a standard normal distribution,
-it implicitly defines a distribution over matrices~$X$ parameterized
-by~${\theta = \{M, H\}}$. Furthermore, as~$\tau$ goes to zero, the density
-concentrates on permutation matrices.  We use this procedure to define
-a variational distribution with density~$q(X; \theta)$.
+of~$\Xi$ are independently sampled from a standard normal
+distribution, it implicitly defines a distribution over matrices~$X$
+parameterized by~${\theta = \{M, H\}}$. Furthermore, as~$\tau$ goes to
+zero, the density concentrates on permutation matrices.  A simple
+example is shown in Fig.~\ref{fig:transforms}d,
+where~${M = \tfrac{1}{N}\bone \bone^\trans}$, ${H = 0.4^2 I}$,
+and~${\tau=0.5}$. We use this procedure to define a variational
+distribution with density~$q(X; \theta)$.
 
 To compute the ELBO and its gradient~\eqref{eq:elbo}, we need to
 evaluate~$q(X; \theta)$.  By construction, steps (i) and (ii) involve

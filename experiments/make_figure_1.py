@@ -228,11 +228,11 @@ def plot_discrete_stickbreak_psi_pi(ax_psi, ax_pi):
             ax_psi.plot(*zip(s, e), '-k')
     ax_psi.text(-0.1, .05, "0", fontsize=6)
     ax_psi.text(-0.1, .95, "1", fontsize=6)
-    ax_psi.text(-0.2, 0.5, "$\\psi_{1}$", fontsize=8)
+    ax_psi.text(-0.2, 0.5, "$\\psi_{2}$", fontsize=8)
 
     ax_psi.text(.05, -0.1, "0", fontsize=6)
     ax_psi.text(.95, -0.1, "1", fontsize=6)
-    ax_psi.text(0.5, -0.2, "$\\psi_{2}$", fontsize=8)
+    ax_psi.text(0.5, -0.2, "$\\psi_{1}$", fontsize=8)
     ax_psi.axis('off')
     ax_psi.set_aspect("equal")
 
