@@ -223,24 +223,25 @@ to a distribution that depends on these parameters.
 
 \begin{figure*}[ht!]
   \centering
-  \includegraphics[width=4.5in]{../figures/figure1b.pdf} 
-  \caption{Reparameterizations of discrete polytopes.  (a,b) The
-    Gumbel-softmax, or ``Concrete'' transformation maps points
-    ${\psi \in \reals^N}$ to points in the
-    simplex~${x \in \Delta_{N}}$ by adding noise and applying the
-    softmax.  Here we show a slice for~$N=3$ with~$\psi_3=0$. Colored
-    points are aids to visualize the transformation.  (c,d)
-    Stick-breaking offers and alternative transformation, here from
-    points~$\psi \in [0,1]^{N-1}$ to~$\Delta_N$.  The ordering of the
-    stick-breaking induces an asymmetry in the transformation.  (e,f)
-    We extend this stick-breaking transformation to reparameterize the
-    Birkhoff polytope, i.e. the set of doubly-stochastic
-    matrices. Here,~$\mcB_3$ is reparameterized in terms of
-    matrices~$\Psi \in [0,1]^{2 \times 2}$, of which three coordinates
-    are shown in (e).  These points are mapped to doubly-stochastic
-    matrices, which we have projected onto~$\reals^2$ in panel~(f).
-    In all panels, gray points provide a sense for how distributions
-    are transformed.
+  \includegraphics[width=6.5in]{../figures/figure1.pdf} 
+  \caption{Reparameterizations of discrete polytopes.  From left to
+    right: (a)~The Gumbel-softmax, or ``Concrete'' transformation maps
+    Gumbel r.v.'s~${\psi \in \reals^N}$ (blue dots) to points in the
+    simplex~${x \in \Delta_{N}}$ by applying the softmax.  Colored
+    dots aid in visualizing the transformation.  (b)~Stick-breaking
+    offers and alternative transformation for categorical inference,
+    here from points~$\psi \in [0,1]^{N-1}$ to~$\Delta_N$, but the
+    ordering of the stick-breaking induces an asymmetry in the
+    transformation.  (c)~We extend this stick-breaking transformation
+    to reparameterize the Birkhoff polytope, i.e. the set of
+    doubly-stochastic matrices. We show how~$\mcB_3$ is reparameterized in
+    terms of matrices~$\Psi \in [0,1]^{2 \times 2}$
+    (here,~${\psi_{22}=0}$).  These points are mapped to
+    doubly-stochastic matrices, which we have projected
+    onto~$\reals^2$ below.  (d)~Finally, we derive a ``rounding'' transformation
+    that moves points in~$\reals^{N \times N}$ nearer to the closest
+    permutation matrix, which is found with the Hungarian algorithm.
+    This is more symmetric, but does not map strictly onto~$\mcB_N$.
   }
 \label{fig:transforms}
 \end{figure*}

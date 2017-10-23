@@ -91,7 +91,7 @@ def proj_matrix(mat):
     return Q.T.dot(mat).dot(Q)
 
 
-def plot_simplex(ax):
+def plot_simplex(ax, fontsize=8):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Polygon
 
@@ -108,9 +108,9 @@ def plot_simplex(ax):
     # vertices[2,0] -= 0.25
     vertices = np.array([[0.2, 0.85],
                          [1.05, -0.4 ],
-                         [-1.3, -0.4 ]])
+                         [-1.25, -0.4 ]])
     for i in range(3):
-        plt.text(vertices[i,0], vertices[i,1], "$\\pi_%d$" % (i+1), fontsize=14)
+        plt.text(vertices[i,0], vertices[i,1], "$\\pi_%d$" % (i+1), fontsize=fontsize)
 
 
     # Overlay the triangle border.

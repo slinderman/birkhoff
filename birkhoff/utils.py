@@ -457,7 +457,6 @@ def cached(results_dir, results_name):
             if not results_file.endswith(".pkl"):
                 results_file += ".pkl"
 
-            print results_file
             if os.path.exists(results_file):
                 with open(results_file, "rb") as f:
                     results = pickle.load(f)
