@@ -1,59 +1,3 @@
-\documentclass[twoside]{article}
-
-\input{preamble.tex}
-\input{preamble_math.tex}
-\input{preamble_acronyms.tex}
-
-\usepackage{blindtext}
-
-\usepackage{aistats2018}
-
-\DeclareRobustCommand{\parhead}[1]{\textbf{#1}~}
-
-% If your paper is accepted, change the options for the package
-% aistats2018 as follows:
-%
-%\usepackage[accepted]{aistats2018}
-%
-% This option will print headings for the title of your paper and
-% headings for the authors names, plus a copyright note at the end of
-% the first column of the first page.
-
-
-\begin{document}
-
-% If your paper is accepted and the title of your paper is very long,
-% the style will print as headings an error message. Use the following
-% command to supply a shorter title of your paper so that it can be
-% used as headings.
-%
-%\runningtitle{I use this title instead because the last one was very long}
-
-% If your paper is accepted and the number of authors is large, the
-% style will print as headings an error message. Use the following
-% command to supply a shorter version of the authors names so that
-% they can be used as headings (for example, use only the surnames)
-%
-%\runningauthor{Surname 1, Surname 2, Surname 3, ...., Surname n}
-
-\twocolumn[
-
-\aistatstitle{Reparameterizing the Birkhoff Polytope for \\
-  Variational Permutation Inference: Supplementary Material}
-
-% \aistatsauthor{ Gonzalo E. Mena$^*$ \And Scott W. Linderman$^*$
-%   \And  Hal Cooper \AND Liam Paninski \And John P. Cunningham }
-
-% \aistatsaddress{ Columbia University}
-
-\aistatsauthor{ Anonymous Authors }
-
-\aistatsaddress{ Anonymous Institutions}
-]
-\appendix
-
-
-
 \section{Alternative methods of discrete variational inference}
 
 Recently there have been a number of proposals for extending the
@@ -588,10 +532,3 @@ maximum values for the noise variances were calibrated using a grid
 search.
  
 In the C. elegans example we considered the symmetrized version of the adjacency matrix described in \citep{varshney2011structural}; i.e. we used $A'=(A+A^\top)/2$, and the matrix $W$ was chosen antisymmetric, with entries sampled randomly with the sparsity pattern dictated by $A'$. To avoid divergence, the matrix $W$ was then re-scaled by 1.1 times its spectral radius. This choice, although not essential, induced a reasonably well behaved linear dynamical system, rich in non-damped oscillations. We used a time window of $T=1000$ time samples, and added spherical standard noise at each time. 
-
-
-\bibliography{refs}
-\bibliographystyle{abbrvnat}
-
-
-\end{document}
