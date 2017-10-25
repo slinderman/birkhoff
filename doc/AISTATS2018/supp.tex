@@ -561,4 +561,21 @@ polytope. For stick-breaking the variances $\nu$ defined in
 either case, the temperature, along with maximum values for the noise
 variances were calibrated using a grid search.
  
-In the C. elegans example we considered the symmetrized version of the adjacency matrix described in \citep{varshney2011structural}; i.e. we used $A'=(A+A^\top)/2$, and the matrix $W$ was chosen antisymmetric, with entries sampled randomly with the sparsity pattern dictated by $A'$. To avoid divergence, the matrix $W$ was then re-scaled by 1.1 times its spectral radius. This choice, although not essential, induced a reasonably well behaved linear dynamical system, rich in non-damped oscillations. We used a time window of $T=1000$ time samples, and added spherical standard noise at each time. All results in Figure \ref{fig:elegantresults} are averages over five experiment simulations with different sampled matrices $W$. For results in Figure \ref{fig:elegantresults}b we considered either one or four worms (squares and circles, respectively) for the x-axis we used the values $\nu=0.0075,0.01,0.02,0.04,0.05$ and fixed the number of given neurons to 25 (randomly chosen). For results in Figure \ref{fig:elegantresults}c we used four worms and considered two values for $\nu$; 0.1 (squares) and 0.05 (circles). Different x-axis values correspond to fixing 110, 83, 55 and 25 neurons.
+In the C. elegans example we considered the symmetrized version of the
+adjacency matrix described in \citep{varshney2011structural}; i.e. we
+used $A'=(A+A^\top)/2$, and the matrix $W$ was chosen antisymmetric,
+with entries sampled randomly with the sparsity pattern dictated by
+$A'$. To avoid divergence, the matrix $W$ was then re-scaled by 1.1
+times its spectral radius. This choice, although not essential,
+induced a reasonably well-behaved linear dynamical system, rich in
+non-damped oscillations. We used a time window of $T=1000$ time
+samples, and added spherical standard noise at each time. All results
+in Figure \ref{fig:elegantresults} are averages over five experiment
+simulations with different sampled matrices $W$. For results in Figure
+\ref{fig:elegantresults}b we considered either one or four worms
+(squares and circles, respectively), and for the x-axis we used the values
+$\nu \in \{0.0075,0.01,0.02,0.04,0.05\}$. We fixed the number of known neuron
+identities to 25 (randomly chosen). For results in Figure
+\ref{fig:elegantresults}c we used four worms and considered two values
+for $\nu$; 0.1 (squares) and 0.05 (circles). Different x-axis values
+correspond to fixing 110, 83, 55 and 25 neuron identities.
