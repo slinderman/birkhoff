@@ -342,7 +342,7 @@ def plot_stickbreak_psi_pi(fig, ax_psi, ax_pi, axes=((0, 0), (0, 1), (1, 0))):
     ax_psi.text(-0.1, -0.1, -0.1,  "0", fontsize=6)
     # ax_psi.text(.95, -0.1, "1", fontsize=6)
     ax_psi.text(0.5, -0.4, 0., "$\\beta_{11}$", fontsize=8)
-    ax_psi.text(1.1, 0.5, 0., "$\\beta_{12}$", fontsize=8)
+    ax_psi.text(1.2, 0.5, 0., "$\\beta_{12}$", fontsize=8)
     ax_psi.text(-0.3, -0.2, 0.5, "$\\beta_{21}$", fontsize=8)
     ax_psi.axis('off')
     ax_psi.set_aspect("equal")

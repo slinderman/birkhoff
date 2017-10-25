@@ -41,7 +41,9 @@
 \aistatstitle{Reparameterizing the Birkhoff Polytope for \\
   Variational Permutation Inference}
 
-\aistatsauthor{ Scott W. Linderman$^*$ \And Gonzalo E. Mena$^*$
+\aistatsauthor{
+  Scott W. Linderman$^*$
+  \And Gonzalo E. Mena$^*$
   \And  Hal Cooper}
 \aistatsaddress{ Columbia University \And Columbia University \And Columbia University}
 \aistatsauthor{Liam Paninski \And John P. Cunningham }
@@ -74,12 +76,8 @@
 
 
 \section{Introduction}
+{\let\thefootnote\relax\footnote{$^*$These authors contributed equally.}}
 
-% Permutation inference central to many machine learning problems
-% - Matching problems
-% - Multiple object tracking
-% - Ranking
-% - As latent step in a generative model
 Permutation inference is central to many modern machine learning
 problems.  Identity management ~\citep{guibas2008identity} and
 multiple-object tracking~\citep{shin2005lazy, kondor2007multi} are
@@ -765,9 +763,12 @@ relaxed ELBO to efficiently explore the space of variational posterior
 distributions.
 
 \subsection*{Acknowledgments}
-
-SWL is supported by the Simons Foundation SCGB-418011.
-
+We thank Christian Naesseth for many helpful discussions.  SWL is
+supported by the Simons Collaboration on the Global Brain (SCGB)
+Postdoctoral Fellowship (418011).  LP is supported by ARO MURI
+W91NF-12-1-0594, the SCGB, DARPA SIMPLEX N66001-15-C-4032, IARPA
+MICRONS D16PC00003, and ONR N00014-16-1-2176.  JPC is supported by the
+Sloan Foundation, McKnight Foundation, and the SCGB.
 
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
