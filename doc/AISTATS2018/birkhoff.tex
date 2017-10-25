@@ -41,14 +41,15 @@
 \aistatstitle{Reparameterizing the Birkhoff Polytope for \\
   Variational Permutation Inference}
 
-% \aistatsauthor{ Gonzalo E. Mena$^*$ \And Scott W. Linderman$^*$
-%   \And  Hal Cooper \AND Liam Paninski \And John P. Cunningham }
+\aistatsauthor{ Scott W. Linderman$^*$ \And Gonzalo E. Mena$^*$
+  \And  Hal Cooper}
+\aistatsaddress{ Columbia University \And Columbia University \And Columbia University}
+\aistatsauthor{Liam Paninski \And John P. Cunningham }
+\aistatsaddress{Columbia University \And Columbia University}
 
-% \aistatsaddress{ Columbia University}
+%\aistatsauthor{ Anonymous Authors }
 
-\aistatsauthor{ Anonymous Authors }
-
-\aistatsaddress{ Anonymous Institutions}
+%\aistatsaddress{ Anonymous Institutions}
 ]
 
 \begin{abstract}
@@ -228,17 +229,19 @@ to a distribution that depends on these parameters.
     right: (a)~The Gumbel-softmax, or ``Concrete'' transformation maps
     Gumbel r.v.'s~${\psi \in \reals^N}$ (blue dots) to points in the
     simplex~${x \in \Delta_{N}}$ by applying the softmax.  Colored
-    dots aid in visualizing the transformation.  (b)~Stick-breaking
-    offers and alternative transformation for categorical inference,
-    here from points~$\psi \in [0,1]^{N-1}$ to~$\Delta_N$, but the
-    ordering of the stick-breaking induces an asymmetry in the
+    dots are random variates that aid in visualizing the
+    transformation.  (b)~Stick-breaking offers and alternative
+    transformation for categorical inference, here from
+    points~$\beta \in [0,1]^{N-1}$ to~$\Delta_N$, but
+    the ordering of the stick-breaking induces an asymmetry in the
     transformation.  (c)~We extend this stick-breaking transformation
     to reparameterize the Birkhoff polytope, i.e. the set of
-    doubly-stochastic matrices. We show how~$\mcB_3$ is reparameterized in
-    terms of matrices~$\Psi \in [0,1]^{2 \times 2}$
-    (here,~${\psi_{22}=0}$).  These points are mapped to
+    doubly-stochastic matrices. We show how~$\mcB_3$ is
+    reparameterized in terms of matrices~$\Psi \in [0,1]^{2 \times 2}$
+    These points are mapped to
     doubly-stochastic matrices, which we have projected
-    onto~$\reals^2$ below.  (d)~Finally, we derive a ``rounding'' transformation
+    onto~$\reals^2$ below (stencils show permutation matrices at the
+    vertices).  (d)~Finally, we derive a ``rounding'' transformation
     that moves points in~$\reals^{N \times N}$ nearer to the closest
     permutation matrix, which is found with the Hungarian algorithm.
     This is more symmetric, but does not map strictly onto~$\mcB_N$.
@@ -252,24 +255,24 @@ simulate from~$q$ via the following equivalence,
 \begin{align*}
   x &\sim q(x; \theta)
       & \iff & &  
-  \xi &\sim r(\xi), \quad x = g(\xi;\theta),
+  \noise &\sim r(\noise), \quad x = g(\noise;\theta),
 \end{align*}
-where~$r$ is a distribution on the ``noise''~$\xi$ and
-where~$g(\xi; \theta)$ is a deterministic and differentiable
+where~$r$ is a distribution on the ``noise''~$\noise$ and
+where~$g(\noise; \theta)$ is a deterministic and differentiable
 function.
 % For example,
 % if~${q(x; \theta) = \mathcal{N}(x \given \theta, 1)}$, we can
 % reparameterize by setting the noise distribution
-% to~${r(\xi) = \mathcal{N}(\xi \given 0, 1)}$ and using the
-% transformation~${g(\xi; \theta) = \xi + \theta}$.
+% to~${r(\noise) = \mathcal{N}(\noise \given 0, 1)}$ and using the
+% transformation~${g(\noise; \theta) = \noise + \theta}$.
 The reparameterization trick effectively ``factors out'' the randomness
 of~$q$. With this transformation, we can bring the gradient inside the
 expectation as follows,
 \begin{multline}
   \label{eq:elbo}
   \nabla_\theta \mcL(\theta) 
-  = \E_{r(\xi)} \Big[ \nabla_\theta \log p(g(\xi; \theta) \given y) \\
-    - \nabla_\theta  \log q(g(\xi; \theta); \theta) \Big].
+  = \E_{r(\noise)} \Big[ \nabla_\theta \log p(g(\noise; \theta) \given y) \\
+    - \nabla_\theta  \log q(g(\noise; \theta); \theta) \Big].
 \end{multline}
 This gradient can be estimated with Monte Carlo, and, in practice,
 this leads to lower variance estimates of the gradient than, for
@@ -279,20 +282,21 @@ Critically, the gradients in~\eqref{eq:elbo} can only be computed
 if~$x$ is continuous. Recently, \citet{maddison2016concrete} and
 \citet{jang2016categorical} proposed the ``Gumbel-softmax'' method for
 discrete variational inference. It is based on the following
-observation: one-hot vectors~${x \in \{0,1\}^N}$ can be viewed as
-vertices of the simplex~$\Delta_N$; likewise, discrete probability
-mass functions~$q(x; \theta)$ can be seen as atomic densities on the
-vertices of the simplex.  This motivates a natural relaxation: let
-$q(x; \theta)$ be a density on the interior of the simplex instead and
-anneal this density such that it converges to an atomic density on the
-vertices. Fig.~\ref{fig:transforms}a illustrates this idea. Gumbel
-random variates, are mapped through a temperature-controlled softmax
-function,
-${g(\psi; \tau) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_N /
-    \tau}/Z \big]}$, where~$Z=\sum_{n=1}^N e^{\psi_n / \tau}$, to
-obtain points in the simplex. As~$\tau$ goes to zero, the density
-concentrates on one-hot vectors.  We build on these ideas
-for variational permutation inference.
+observation: discrete probability mass functions~$q(x; \theta)$ can be
+seen as densities with atoms on the vertices of the simplex; i.e. on
+the set of one-hot vectors~${\{e_n\}_{n=1}^N}$,
+where~${e_n = (0, 0, \ldots, 1, \ldots, 0)^\trans}$ is a binary vector
+with a single 1 in the~$n$-th position. This motivates a natural
+relaxation: let $q(x; \theta)$ be a density on the interior of the
+simplex instead and anneal this density such that it converges to an
+atomic density on the vertices. Fig.~\ref{fig:transforms}a illustrates
+this idea. Gumbel random variates, are mapped through a
+temperature-controlled softmax function,
+${g_\tau(\psi) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_N / \tau}/Z
+  \big]}$, where~${Z=\sum_{n=1}^N e^{\psi_n / \tau}}$, to obtain
+points in the simplex. As~$\tau$ goes to zero, the density
+concentrates on one-hot vectors.  We build on these ideas for
+variational permutation inference.
 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
@@ -313,28 +317,32 @@ and then discuss their relative merits. We provide further
 implementation details for both methods in the supplement.
 
 \subsection{Stick-breaking transformations to the Birkhoff polytope}
+\label{sub:stickbreaking}
+
 Stick-breaking is well-known as a construction for the Dirichlet
 process~\citep{sethuraman1994constructive}; here we show how the
 same intuition can be extended to more complex discrete objects. 
-Let~$\Psi$ be a matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
+Let~$B$ be a matrix in~${[0,1]^{(N-1) \times (N-1)}}$; we will
 transform it into a doubly-stochastic
 matrix~${X \in [0,1]^{N \times N}}$ by filling in entry by entry, starting
 in the top left and raster scanning left to right then top to
-bottom. Denote the~$(m,n)$-th entries of~$\Psi$ and~$X$ by~$\psi_{mn}$
+bottom. Denote the~$(m,n)$-th entries of~$B$ and~$X$ by~$\beta_{mn}$
 and~${x}_{mn}$, respectively.
 
 Each row and column has an associated unit-length ``stick'' that we
 allot to its entries.  The first entry in the matrix is given by
-$x_{11} = \psi_{11}$.  As we work left to right in the first row, the
+$x_{11} = \beta_{11}$.  As we work left to right in the first row, the
 remaining stick length decreases as we add new entries. This reflects
 the row normalization constraints.  The first row follows the standard
 stick-breaking construction,
 \begin{align*}
-  x_{1n} &= \psi_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
+  x_{1n} &= \beta_{1n} \left(1 - \sum_{k=1}^{n-1} x_{1k} \right)  & &  \text{for } n=2, \ldots, N-1\\
   x_{1N} &= 1 - \sum_{n=1}^{N-1} x_{1n}.
 \end{align*}
-This is illustrated in Fig.~\ref{fig:transforms}b, where points
-in the unit square map to points in the simplex. 
+This is illustrated in Fig.~\ref{fig:transforms}b, where points in the
+unit square map to points in the simplex. Here, the blue dots are
+two-dimensional~$\distNormal(0, 4I)$ variates mapped through a coordinate-wise
+logistic function.
 
 Subsequent rows are more interesting, requiring a novel advance on the
 typical uses of stick breaking. Here we need to conform to row and
@@ -372,38 +380,42 @@ u_{mn} &\triangleq
 \min \left \{1- \sum_{k=1}^{n-1} x_{mk}, \,
 1- \sum_{k=1}^{m-1} x_{kn} \right\}.
 \end{align*}
-Accordingly, we define~${x_{mn} = \ell_{mn} + \psi_{mn} (u_{mn} - \ell_{mn})}$.
-The inverse transformation from~$X$ to $\Psi$ is analogous.
-We start by computing~$\psi_{11}$ and then progressively compute
-upper and lower bounds and set~${\psi_{mn} = (x_{mn} - \ell_{mn})/(u_{mn} - \ell_{mn})}$.
+Accordingly, we define~${x_{mn} = \ell_{mn} + \beta_{mn} (u_{mn} - \ell_{mn})}$.
+The inverse transformation from~$X$ to $B$ is analogous.
+We start by computing~$z_{11}$ and then progressively compute
+upper and lower bounds and set~${\beta_{mn} = (x_{mn} - \ell_{mn})/(u_{mn} - \ell_{mn})}$.
 
 To complete the reparameterization, we define a parametric,
-temperature-controlled density for~$\Psi$.
-Let~${\Xi \in \reals^{(N-1) \times (N-1)}}$ be a matrix of standard
-Gaussian random variables.  We
-define,
+temperature-controlled density from a standard Gaussian matrix~${\Noise \in \reals^{(N-1) \times (N-1)}}$
+to the unit-hypercube~$B$.
+Let,
 \begin{align*}
-  \psi_{mn} &= \sigma\left( \frac{\mu_{mn} + \eta_{mn} \xi_{mn}}{\tau} \right),
+  \psi_{mn} &= \mu_{mn} + \nu_{mn} \noise_{mn}, \\
+   \beta_{mn} &= \sigma\left( \psi_{mn} / \tau \right),
 \end{align*}
-where~${\theta = \{\mu_{mn}, \eta^2_{mn}\}_{m,n=1}^N}$ are the mean
-and variance parameters of the
-mapping,~${\sigma(u) = (1+e^{-u})^{-1}}$ is the logistic function,
-and~$\tau$ is a temperature parameter. As~$\tau \to 0$, the values
-of~$\psi_{mn}$ are pushed to either zero or one, depending on whether
-the input to the logistic function is negative or positive,
+where~${\theta = \{\mu_{mn}, \nu^2_{mn}\}_{m,n=1}^N}$ are the mean and
+variance parameters of the intermediate Gaussian
+matrix~$\Psi$,~${\sigma(u) = (1+e^{-u})^{-1}}$ is the logistic
+function, and~$\tau$ is a temperature parameter. As~$\tau \to 0$, the
+values of~$\beta_{mn}$ are pushed to either zero or one, depending on
+whether the input to the logistic function is negative or positive,
 respectively.  As a result, the doubly-stochastic output matrix~$X$ is
 pushed toward the extreme points of the Birkhoff polytope, the
 permutation matrices.  This map is illustrated in
-Fig.~\ref{fig:transforms}c for permutations of~${N=3}$
-elements.
+Fig.~\ref{fig:transforms}c for permutations of~${N=3}$ elements.
+Here, the blue dots are samples of~$B$ with~$\mu_{mn}=0$,
+$\nu_{mn}=2$, and~$\tau=1$.
 
 We compute gradients of this transformation with automatic
 differentiation.  Since this transformation is ``feed-forward,'' its
-Jacobian is lower triangular. The determinant of the Jacobian, necessary for evaluating the density~$q(X; \theta)$, is a simple function of the upper and lower bounds and is given in the supplement.
-While this map is peculiar in its reliance on an ordering of the
-elements, as discussed in Section~\ref{sec:considerations}, it is a
-novel transformation to the Birkhoff polytope with the essential
-properties for gradient-based variational permutation inference.
+Jacobian is lower triangular. The determinant of the Jacobian,
+necessary for evaluating the density~$q_\tau(X; \theta)$, is a simple
+function of the upper and lower bounds and is derived in
+Appendix~\ref{sec:details}.  While this map is peculiar in its
+reliance on an ordering of the elements, as discussed in
+Section~\ref{sec:considerations}, it is a novel transformation to the
+Birkhoff polytope that supports gradient-based variational
+permutation inference.
 
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
@@ -413,60 +425,63 @@ appealing, it is not strictly required.  For example, consider the
 following procedure for sampling a point \emph{near} the Birkhoff
 polytope:
 \begin{enumerate}[label=(\roman*)]
-\item Input~${\Xi \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${H \in \reals_+^{N \times N}}$;
+\item Input~${\Noise \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${V \in \reals_+^{N \times N}}$;
 \item Map~$M \to \mathsf{sink}(M)$, a point near the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
-\item Set~${\Psi = \mathsf{sink}(M) + H \odot \Xi}$ where~$\odot$ denotes elementwise multiplication;
+\item Set~${\Psi = \mathsf{sink}(M) + V \odot \Noise}$ where~$\odot$ denotes elementwise multiplication;
 \item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix to~$\Psi$, using the Hungarian algorithm;
 \item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
-This procedure is a mapping~$X = g(\Xi; M, H)$, and when the elements
-of~$\Xi$ are independently sampled from a standard normal
+This procedure is a mapping~$X = g_\tau(\Noise; M, V)$, and when the elements
+of~$\Noise$ are independently sampled from a standard normal
 distribution, it implicitly defines a distribution over matrices~$X$
-parameterized by~${\theta = \{M, H\}}$. Furthermore, as~$\tau$ goes to
+parameterized by~${\theta = \{M, V\}}$. Furthermore, as~$\tau$ goes to
 zero, the density concentrates on permutation matrices.  A simple
 example is shown in Fig.~\ref{fig:transforms}d,
-where~${M = \tfrac{1}{N}\bone \bone^\trans}$, ${H = 0.4^2 I}$,
-and~${\tau=0.5}$. We use this procedure to define a variational
-distribution with density~$q(X; \theta)$.
+where~${M = \tfrac{1}{N}\bone \bone^\trans}$ with~$\bone$ a
+vector of all ones,
+${V = 0.4^2 \bone \bone^\trans}$, and~${\tau=0.5}$. We use this procedure to define a variational
+distribution with density~$q_\tau(X; \theta)$.
 
 To compute the ELBO and its gradient~\eqref{eq:elbo}, we need to
-evaluate~$q(X; \theta)$.  By construction, steps (i) and (ii) involve
+evaluate~$q_\tau(X; \theta)$.  By construction, steps (i) and (ii) involve
 differentiable transformations of parameter~$M$ to set the mean close
 to the Birkhoff polytope, but since these do not influence the
-distribution of~$\Xi$, the non-invertibility of
+distribution of~$\Noise$, the non-invertibility of
 the~$\mathsf{sink}$ function poses no problems.  Had
-we applied~$\mathsf{sink}$ directly to~$\Xi$, this would not be true.
+we applied~$\mathsf{sink}$ directly to~$\Noise$, this would not be true.
 The challenge in computing the density stems from the rounding in
 steps (iv) and (v).
 
-To compute~$q(X; \theta)$, we need the inverse~$g^{-1}(X; M, H)$ and its
-Jacobian.  The inverse is straightforward: when~${\tau \in [0,1)}$,
-$\mathsf{round}(\Psi)$ outputs a point strictly closer to the nearest
-permutation, implying
+To compute~$q_\tau(X; \theta)$, we need the
+inverse~$g_\tau^{-1}(X; M, V)$ and its Jacobian.  The inverse is
+straightforward: when~${\tau \in [0,1)}$, $\mathsf{round}(\Psi)$
+outputs a point strictly closer to the nearest permutation, implying
 ${\mathsf{round}(\Psi) \equiv \mathsf{round}(X)}$.  Thus, the inverse
 is~${\Psi = \tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau}
   \mathsf{round}(X)}$.  A slight wrinkle arises from the fact that
-step (v) maps to a subset~$\mcX_\tau \subset \reals^{N \times N}$, but
-this inverse is valid for all~$X \in \mcX_\tau$.\footnote{Consider a
-  simple example of rounding in the one-dimensional simplex, that is,
-  the unit interval.  If~$\tau = 0.5$, the rounding operation
-  maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$; the resulting density
-  has zero measure in the interval~$[0.25, 0.75)$.  The same is true
-  of rounding toward permutations: the inverse mapping is only defined
-  for points within~$\tau$ of a permutation. }
+step (v) maps to a subset~${\mcX_\tau \subset \reals^{N \times N}}$ that
+excludes the center of the Birkhoff polytope (note the ``hole'' in
+Fig.~\ref{fig:transforms}d), but this inverse is valid for all~$X$ in
+that subset.
+
+% \footnote{Consider a simple example of rounding in the one-dimensional
+%   simplex, that is, the unit interval.  If~$\tau = 0.5$, the rounding
+%   operation maps~$[0,1]$ to~${[0,0.25) \cup [0.75, 1]}$; the resulting
+%   density has zero measure in the interval~$[0.25, 0.75)$.  The same
+%   is true of rounding toward permutations: the inverse mapping is only
+%   defined for points within~$\tau$ of a permutation. }
 
 The Jacobian is more challenging due to the non-differentiability
 of~$\mathsf{round}$. However, since the nearest permutation output
 only changes at points that are equidistant from two or more
 permutation matrices, $\mathsf{round}$ is a piecewise constant
 function with discontinuities only at a set of points with
-zero measure. In practice, we find that we can safely ignore these
-discontinuities.
+zero measure. Thus, the change of variable theorem still applies.
 
 With the inverse and its Jacobian, we have
 \begin{align*}
-  q(X; \theta) = 
-  \frac{1}{\tau^{N^2}} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), H \right),
+  q_\tau(X; \theta) = 
+  \frac{1}{\tau^{N^2}} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), V \right),
 \end{align*}
 for~${X \in \mcX_\tau}$.
 In the zero-temperature limit we recover a discrete
@@ -505,10 +520,11 @@ ultimate test is in their empirical performance, which we study in
 Section~\ref{sec:synthetic}.
 
 \begin{itemize}
-\item Stick-breaking relaxes to~$\mcB_N$ whereas rounding relaxes
-  to~$\reals^{N \times N}$. The Birkhoff polytope is
-  intuitively appealing, but as long as the likelihood,~$p(y \given X)$,
-  accepts real-valued matrices, either may suffice. 
+\item Stick-breaking relaxes to the Birkhoff polytope whereas rounding
+  relaxes to~$\reals^{N \times N}$. The Birkhoff polytope is
+  intuitively appealing, but as long as the
+  likelihood,~$p(y \given X)$, accepts real-valued matrices, either
+  may suffice.
   
 \item Rounding uses the~$O(N^3)$ Hungarian algorithm in its sampling
   process, whereas stick-breaking has~$O(N^2)$ complexity. In practice,
@@ -516,10 +532,11 @@ Section~\ref{sec:synthetic}.
     
 \item Rounding can easily incorporate constraints.  If certain
   mappings are invalid, i.e.~${X_{mn} \equiv 0}$, they are given an
-  infinite cost in the Hungarian algorithm.\footnote{Constraints of
-    the form~$X_{m,n} \equiv 1$ simply reduce the dimension of the
-    inference problem.}  This is hard to do this with stick breaking
-  as it would change the computation of the upper and lower bounds. 
+  infinite cost in the Hungarian algorithm. This is hard to do this
+  with stick breaking as it would change the computation of the upper
+  and lower bounds. (In both cases, constraints of the
+  form~$X_{mn} \equiv 1$ simply reduce the dimension of the inference
+  problem.)
   
 \item Stick-breaking introduces a dependence on ordering.  While the
   mapping is bijective, a desired distribution on the Birkhoff polytope
@@ -609,12 +626,12 @@ capture complex permutation distributions.
 
 We measured the discrepancy between true posterior and an empirical
 estimate of the inferred posteriors using using the Battacharya
-distance (BD). We fit $q(X; \theta)$ for both stick-breaking and
-rounding transformations, sampled the variational posterior, and
-rounded the samples to the nearest permutation matrix with the
-Hungarian algorithm. For the Mallows distribution, we set $\phi_0$ to
-the MAP estimate, also found with the Hungarian algorithm, and sampled
-using MCMC.
+distance (BD). We fit $q_\tau(X; \theta)$ with an annealing schedule
+for both stick-breaking and rounding transformations, sampled the
+variational posterior, and rounded the samples to the nearest
+permutation matrix with the Hungarian algorithm. For the Mallows
+distribution, we set $\phi_0$ to the MAP estimate, also found with the
+Hungarian algorithm, and sampled using MCMC.
  
 We found our method outperforms the simple Mallows distribution and
 reasonably approximates non-trivial distributions over
@@ -739,7 +756,7 @@ as shown by the overall variance of the samples in Fig~\ref{fig:elegantresults}d
 \section{Conclusion}
 
 Our results provide evidence that variational permutation
-variational inference is a valuable tool, especially in complex
+inference is a valuable tool, especially in complex
 problems like neural identity inference where information must be
 aggregated from disparate sources in a hierarchical model.  As we
 apply this to real neural recordings, we must consider more realistic,

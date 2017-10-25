@@ -110,7 +110,7 @@ def plot_simplex(ax, fontsize=8):
                          [1.05, -0.4 ],
                          [-1.25, -0.4 ]])
     for i in range(3):
-        plt.text(vertices[i,0], vertices[i,1], "$\\pi_%d$" % (i+1), fontsize=fontsize)
+        plt.text(vertices[i,0], vertices[i,1], "$e_%d$" % (i+1), fontsize=fontsize)
 
 
     # Overlay the triangle border.

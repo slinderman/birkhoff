@@ -2,17 +2,13 @@ import itertools as it
 
 import numpy as np
 np.random.seed(0)
+from scipy.optimize import linear_sum_assignment
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # Import figure making stuff
-
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.gridspec as gridspec
 from matplotlib.font_manager import FontProperties
-import matplotlib.patches as patches
-import mpl_toolkits.mplot3d.art3d as art3d
-
 import seaborn as sns
 color_names = ["windows blue",
                "red",
@@ -35,18 +31,14 @@ colors = sns.xkcd_palette(color_names)
 sns.set_style("white")
 sns.set_context("paper")
 
-from hips.plotting.colormaps import gradient_cmap
-from hips.plotting.layout import create_figure, create_axis_at_location, remove_plot_labels
+from hips.plotting.layout import create_axis_at_location
 
 
 import birkhoff.simplex as simplex
-from birkhoff.primitives import psi_to_pi
-from birkhoff.utils import get_b3_projection, project_perm_to_sphere, sinkhorn
-from birkhoff.primitives import psi_to_birkhoff, birkhoff_to_psi
+from birkhoff.primitives import psi_to_pi, logistic
+from birkhoff.utils import get_b3_projection, project_perm_to_sphere
+from birkhoff.primitives import psi_to_birkhoff
 
-from birkhoff.utils import get_b3_projection, project_perm_to_sphere, sinkhorn
-from birkhoff.primitives import psi_to_birkhoff, birkhoff_to_psi
-from scipy.optimize import linear_sum_assignment
 
 WIDTH, HEIGHT = 6.6, 3.3
 K = 3
@@ -209,7 +201,8 @@ def plot_softmax_psi_pi(ax_psi, ax_pi):
 ### Discrete stick-breaking
 ###
 def _sample_stickbreak_psi_pi():
-    psi_smpls = np.random.rand(N_smpls, 2)
+    # psi_smpls = np.random.rand(N_smpls, 2)
+    psi_smpls = logistic(2 * np.random.randn(N_smpls, 2))
     pi_smpls = np.array([psi_to_pi(psi) for psi in psi_smpls])
     xy_smpls = np.array([simplex.proj_to_2D(pi) for pi in pi_smpls])
 
@@ -228,11 +221,11 @@ def plot_discrete_stickbreak_psi_pi(ax_psi, ax_pi):
             ax_psi.plot(*zip(s, e), '-k')
     ax_psi.text(-0.1, .05, "0", fontsize=6)
     ax_psi.text(-0.1, .95, "1", fontsize=6)
-    ax_psi.text(-0.2, 0.5, "$\\psi_{2}$", fontsize=8)
+    ax_psi.text(-0.2, 0.5, "$\\beta_{2}$", fontsize=8)
 
     ax_psi.text(.05, -0.1, "0", fontsize=6)
     ax_psi.text(.95, -0.1, "1", fontsize=6)
-    ax_psi.text(0.5, -0.2, "$\\psi_{1}$", fontsize=8)
+    ax_psi.text(0.5, -0.2, "$\\beta_{1}$", fontsize=8)
     ax_psi.axis('off')
     ax_psi.set_aspect("equal")
 
@@ -296,8 +289,9 @@ def _plot_birkhoff_projection(fig, ax, Q):
 
 def _sample_stickbreak_perm_psi_pi(Q):
     # Sample a bunch of points in the Birkhoff polytope
-    psi_smpls = np.random.rand(N_smpls, K - 1, K - 1)
-    psi_smpls[:, 1, 1] = 0.
+    # psi_smpls = np.random.rand(N_smpls, K - 1, K - 1)
+    psi_smpls = logistic(2 * np.random.randn(N_smpls, K - 1, K - 1))
+    # psi_smpls[:, 1, 1] = 0.
     pi_smpls = []
     xy_smpls = []
     for n, psi in enumerate(psi_smpls):
@@ -328,8 +322,11 @@ def _sample_stickbreak_perm_psi_pi(Q):
 def plot_stickbreak_psi_pi(fig, ax_psi, ax_pi, axes=((0, 0), (0, 1), (1, 0))):
     # Now plot the trajectory in the K-1 x K-1 unit hypercube
 
+    rs = np.random.get_state()
     np.random.seed(1)
     Q = get_b3_projection()
+    np.random.set_state(rs)
+
     psi_marks, pi_marks, xy_marks, psi_smpls, pi_smpls, xy_smpls = _sample_stickbreak_perm_psi_pi(Q)
 
     # ax.plot(fUs[:,axes[0]], fUs[:, axes[1]], fUs[:, axes[2]], ':k')
@@ -344,9 +341,9 @@ def plot_stickbreak_psi_pi(fig, ax_psi, ax_pi, axes=((0, 0), (0, 1), (1, 0))):
 
     ax_psi.text(-0.1, -0.1, -0.1,  "0", fontsize=6)
     # ax_psi.text(.95, -0.1, "1", fontsize=6)
-    ax_psi.text(0.5, -0.4, 0., "$\\psi_{11}$", fontsize=8)
-    ax_psi.text(1.1, 0.5, 0., "$\\psi_{12}$", fontsize=8)
-    ax_psi.text(-0.3, -0.2, 0.5, "$\\psi_{21}$", fontsize=8)
+    ax_psi.text(0.5, -0.4, 0., "$\\beta_{11}$", fontsize=8)
+    ax_psi.text(1.1, 0.5, 0., "$\\beta_{12}$", fontsize=8)
+    ax_psi.text(-0.3, -0.2, 0.5, "$\\beta_{21}$", fontsize=8)
     ax_psi.axis('off')
     ax_psi.set_aspect("equal")
 
@@ -407,8 +404,10 @@ def _sample_round_psi_pi(Q, eta, tau):
 
 
 def plot_round_psi_pi(fig, ax_psi, ax_pi, tau=0.5, eta=0.4):
+    rs = np.random.get_state()
     np.random.seed(1)
     Q = get_b3_projection()
+    np.random.set_state(rs)
 
     psi_marks, pi_marks, xy_marks, psi_smpls, pi_smpls, xy_smpls = _sample_round_psi_pi(Q, eta, tau)
 
