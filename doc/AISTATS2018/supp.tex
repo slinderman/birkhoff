@@ -398,12 +398,12 @@ penalize values of~$X$ that are far from permutation matrices.
 For our categorical experiment on MNIST we use a mixture of Gaussians
 around each
 vertex,~${p(x) = \tfrac{1}{N} \sum_{n=1}^N \mathcal{N}(x \given e_k,
-  \nu^2)}$.  This can be extended to permutations, where we use a
+  \eta^2)}$.  This can be extended to permutations, where we use a
 mixture of Gaussians for each coordinate,
 \begin{align}
 \label{eq:permprior}
   p(X) &= \prod_{m=1}^N \prod_{n=1}^N
-  \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \nu^2) + \distNormal(x_{mn} \given 1, \nu^2 \right).
+  \frac{1}{2} \left(\mathcal{N}(x_{mn} \given 0, \eta^2) + \distNormal(x_{mn} \given 1, \eta^2 \right).
 \end{align}
 Although this prior puts significant mass around invalid points
 (e.g.~${(1, 1, \ldots, 1)}$), it penalizes~$X$ that are far from~$\mcB_N$.

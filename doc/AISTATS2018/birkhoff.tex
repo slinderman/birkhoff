@@ -232,13 +232,12 @@ to a distribution that depends on these parameters.
     dots are random variates that aid in visualizing the
     transformation.  (b)~Stick-breaking offers and alternative
     transformation for categorical inference, here from
-    points~$\beta \in [0,1]^{N-1}$ to~$\Delta_N$, but
-    the ordering of the stick-breaking induces an asymmetry in the
-    transformation.  (c)~We extend this stick-breaking transformation
-    to reparameterize the Birkhoff polytope, i.e. the set of
-    doubly-stochastic matrices. We show how~$\mcB_3$ is
-    reparameterized in terms of matrices~$\Psi \in [0,1]^{2 \times 2}$
-    These points are mapped to
+    points~$\beta \in [0,1]^{N-1}$ to~$\Delta_N$, but the ordering of
+    the stick-breaking induces an asymmetry in the transformation.
+    (c)~We extend this stick-breaking transformation to reparameterize
+    the Birkhoff polytope, i.e. the set of doubly-stochastic
+    matrices. We show how~$\mcB_3$ is reparameterized in terms of
+    matrices~$B \in [0,1]^{2 \times 2}$ These points are mapped to
     doubly-stochastic matrices, which we have projected
     onto~$\reals^2$ below (stencils show permutation matrices at the
     vertices).  (d)~Finally, we derive a ``rounding'' transformation
@@ -540,7 +539,7 @@ Section~\ref{sec:synthetic}.
   
 \item Stick-breaking introduces a dependence on ordering.  While the
   mapping is bijective, a desired distribution on the Birkhoff polytope
-  may require a complex distribution for~$\Psi$.  Rounding, by contrast,
+  may require a complex distribution for~$B$.  Rounding, by contrast,
   is more ``symmetric'' in this regard.
   
 \end{itemize}
