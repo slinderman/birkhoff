@@ -283,10 +283,10 @@ discrete variational inference. It is based on the following
 observation: discrete probability mass functions~$q(x; \theta)$ can be
 seen as densities with atoms on the vertices of the simplex; i.e. on
 the set of one-hot vectors~${\{e_n\}_{n=1}^N}$,
-where~${e_n = (0, 0, \ldots, 1, \ldots, 0)^\trans}$ is a binary vector
+where~${e_n = (0, 0, \ldots, 1, \ldots, 0)^\trans}$ is a length-$N$ binary vector
 with a single 1 in the~$n$-th position. This motivates a natural
 relaxation: let $q(x; \theta)$ be a density on the interior of the
-simplex instead and anneal this density such that it converges to an
+simplex instead, and anneal this density such that it converges to an
 atomic density on the vertices. Fig.~\ref{fig:transforms}a illustrates
 this idea. Gumbel random variates, are mapped through a
 temperature-controlled softmax function,
@@ -424,15 +424,15 @@ following procedure for sampling a point \emph{near} the Birkhoff
 polytope:
 \begin{enumerate}[label=(\roman*)]
 \item Input~${\Noise \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${V \in \reals_+^{N \times N}}$;
-\item Map~$M \to \mathsf{sink}(M)$, a point near the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
-\item Set~${\Psi = \mathsf{sink}(M) + V \odot \Noise}$ where~$\odot$ denotes elementwise multiplication;
+\item Map~$M \to \widetilde{M}$, a point in the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
+\item Set~${\Psi = \widetilde{M} + V \odot \Noise}$ where~$\odot$ denotes elementwise multiplication;
 \item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix to~$\Psi$, using the Hungarian algorithm;
 \item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
-This procedure is a mapping~$X = g_\tau(\Noise; M, V)$, and when the elements
+This procedure defines a mapping~${X = g_\tau(\Noise; \theta)}$ with~${\theta = \{M, V\}}$. When the elements
 of~$\Noise$ are independently sampled from a standard normal
 distribution, it implicitly defines a distribution over matrices~$X$
-parameterized by~${\theta = \{M, V\}}$. Furthermore, as~$\tau$ goes to
+parameterized by~${\theta}$. Furthermore, as~$\tau$ goes to
 zero, the density concentrates on permutation matrices.  A simple
 example is shown in Fig.~\ref{fig:transforms}d,
 where~${M = \tfrac{1}{N}\bone \bone^\trans}$ with~$\bone$ a
@@ -445,18 +445,18 @@ evaluate~$q_\tau(X; \theta)$.  By construction, steps (i) and (ii) involve
 differentiable transformations of parameter~$M$ to set the mean close
 to the Birkhoff polytope, but since these do not influence the
 distribution of~$\Noise$, the non-invertibility of
-the~$\mathsf{sink}$ function poses no problems.  Had
-we applied~$\mathsf{sink}$ directly to~$\Noise$, this would not be true.
+the Sinkhorn-Knopp algorithm poses no problems.  Had
+we applied this algorithm directly to~$\Noise$, this would not be true.
 The challenge in computing the density stems from the rounding in
-steps (iv) and (v).
+steps~(iv) and~(v).
 
 To compute~$q_\tau(X; \theta)$, we need the
-inverse~$g_\tau^{-1}(X; M, V)$ and its Jacobian.  The inverse is
+inverse~$g_\tau^{-1}(X; \theta)$ and its Jacobian.  The inverse is
 straightforward: when~${\tau \in [0,1)}$, $\mathsf{round}(\Psi)$
 outputs a point strictly closer to the nearest permutation, implying
 ${\mathsf{round}(\Psi) \equiv \mathsf{round}(X)}$.  Thus, the inverse
-is~${\Psi = \tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau}
-  \mathsf{round}(X)}$.  A slight wrinkle arises from the fact that
+is~${g_\tau^{-1}(X; \theta) = \big(\tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau}
+  \mathsf{round}(X) - \widetilde{M}\big) \oslash V}$, where~$\oslash$ denotes elementwise division.  A slight wrinkle arises from the fact that
 step (v) maps to a subset~${\mcX_\tau \subset \reals^{N \times N}}$ that
 excludes the center of the Birkhoff polytope (note the ``hole'' in
 Fig.~\ref{fig:transforms}d), but this inverse is valid for all~$X$ in
@@ -479,9 +479,12 @@ zero measure. Thus, the change of variable theorem still applies.
 With the inverse and its Jacobian, we have
 \begin{align*}
   q_\tau(X; \theta) = 
-  \frac{1}{\tau^{N^2}} \distNormal \left( \frac{1}{\tau}X -\frac{1-\tau}{\tau} \mathsf{round}(X); \, \mathsf{sink}(M), V \right),
+  \prod_{m=1}^N\prod_{n=1}^N  \frac{1}{\tau \nu_{mn}}
+  \distNormal \left( z_{mn}; \, 0, 1 \right)
+  \times \bbI[X \in \mcX_\tau],
 \end{align*}
-for~${X \in \mcX_\tau}$.
+where~${z_{mn} = [g_\tau^{-1}(X; \theta)]_{mn}}$ and~$\nu_{mn}$
+are the entries of~$V$.
 In the zero-temperature limit we recover a discrete
 distribution on permutation matrices; otherwise the density
 concentrates near the vertices as~${\tau \to 0}$.  This
@@ -493,7 +496,7 @@ benefits.
 
 \begin{figure*}[ht] 
    \centering
-   \includegraphics[width=6in]{../figures/figure8.pdf}
+   \includegraphics[width=6.5in]{../figures/figure8.pdf}
    \caption{Synthetic matching experiment results. The goal is to
      infer the lines that match squares to circles. (a) Examples of
      center locations (circles) and noisy samples (squares), at
@@ -535,11 +538,11 @@ Section~\ref{sec:synthetic}.
   the stick-breaking computations are slightly more efficient.
     
 \item Rounding can easily incorporate constraints.  If certain
-  mappings are invalid, i.e.~${X_{mn} \equiv 0}$, they are given an
+  mappings are invalid, i.e.~${x_{mn} \equiv 0}$, they are given an
   infinite cost in the Hungarian algorithm. This is hard to do this
   with stick breaking as it would change the computation of the upper
   and lower bounds. (In both cases, constraints of the
-  form~$X_{mn} \equiv 1$ simply reduce the dimension of the inference
+  form~$x_{mn} \equiv 1$ simply reduce the dimension of the inference
   problem.)
   
 \item Stick-breaking introduces a dependence on ordering.  While the
@@ -641,9 +644,9 @@ We found our method outperforms the simple Mallows distribution and
 reasonably approximates non-trivial distributions over
 permutations. Fig~\ref{fig:synthetic} illustrates our findings,
 showing (a) sample experiment configurations; (b) examples of
-inferred, discrete, posteriors for stick breaking (top), rounding
-(middle), and Mallows (bottom); and (c) histogram of Battacharya distance.
-The latter are summarized in Table~\ref{table:BDs}.
+inferred, discrete, posteriors for stick breaking, rounding, and
+Mallows at various levels of noise; and (c) histogram of Battacharya
+distance.  The latter are summarized in Table~\ref{table:BDs}.
 
 
 \section{Inferring neuron identities in \textit{C. elegans}}
@@ -783,7 +786,7 @@ Sloan Foundation, McKnight Foundation, and the SCGB.
 \bibliographystyle{abbrvnat}
 
 
-\pagebreak 
+\clearpage
 \appendix
 
 \input{supp}

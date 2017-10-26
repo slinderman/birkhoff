@@ -1,6 +1,10 @@
 \DeclareRobustCommand{\mb}[1]{\ensuremath{\boldsymbol{\mathbf{#1}}}}
 \DeclareRobustCommand{\KL}[2]{\ensuremath{\textrm{KL}\left(#1\;\|\;#2\right)}}
 
+% Name the noise
+\newcommand{\Noise}{Z}
+\newcommand{\noise}{z}
+
 \newcommand{\supp}{\textrm{supp}}
 
 \newcommand{\E}{\mathbb{E}}
@@ -161,13 +165,12 @@
 
 \DeclareMathOperator{\diag}{diag}
 \let\vec\relax% Set equal to \relax so that LaTeX thinks it's not defined
-\DeclareMathOperator{\vec}{vec}
+%\DeclareMathOperator{\vec}{vec}
 \let\Re\relax
-\DeclareMathOperator{\Re}{\textup{Re}}
+%\DeclareMathOperator{\Re}{\textup{Re}}
 \let\Im\relax
-\DeclareMathOperator{\Im}{\textup{Im}}
+%\DeclareMathOperator{\Im}{\textup{Im}}
 
 % Backcompat: dif and diff both work
 \newcommand*\dif{\mathop{}\!\mathrm{d}}
 \newcommand*\diff{\mathop{}\!\mathrm{d}}
-
