@@ -29,7 +29,7 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 
-\title{Bayesian methods for neural identification in C. elegans based on continuous relaxations for permutations}
+\title{Identifying neurons in \textit{C. elegans} with continuous relaxations for Bayesian permutation inference}
 
 % The \author macro works with any number of authors. There are two
 % commands used to separate the names and addresses of multiple
@@ -117,7 +117,31 @@ Modern calcium imaging technology enables simultaneous measurements of
 hundreds of these neurons simultaneously \citep{Kato2015,
   nguyen2016whole}. Thus, the time seems right to employ modern statistical methods to summarize what can
 be learned about the functional connectome in this system, and to suggest new experiments to constrain our uncertainty further.  
-  
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=5.0in]{Figure1.pdf} 
+  \caption{\textit{Hierarchical Bayesian framework}.  \textbf{A} We
+    are given the actual adjaency matrix $A$ from
+    \citep{varshney2011structural}. The full matrix is shown (top)
+    along with a zoom-in to 14 neurons (center).  We wish to infer the
+    corresponding weight matrix~$W$, an example of which is shown
+    below.  \textbf{B} We also know the typial locations of the
+    neurons \citep{white1986structure,wormatlas}. Given observed
+    locations, we constrain possible assignments to neuron identities
+    within~$\eta$ of the observed location.  \textbf{C} These
+    constraints are represented as a matrix $\mathcal{C}^{(j)}$ for
+    worm~$j$ which specifies possible assignments of observed neurons
+    to known identities.  \textbf{D} To infer the weights, we must
+    first infer the permutation $P^{(j)}$ that matches the observed
+    neurons in worm~$j$ to the set of known identities.
+    \textbf{E} The observed data is a matrix~$Y^{(j)}$ whose rows
+    are ordered according to the order in which neurons were observed
+    in that worm.  The permutation matrix maps this to the canonical
+    ordering of the adjacency and weight matrices. Given~$\{Y^{(j)}\}_{j=1}^J$ and~$A$, we infer~$\{P^{(j)}\}_{j=1}^J$ and~$W$.}
+\label{fig:1}
+\end{figure*}
+
   To this end, Bayesian inference  stands out as the most suited methodological framework, as it allow us to represent hierarchical probabilistic structures, and to integrate our strong priors on the system components (e.g. sparsity patterns in the connectome, and a priori knowledge of approximate neural positions).
 In the most general setup, we would be interested on posterior inference of a generic dynamical system that dictates the distribution of next neural state, given history, system's input and behavior. Learning and inference in dynamical systems with MCMC methods is rather standard, even in cases with complicated latent structures \cite{Freitas2001,Paninski2010}. Further, methods to account for the hierarchical aspect, i.e., incorporating information from many worms are also widely available \citep{Gelman2014}. However, we note a fundamental
 technical hurdle complicates our efforts of integrating across-specimens information: in practice, associating recorded traces to neuron names is a painstaking process; experimenters
@@ -140,14 +164,9 @@ $\mathcal{C}^{(j)}$ so that $\mathcal{C}^{(j)}_{mn}=1$ (observed) neuron $m$ is 
 to (canonical) neuron $n$; i.e., if their distance is smaller than a
 tolerance $\eta$ (Figure \ref{fig:1}C) . Also, absolute certainty of neural identity can be encoded in this matrix, by imposing $\mathcal{C}^{(j)}_{mn}=1$ in for only true index $n$.
 
+
 In this setup, then, we are concerned with joint posterior inference of $p(\{W,P^{(j)}\})$. Although this problem may be also addressed with MCMC, and in practice poor mixing is observed, motivating the use or alternative tools. Here, we cast this problem as an instance of the \emph{variational inference} (VI) framework \citep{Blei2017} and develop new tools the applicability of this framework to the case where the latent variables are permutation, a case that substantially deviates from the standard practice.  In section \ref{sec:VI} we detail our VI formulation and summarize our developed methods. Finally, in section \ref{sec:results} we show our findings; notably, the supremacy of our method over the naive MCMC sampler.
 
-\begin{figure*}[ht]
-  \centering
-  \includegraphics[width=5.0in]{Figure1.pdf} 
-  \caption{Hierarchical model outline. \textbf{A} (top) actual connectome $A$, from \citep{varshney2011structural}, (center) zoom-in to 14 neurons, (bottom) sampled matrix $W$ consistent with $A$. \textbf{B} reference linear location information  \citep{white1986structure,wormatlas} can incorporated in our model to constrain posibilities. \textbf{C} in detail, location constrains are represented through a confusion matrix $\mathcal{C}^{(j) }$ that encodes which assignments are possible for each neuron. \textbf{D} permutations $P^{(j)}$ are chosen in consistency with constrains. \textbf{E} dynamical system observations $Y_t^{(j)}$ are sampled from $P^{(j)}$-permuted copies of $W$.}
-\label{fig:1}
-\end{figure*}
 
 
  \section{New methods for variational inference of latent permutations}
