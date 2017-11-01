@@ -340,8 +340,8 @@ stick-breaking construction,
 \end{align*}
 This is illustrated in Fig.~\ref{fig:transforms}b, where points in the
 unit square map to points in the simplex. Here, the blue dots are
-two-dimensional~$\distNormal(0, 4I)$ variates mapped through a coordinate-wise
-logistic function.
+two-dimensional~$\distNormal(0, 4I)$ variates mapped through a
+coordinate-wise logistic function.
 
 Subsequent rows are more interesting, requiring a novel advance on the
 typical uses of stick breaking. Here we need to conform to row and
@@ -354,7 +354,7 @@ x_{mn} &\leq 1- \sum_{k=1}^{n-1} x_{mk} & & \text{(row sum)} \\
 x_{mn} &\leq 1- \sum_{k=1}^{m-1} x_{kn} & & \text{(column sum)}.
 \end{align*}
 Moreover, there is also a lower bound on~$x_{mn}$. This entry must
-claim enough of the stick such that what is leftover fits within
+claim enough of the stick such that what remains fits within
 the confines imposed by subsequent column sums. That is, each column
 sum places an upper bound on the amount that may be attributed to any
 subsequent entry. If the remaining stick exceeds the sum of these
@@ -370,8 +370,9 @@ Rearranging terms, we have,
   % 1- \sum_{k=1}^{n-1} x_{mk} - \sum_{j=n+1}^N (1- \sum_{k=1}^{m-1} x_{kj}) \\
 1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj}.
 \end{align*}
-Of course, this bound is only relevant if the right hand side is greater than zero.
-Taken together, we have~$\ell_{mn} \leq x_{mn} \leq u_{mn}$, where,
+Of course, this bound is only relevant if the right hand side is
+greater than zero.  Taken together, we
+have~$\ell_{mn} \leq x_{mn} \leq u_{mn}$, where,
 \begin{align*}
 \ell_{mn} &\triangleq \max \left \{0, \, 1 - N + n - \sum_{k=1}^{n-1} x_{mk}  +  \sum_{k=1}^{m-1} \sum_{j=n+1}^N x_{kj} \right \}
 \\
@@ -379,15 +380,17 @@ u_{mn} &\triangleq
 \min \left \{1- \sum_{k=1}^{n-1} x_{mk}, \,
 1- \sum_{k=1}^{m-1} x_{kn} \right\}.
 \end{align*}
-Accordingly, we define~${x_{mn} = \ell_{mn} + \beta_{mn} (u_{mn} - \ell_{mn})}$.
-The inverse transformation from~$X$ to $B$ is analogous.
-We start by computing~$z_{11}$ and then progressively compute
-upper and lower bounds and set~${\beta_{mn} = (x_{mn} - \ell_{mn})/(u_{mn} - \ell_{mn})}$.
+Accordingly, we
+define~${x_{mn} = \ell_{mn} + \beta_{mn} (u_{mn} - \ell_{mn})}$.  The
+inverse transformation from~$X$ to $B$ is analogous.  We start by
+computing~$z_{11}$ and then progressively compute upper and lower
+bounds and
+set~${\beta_{mn} = (x_{mn} - \ell_{mn})/(u_{mn} - \ell_{mn})}$.
 
 To complete the reparameterization, we define a parametric,
-temperature-controlled density from a standard Gaussian matrix~${\Noise \in \reals^{(N-1) \times (N-1)}}$
-to the unit-hypercube~$B$.
-Let,
+temperature-controlled density from a standard Gaussian
+matrix~${\Noise \in \reals^{(N-1) \times (N-1)}}$ to the
+unit-hypercube~$B$.  Let,
 \begin{align*}
   \psi_{mn} &= \mu_{mn} + \nu_{mn} \noise_{mn}, \\
    \beta_{mn} &= \sigma\left( \psi_{mn} / \tau \right),
@@ -424,42 +427,50 @@ appealing, it is not strictly required.  For example, consider the
 following procedure for sampling a point \emph{near} the Birkhoff
 polytope:
 \begin{enumerate}[label=(\roman*)]
-\item Input~${\Noise \in \reals^{N \times N}}$,~${M \in \reals_+^{N \times N}}$, and~${V \in \reals_+^{N \times N}}$;
-\item Map~$M \to \widetilde{M}$, a point in the Birkhoff polytope, using the Sinkhorn-Knopp algorithm;
-\item Set~${\Psi = \widetilde{M} + V \odot \Noise}$ where~$\odot$ denotes elementwise multiplication;
-\item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix to~$\Psi$, using the Hungarian algorithm;
+\item Input~${\Noise \in \reals^{N \times
+      N}}$,~${M \in \reals_+^{N \times N}}$,
+  and~${V \in \reals_+^{N \times N}}$;
+\item Map~$M \to \widetilde{M}$, a point in the Birkhoff polytope,
+  using the Sinkhorn-Knopp algorithm;
+\item Set~${\Psi = \widetilde{M} + V \odot \Noise}$ where~$\odot$
+  denotes elementwise multiplication;
+\item Find~$\mathsf{round}(\Psi)$, the nearest permutation matrix
+  to~$\Psi$, using the Hungarian algorithm;
 \item Output~${X = \tau \Psi + (1-\tau) \mathsf{round}(\Psi)}$.
 \end{enumerate}
-This procedure defines a mapping~${X = g_\tau(\Noise; \theta)}$ with~${\theta = \{M, V\}}$. When the elements
-of~$\Noise$ are independently sampled from a standard normal
-distribution, it implicitly defines a distribution over matrices~$X$
-parameterized by~${\theta}$. Furthermore, as~$\tau$ goes to
-zero, the density concentrates on permutation matrices.  A simple
-example is shown in Fig.~\ref{fig:transforms}d,
-where~${M = \tfrac{1}{N}\bone \bone^\trans}$ with~$\bone$ a
-vector of all ones,
-${V = 0.4^2 \bone \bone^\trans}$, and~${\tau=0.5}$. We use this procedure to define a variational
-distribution with density~$q_\tau(X; \theta)$.
+This procedure defines a mapping~${X = g_\tau(\Noise; \theta)}$
+with~${\theta = \{M, V\}}$. When the elements of~$\Noise$ are
+independently sampled from a standard normal distribution, it
+implicitly defines a distribution over matrices~$X$ parameterized
+by~${\theta}$. Furthermore, as~$\tau$ goes to zero, the density
+concentrates on permutation matrices.  A simple example is shown in
+Fig.~\ref{fig:transforms}d,
+where~${M = \tfrac{1}{N}\bone \bone^\trans}$ with~$\bone$ a vector of
+all ones, ${V = 0.4^2 \bone \bone^\trans}$, and~${\tau=0.5}$. We use
+this procedure to define a variational distribution with
+density~$q_\tau(X; \theta)$.
 
 To compute the ELBO and its gradient~\eqref{eq:elbo}, we need to
-evaluate~$q_\tau(X; \theta)$.  By construction, steps (i) and (ii) involve
-differentiable transformations of parameter~$M$ to set the mean close
-to the Birkhoff polytope, but since these do not influence the
-distribution of~$\Noise$, the non-invertibility of
-the Sinkhorn-Knopp algorithm poses no problems.  Had
-we applied this algorithm directly to~$\Noise$, this would not be true.
-The challenge in computing the density stems from the rounding in
-steps~(iv) and~(v).
+evaluate~$q_\tau(X; \theta)$.  By construction, steps (i) and (ii)
+involve differentiable transformations of parameter~$M$ to set the
+mean close to the Birkhoff polytope, but since these do not influence
+the distribution of~$\Noise$, the non-invertibility of the
+Sinkhorn-Knopp algorithm poses no problems.  Had we applied this
+algorithm directly to~$\Noise$, this would not be true.  The challenge
+in computing the density stems from the rounding in steps~(iv)
+and~(v).
 
 To compute~$q_\tau(X; \theta)$, we need the
 inverse~$g_\tau^{-1}(X; \theta)$ and its Jacobian.  The inverse is
 straightforward: when~${\tau \in [0,1)}$, $\mathsf{round}(\Psi)$
 outputs a point strictly closer to the nearest permutation, implying
 ${\mathsf{round}(\Psi) \equiv \mathsf{round}(X)}$.  Thus, the inverse
-is~${g_\tau^{-1}(X; \theta) = \big(\tfrac{1}{\tau}X - \tfrac{1-\tau}{\tau}
-  \mathsf{round}(X) - \widetilde{M}\big) \oslash V}$, where~$\oslash$ denotes elementwise division.  A slight wrinkle arises from the fact that
-step (v) maps to a subset~${\mcX_\tau \subset \reals^{N \times N}}$ that
-excludes the center of the Birkhoff polytope (note the ``hole'' in
+is~${g_\tau^{-1}(X; \theta) = \big(\tfrac{1}{\tau}X -
+  \tfrac{1-\tau}{\tau} \mathsf{round}(X) - \widetilde{M}\big) \oslash
+  V}$, where~$\oslash$ denotes elementwise division.  A slight wrinkle
+arises from the fact that step (v) maps to a
+subset~${\mcX_\tau \subset \reals^{N \times N}}$ that excludes the
+center of the Birkhoff polytope (note the ``hole'' in
 Fig.~\ref{fig:transforms}d), but this inverse is valid for all~$X$ in
 that subset.
 
@@ -656,7 +667,19 @@ distance.  The latter are summarized in Table~\ref{table:BDs}.
 \begin{figure*}[ht]
   \centering
   \includegraphics[width=6in]{figure7.pdf} 
-  \caption{Results on the C.elegans inference example. (a) An example of convergence of the algorithm, and the baselines. (b) Accuracy of identity inference as a function of mean number of candidates (correlated with $\nu$), for $M=1$ worm (square) and combining information of $M=5$ worms (circles). (c) Accuracy as a function of the proportion of known networks beforehand,  with $\nu=0.1$ (circles) and $\nu=0.05$ (squares). (d)Variance of distribution over permutations (vectorized) as a function of the number of iterations. (e) Two samples of permutation matrices $\mathsf{round}(\Psi)$ (right) and their noisy, non-rounded versions $\Psi$ (left) at the twentieth algorithm iteration. The average of many samples is also shown. Presence of grey dots indicate that the sampling procedure is not deterministic.}
+  \caption{Results on the C.elegans inference example. (a) An example
+    of convergence of the algorithm, and the baselines. (b) Accuracy
+    of identity inference as a function of mean number of candidates
+    (correlated with $\nu$), for $M=1$ worm (square) and combining
+    information of $M=5$ worms (circles). (c) Accuracy as a function
+    of the proportion of known networks beforehand, with $\nu=0.1$
+    (circles) and $\nu=0.05$ (squares). (d)Variance of distribution
+    over permutations (vectorized) as a function of the number of
+    iterations. (e) Two samples of permutation matrices
+    $\mathsf{round}(\Psi)$ (right) and their noisy, non-rounded
+    versions $\Psi$ (left) at the twentieth algorithm iteration. The
+    average of many samples is also shown. Presence of grey dots
+    indicate that the sampling procedure is not deterministic.}
 \label{fig:elegantresults}
 \end{figure*}
 
@@ -693,39 +716,40 @@ and~${Y^{(j)} \in \reals^{T_j \times N}}$ denote a recording of
 worm~$j$ with~$T_j$ time steps and~$N$ neurons.  We model the neural
 activity with a linear dynamical system
 ${Y^{(j)}_t = {X^{(j)}} W {X^{(j)}}^\trans
-  Y^{(j)}_{t-1}+\varepsilon^{(j)}_t}$, where~$\varepsilon_t^{(j)}$ is Gaussian noise.
-Here, ~$X^{(j)}$ is a latent permutation of neurons that must be
-inferred for each worm in order to align the observations with the
-shared dynamics matrix~$W$.  The hierarchical component of the model
-is that~$W$ is shared by all worms, and it encodes the influence of
-one neuron on another (the rows and columns of~$W$ are ordered in the
-same way as the known connectome~$A$). The connectome specifies which
-entries of~$W$ may be non-zero: without a connection (${A_{mn}=0}$)
-the corresponding weight must be zero; if a connection exists (${A_{mn}=1}$),
-we must infer its weight.  Fig.~\ref{fig:connectome}d shows
-simulated traces from a network that respects the connectivity of~$A$
-and has random Gaussian weights.  The linear model is a simple start;
-in future work we can incorporate nonlinear dynamics, more informed
-priors on~$W$, etc.
+  Y^{(j)}_{t-1}+\varepsilon^{(j)}_t}$, where~$\varepsilon_t^{(j)}$ is
+Gaussian noise.  Here, ~$X^{(j)}$ is a latent permutation of neurons
+that must be inferred for each worm in order to align the observations
+with the shared dynamics matrix~$W$.  The hierarchical component of
+the model is that~$W$ is shared by all worms, and it encodes the
+influence of one neuron on another (the rows and columns of~$W$ are
+ordered in the same way as the known connectome~$A$). The connectome
+specifies which entries of~$W$ may be non-zero: without a connection
+(${A_{mn}=0}$) the corresponding weight must be zero; if a connection
+exists (${A_{mn}=1}$), we must infer its weight.
+Fig.~\ref{fig:connectome}d shows simulated traces from a network that
+respects the connectivity of~$A$ and has random Gaussian weights.  The
+linear model is a simple start; in future work we can incorporate
+nonlinear dynamics, more informed priors on~$W$, etc.
 
 Our goal is to infer~$W$ and~$\{X^{(j)}\}$ given~$\{Y^{(j)}\}$ using
 variational permutation inference.  We place a standard Gaussian prior
 on~$W$ and a uniform prior on~$X^{(j)}$, and we use the rounding
 transformation to approximate the posterior,
-$p(W,\{X^{(j)}\} \given \{Y^{(j)}\})\propto p(W) \prod_m p(Y^{(j)} \given W, {X^{(j)}}) \,  p({X^{(j)}}$).
+$p(W,\{X^{(j)}\} \given \{Y^{(j)}\})\propto p(W) \prod_m p(Y^{(j)}
+\given W, {X^{(j)}}) \, p({X^{(j)}}$).
 
 Finally, we use neural position along the worm's body to constrain the
-possible neural identities for a given neuron.
-We use the known positions of each neuron~\citep{wormatlas}, approximating
-the worm as a one-dimensional object with neurons locations distributed
-as in Fig.~\ref{fig:connectome}c. Then, given reported positions of the
-neurons, we can conceive a binary \textit{constraint} matrix
-$C^{(j)}$ so that $C^{(j)}_{mn}=1$ if (observed) neuron $m$ is close enough
-to (canonical) neuron $n$; i.e., if their distance is smaller than a
+possible neural identities for a given neuron.  We use the known
+positions of each neuron~\citep{wormatlas}, approximating the worm as
+a one-dimensional object with neurons locations distributed as in
+Fig.~\ref{fig:connectome}c. Then, given reported positions of the
+neurons, we can conceive a binary \textit{constraint} matrix $C^{(j)}$
+so that $C^{(j)}_{mn}=1$ if (observed) neuron $m$ is close enough to
+(canonical) neuron $n$; i.e., if their distance is smaller than a
 tolerance $\nu$. We enforce this constraint during inference by
 zeroing corresponding entries in the parameter matrix $M$ described in
 ~\ref{sub:rounding}.  This modeling choice greatly reduces the number
-parameters of the model, and facilitates inference. 
+parameters of the model, and facilitates inference.
 
 \parhead{Results.} We compared against three methods: (i) naive
 variational inference, where we do not enforce the constraint that
@@ -734,10 +758,12 @@ a Dirichlet distributed vector; (ii) MCMC, where we alternate between
 sampling from the conditionals of $W$ (Gaussian) and ${X^{(j)}}$, from
 which one can sample by proposing local swaps, as described in
 \cite{Diaconis2009}, and (iii) maximum a posteriori estimation (MAP).
-Our MAP algorithm alternates between the optimizing estimate of $W$ given~$\{X^{(m)}, Y^{(m)}\}$ using linear regression and finding the optimal ${X^{(j)}}$. The second step requires solving a quadratic assignment
-problem (QAP) in ${X^{(j)}}$; that is, it can be expressed as
-$\mathrm{Tr}(AXBX^\trans)$ for matrices $A,B$. We used the QAP solver
-proposed by~\citet{Vogelstein2015}.
+Our MAP algorithm alternates between the optimizing estimate of $W$
+given~$\{X^{(m)}, Y^{(m)}\}$ using linear regression and finding the
+optimal ${X^{(j)}}$. The second step requires solving a quadratic
+assignment problem (QAP) in ${X^{(j)}}$; that is, it can be expressed
+as $\mathrm{Tr}(AXBX^\trans)$ for matrices $A,B$. We used the QAP
+solver proposed by~\citet{Vogelstein2015}.
 
 
 We find that our method outperforms each
@@ -747,8 +773,7 @@ Fig.~\ref{fig:elegantresults}b and Fig.~\ref{fig:elegantresults}c show
 that our method outperforms alternatives when there are many possible
 candidates and when only a small proportion of neurons are known with
 certitude. Fig.~\ref{fig:elegantresults}c also shows that these
-Bayesian methods benefit from combining information across many
-worms.
+Bayesian methods benefit from combining information across many worms.
 
 Altogether, these results indicate our method enables a more efficient
 use of information than its alternatives. This is consistent with
@@ -759,7 +784,9 @@ not better results, but the local proposals---swapping pairs of
 labels---leads to slow convergence. On the other hand,
 Fig~\ref{fig:elegantresults}a shows that our method converges much
 more quickly while still capturing a distribution over permutations,
-as shown by the overall variance of the samples in Fig~\ref{fig:elegantresults}d and the individual samples in Fig~\ref{fig:elegantresults}e.
+as shown by the overall variance of the samples in
+Fig~\ref{fig:elegantresults}d and the individual samples in
+Fig~\ref{fig:elegantresults}e.
 
 \section{Conclusion}
 

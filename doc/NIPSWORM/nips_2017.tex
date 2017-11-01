@@ -78,9 +78,32 @@
 \maketitle
 
 \begin{abstract}
-  The nematode C. elegans is a unique model organism for neuroscientists  as its connectome, or neural wiring diagram, has been known for at least three decades. Despite this knowledge, an understanding of the functional significance of these synaptic connections has remained elusive. Now several groups can routinely  image the activity of a large fraction of neurons in the head of the worm, providing a unique opportunity to probe this organism. We propose to use hierarchical Bayesian modeling to combine strong prior information with data from many experiments to compute posteriors over the functional connectivity weights. However, these attempts are stifled by a major obstacle: in many cases it is not clear exactly which neuron is being imaged, so to combine information across experiments one must solve a matching, or permutation inference, problem.
+  The nematode C. elegans is a unique model organism for
+  neuroscientists as its connectome, or neural wiring diagram, has
+  been known for at least three decades. Despite this knowledge, an
+  understanding of the functional significance of these synaptic
+  connections has remained elusive. Now several groups can routinely
+  image the activity of a large fraction of neurons in the head of the
+  worm, providing a unique opportunity to probe this organism. We
+  propose a hierarchical Bayesian framework that combines strong
+  prior information with data from many experiments to estimate
+  posteriors over the functional connectivity weights. However, these
+  attempts are stifled by a major obstacle: in many cases it is not
+  clear exactly which neurons are being imaged, so to combine
+  information across experiments one must solve a matching, or
+  permutation inference, problem.
 
-In this work we introduce new variational methods that enable the joint inference of connectivity weights and neural identity. Working with actual permutations would involve evaluating and differentiating an intractable partition function. As an alternative, we build upon recent continuous relaxation techniques (Jang et al 2016, Maddison et al 2016), extending them from the original case of the probability simplex, to the Birkhoff polytope, the convex hull of permutation matrices. We simulate linear dynamical systems consistent with the true connectome and known covariates (neural position) and show that our methods outperform many alternatives; notably, the naive MCMC sampler.
+  In this work we introduce new variational methods that enable the
+  joint inference of connectivity weights and neural identity. Working
+  with actual permutations would involve evaluating and
+  differentiating an intractable partition function. As an
+  alternative, we build upon recent continuous relaxation techniques
+  \citep{Jang2016, Maddison2016}, extending them from the
+  original case of the probability simplex, to the Birkhoff polytope,
+  the convex hull of permutation matrices. We test our method with
+  simulated data from the true connectome and known
+  covariates (neural position) and show that our approach outperforms
+  many alternatives in identifying neurons.
 \end{abstract}
 
 
