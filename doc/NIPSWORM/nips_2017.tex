@@ -91,9 +91,7 @@
   attempts are stifled by a major obstacle: in many cases it is not
   clear exactly which neurons are being imaged, so to combine
   information across experiments one must solve a matching, or
-  permutation inference, problem.
-
-  In this work we introduce new variational methods that enable the
+  permutation inference, problem. In this work we introduce new variational methods that enable the
   joint inference of connectivity weights and neural identity. Working
   with actual permutations would involve evaluating and
   differentiating an intractable partition function. As an
@@ -120,7 +118,7 @@ functional connectome in this system and suggest new experiments.
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=5.0in]{Figure1.pdf} 
+  \includegraphics[width=3.5in]{Figure1.pdf} 
   \caption{\textit{Hierarchical Bayesian framework}.  \textbf{A} We
     are given the actual adjacency matrix $A$ from
     \citep{varshney2011structural}. The full matrix is shown (top)
@@ -144,7 +142,7 @@ functional connectome in this system and suggest new experiments.
 \label{fig:1}
 \end{figure*}
 
-Ultimately, we are interested the dynamical system that governs how
+Ultimately, we are interested in the dynamical system that governs how
 neural activity evolves given its history and sensory inputs.
 Bayesian methods are ideally suited to this goal, allowing us to
 represent hierarchical probabilistic structures and integrate our
@@ -243,14 +241,14 @@ non-trivial distribution over permutations (computing the partition
 function involves a summation over~$N!$ terms).
  
 The re-parameterization trick \cite{Kingma2013} offers an appealing
-alternatives. If~$z$ can be written as a differentiable function of a
+alternative. If~$z$ can be written as a differentiable function of a
 noise distribution and the parameters---i.e. if for certain $f$ and
 $\xi\sim p(\xi)$ one has $z=f(\xi,\nu)$---then we can write the
 expectation with respect to~$q(z)$ as an expectation with respect
 to~$p(\xi)$ and bring the gradient inside the expectation.  In the
 case of discrete random variables a re-parameterization always exists
 and it is given by the \emph{Gumbel trick}
-\citep{Papandreou2011,Balog2017}, which states that one can sample
+\citep{Papandreou2011}, which states that one can sample
 from any discrete distribution by perturbing each potential with
 Gumbel i.i.d noise, and then finding the configuration with the
 maximum value. Unfortunately, the underlying $f$ to this
@@ -278,8 +276,8 @@ and 3.2 of \cite{Linderman2017} and section 4 of
 \cite{Anonymous2018learning} for details, respectively. Here we
 briefly summarize them: the primary geometric object is the Birkhoff
 polytope, the convex hull of permutation matrices, and the analog of
-the probability simplex in the discrete case. We generalize the
-standard stick-breaking construction on the simplex to stick-breaking
+the probability simplex in the discrete case. In the stick-breaking method, we generalize the
+standard construction on the simplex to stick-breaking
 of the Birkhoff polytope. We show how to consistently ``break the
 stick'' while satisfying both the row and column constraints that
 characterize a doubly stochastic matrix. For the rounding
@@ -378,6 +376,8 @@ more sophisticated maneuvers, but fundamentally, it seems the hard
 assignments in the MCMC algorithm lead to poor mixing.  We expect
 that the benefits of VI stem from the continuous relaxation, which
 enables soft assignments of neurons to identities. 
+
+We believe our results provide promising evidence that a bayesian hierarchical approach to the study of neural dynamics on C. elegans is feasible. We note we have presented our methods in the most simplistic situation, which does not usually correspond with what it is observed in real life: first, we assume a linear dynamical system, while actual dynamics are highly nonlinear \cite{Kato2015}, and change depending on behavioral state. We propose the use of the methods developed by \cite{Linderman2016} to address the dependency of dynamics on behavioral state. Also, we assume recordings in the entire worm are available, while in reality one gets to observe only a proportion of the recordings, on each worm. Therefore, methods for marginalizing those unobserved component, as in \cite{Soudry2015} are required.
 
 \clearpage
 
