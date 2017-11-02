@@ -85,23 +85,22 @@
   connections has remained elusive. Now several groups can routinely
   image the activity of a large fraction of neurons in the head of the
   worm, providing a unique opportunity to probe this organism. We
-  propose a hierarchical Bayesian framework that combines strong
-  prior information with data from many experiments to estimate
-  posteriors over the functional connectivity weights. However, these
-  attempts are stifled by a major obstacle: in many cases it is not
-  clear exactly which neurons are being imaged, so to combine
-  information across experiments one must solve a matching, or
-  permutation inference, problem. In this work we introduce new variational methods that enable the
-  joint inference of connectivity weights and neural identity. Working
-  with actual permutations would involve evaluating and
-  differentiating an intractable partition function. As an
-  alternative, we build upon recent continuous relaxation techniques
-  \citep{Jang2016, Maddison2016}, extending them from the
+  propose a hierarchical Bayesian framework that combines strong prior
+  information with data from many experiments to estimate posteriors
+  over the functional connectivity weights. However, these attempts
+  are stifled by a major obstacle: in many cases it is not clear
+  exactly which neurons are being imaged, so to combine information
+  across experiments one must solve a matching, or permutation
+  inference, problem. In this work we introduce new variational
+  methods that enable the joint inference of connectivity weights and
+  neural identity. Working with actual permutations would involve
+  evaluating and differentiating an intractable partition function. As
+  an alternative, we build upon recent continuous relaxation
+  techniques \citep{Jang2016, Maddison2016}, extending them from the
   original case of the probability simplex, to the Birkhoff polytope,
   the convex hull of permutation matrices. We test our method with
-  simulated data from the true connectome and known
-  covariates (neural position) and show that our approach outperforms
-  many alternatives in identifying neurons.
+  simulated data from the true connectome and show that our approach
+  outperforms many alternatives in identifying neurons.
 \end{abstract}
 
 
@@ -114,11 +113,11 @@ known~\citep{varshney2011structural}.  Modern calcium imaging
 technology enables measurements of hundreds of these neurons
 simultaneously \citep{Kato2015, nguyen2016whole}. The time is
 right to employ modern statistical methods to learn about the
-functional connectome in this system and suggest new experiments.
+functional connectome in this system.
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=3.5in]{Figure1.pdf} 
+  \includegraphics[width=5in]{Figure1.pdf} 
   \caption{\textit{Hierarchical Bayesian framework}.  \textbf{A} We
     are given the actual adjacency matrix $A$ from
     \citep{varshney2011structural}. The full matrix is shown (top)
@@ -139,6 +138,7 @@ functional connectome in this system and suggest new experiments.
     permutation matrix maps this to the canonical ordering of the
     adjacency and weight matrices. Given~$\{Y^{(j)}\}_{j=1}^J$
     and~$A$, we infer~$\{P^{(j)}\}_{j=1}^J$ and~$W$.}
+  \vspace{-1em}
 \label{fig:1}
 \end{figure*}
 
@@ -168,23 +168,24 @@ inference over permutations that match observed neurons
 \textit{(neuron 1, neuron 2, ..., neuron~$N$)} to known names
 \textit{(AVAL, AVAR, ..., SMDR)}.  Once the observed neurons have been
 mapped to canonical names, we can learn about the shared dynamical
-system. To start, we focus on a simple linear autoregressive
+system. We focus on a simple linear autoregressive
 model for neural dynamics,
 \begin{align}
   \widetilde{Y}_t^{(j)} &= (W \odot A) \widetilde{Y}_{t-1}^{(j)} + \epsilon_t^{(j)},
 \end{align}
 where~$W \in \reals^{N \times N}$ is the weight matrix we wish to infer;
+$A \in \{0,1\}^{N \times N}$ is the known adjacency matrix or connectome;
 $\odot$ denotes element-wise multiplication;
-$A \in \{0,1\}^{N \times N}$ is the known adjacency matrix or connectome; 
+$\epsilon_t^{(j)} \sim \distNormal(0, \sigma^2 I)$;
 and~$\widetilde{Y}_t^{(j)} \in \reals^N$ is the measured neural activity
 at time~$t$ in worm~$j$.  The catch is that~$\widetilde{Y}_t^{(j)}$ is
 assumed to be in canonical order; i.e. in the same order as the rows and
-columns of~$W$ and~$A$. What we actually observe is,
+columns of~$W$ and~$A$. We actually observe,
 \begin{align}
   Y_t^{(j)} &= P^{(j)} \widetilde{Y}_t^{(j)},
 \end{align}
 vectors that are permuted by matrix~$P^{(j)}$. In order to learn about~$W$,
-we must also infer the permutation matrices. We assume~$\epsilon_t^{(j)} \sim \distNormal(0, \sigma^2 I)$ with known variance, and we place a Gaussian prior on~$W$.
+we must also infer the permutation matrices. We place a Gaussian prior on~$W$.
 
 The permutation matrices are constrained by side
 information. Specifically, we use neural position along the worm's
@@ -216,12 +217,12 @@ the VI framework, we approximate the intractable
 posterior $p(z \given y)$ with the distribution~$q \in \mcQ$
 that best approximates the posterior. For tractability, we assume~$\mcQ$ 
 is indexed by a parameter~$\nu$; i.e.~$\mcQ = \{q(z; \nu): \nu \in \mcV\}$.
-The approximation is typically assessed by the Kullback-Leibler divergence between the true posterior and variational approximation,
-\begin{align}
-  \nu^* &= \argmin_{\nu \in \mcV}
-          \mathrm{KL} \left(q(z; \nu )  \, \|  \,  p(z \given y)\right).
-\end{align}
-The above problem is equivalent to maximizing the \emph{evidence lower bound} (ELBO)
+The approximation is typically assessed by the Kullback-Leibler (KL) divergence between the true posterior and variational approximation.
+% \begin{align}
+%   \nu^* &= \argmin_{\nu \in \mcV}
+%           \mathrm{KL} \left(q(z; \nu )  \, \|  \,  p(z \given y)\right).
+% \end{align}
+Minimizing the KL divergence is equivalent to maximizing the \emph{evidence lower bound} (ELBO)
 \begin{align}
   \label{eq:elbo}
   \mcL(\nu) \triangleq  \E_{q(z;\nu)}[\log p(y|z)]
@@ -322,7 +323,7 @@ the latter performs the best.
 
 \begin{table}[t]
   \caption{Accuracy in inferring true neural identity for different of
-    proportion of known neurons, and two values of $\eta$.
+    proportion of known neurons and $\eta$.
   }%\todo[inline]{Gonzalo: Tell the reader what they should take away
    %from these results.  It seems like this significantly outperforms
    %Linderman et al. when there is significantly less data.  Also,
@@ -358,7 +359,7 @@ given~$\{P^{(j)}, Y^{(j)}\}$ using linear regression and finding the
 optimal ${P^{(j)}}$. The second step requires solving a quadratic
 assignment problem (QAP) in ${P^{(j)}}$; that is, it can be expressed
 as $\mathrm{Tr}(APBP^\trans)$ for matrices $A,B$. We used the QAP
-solver proposed by~\citet{Vogelstein2015}.
+solver of~\citet{Vogelstein2015}.
 
 
 We found that our method outperforms these alternative
