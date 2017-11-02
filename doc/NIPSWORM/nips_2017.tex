@@ -196,18 +196,18 @@ identity if the observed location is within~$\eta$ of the expected
 location.  This is illustrated in Fig.~\ref{fig:1}B. We represent
 these constraints with the matrix~$\mathcal{C}^{(j)}$ so that
 $\mathcal{C}^{(j)}_{mn}=1$ if and only if observed neuron $m$ is
-within~$\eta$ of where canonical neuron $n$'s expected location.  An
+within~$\eta$ of canonical neuron $n$'s expected location.  An
 example is shown in Figure \ref{fig:1}C. We let~$P^{(j)}$ have a
 uniform prior over the set of matrices allowable under the given
 constraints.
 
-We need to perform joint posterior inference of $p(\{W,P^{(j)}\})$.
+We need to perform posterior inference of $p(\{W,P^{(j)}\} \given A, \{Y^{(j)}\})$.
 MCMC with simple Metropolis-Hastings proposals is straightforward, but
 we found this mixed poorly in practice. Motivated by recent advances
 in automatic variational inference \citep{Blei2017}, we considered
-ways of extending this technique to permutation inference.  In section
+ways of extending this technique to permutation inference.  In Section
 \ref{sec:VI} we detail our VI formulation and summarize the methods we
-developed. Then in section \ref{sec:results} we show that these
+developed. Then in Section \ref{sec:results} we show that these
 methods outperform alternatives.
 
 \section{New methods for variational inference of latent permutations}
