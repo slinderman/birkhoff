@@ -109,14 +109,14 @@
 
 
 \section{Introduction}
-The nematode \textit{C. elegans} plays a special role as a model organism
-in neuroscience, since its neural network is stereotyped from animal to
-animal and its complete neural wiring diagram is
-known~\citep{varshney2011structural}.  
-Modern calcium imaging technology enables simultaneous measurements of
-hundreds of these neurons simultaneously \citep{Kato2015,
-  nguyen2016whole}. Thus, the time seems right to employ modern statistical methods to summarize what can
-be learned about the functional connectome in this system, and to suggest new experiments to constrain our uncertainty further.  
+The nematode \textit{C. elegans} plays a special role as a model
+organism in neuroscience since its neural network is stereotyped from
+animal to animal and its complete neural wiring diagram is
+known~\citep{varshney2011structural}.  Modern calcium imaging
+technology enables measurements of hundreds of these neurons
+simultaneously \citep{Kato2015, nguyen2016whole}. The time is
+right to employ modern statistical methods to learn about the
+functional connectome in this system and suggest new experiments.
 
 \begin{figure*}[t]
   \centering
@@ -142,32 +142,71 @@ be learned about the functional connectome in this system, and to suggest new ex
 \label{fig:1}
 \end{figure*}
 
-  To this end, Bayesian inference  stands out as the most suited methodological framework, as it allow us to represent hierarchical probabilistic structures, and to integrate our strong priors on the system components (e.g. sparsity patterns in the connectome, and a priori knowledge of approximate neural positions).
-In the most general setup, we would be interested on posterior inference of a generic dynamical system that dictates the distribution of next neural state, given history, system's input and behavior. Learning and inference in dynamical systems with MCMC methods is rather standard, even in cases with complicated latent structures \cite{Freitas2001,Paninski2010}. Further, methods to account for the hierarchical aspect, i.e., incorporating information from many worms are also widely available \citep{Gelman2014}. However, we note a fundamental
-technical hurdle complicates our efforts of integrating across-specimens information: in practice, associating recorded traces to neuron names is a painstaking process; experimenters
-consider the location of the neuron along with its pattern of activity to perform this matching, but the process is laborious and the results prone to error. 
-In the lack of this association, it is impossible to represent recordings canonically, where indexes point to actual neuron names, common to all worms. This technical problem, then, prevent us from automatically applying hierarchical methods.
+Ultimately, we are interested the dynamical system that governs how
+neural activity evolves given its history and sensory inputs.
+Bayesian methods are ideally suited to this goal, allowing us to
+represent hierarchical probabilistic structures and integrate our
+prior knowledge about the connectome, the locations of neurons, etc.
+Bayesian learning and inference in dynamical systems with MCMC methods
+is well-studied, even for complicated
+models~\citep{Freitas2001,Paninski2010}. Furthermore, hierarchical
+models to incorporate information from many worms are easily
+constructed in a Bayesian framework~\citep{Gelman2014}.
 
-In this work we present a method for overcoming this hurdle, by incorporating inference over \emph{canonicalizing} permutations. For the sake of simplicity, we focus on the most elementary non-trivial dynamical system. Specifically, given the connectome \citep{varshney2011structural} encoded as a $N=282$ dimensional (number of somatic neurons) adjacency matrix $A\in \{0,1\}^{N,N}$ (Figure \ref{fig:1}A) and $J$ worms, we consider the following hierarchical model with shared linear dynamics (represented by a weight matrix $W$) 
-to represent the recorded traces $Y_t^{(j)}\in\mathcal{R}^N$ during $T$ timesteps: \begin{eqnarray}
-\label{eq:generalmodel}
-Y_t^{(j)}= P^{(j)}\left(W\odot A \right)Y^{(j)}_{t-1} {P^{(j)}}^\top+\varepsilon^{(j)}_t, \\ \nonumber
- \varepsilon^{(j)}_t\sim \mathcal{N}(0,I_N), \quad W\sim \mathcal{N}(0,\sigma_w^2 I_N), \quad P^{(j)}\sim\mathrm{Uniform}(\mathcal{P}^{(j)}_N).
- \end{eqnarray}
-The operation $W\odot A$ represents the component-wise product with the adjacency matrix, inducing sparseness in the linear system, and reducing dimensionality. For each worm, we represent by the permutation matrix $P^{(j)}$ the matching between recorded indexes and a canonical arbitrary order. These permutations are confined to the a subset $P^{(j)}_N$, that contains the admissible permutations, based on covariate information. Specifically, we use neural position along the worm's body to constrain the
-possible neural identities for a given recorded neuron.
-We use the known positions of each neuron~\citep{wormatlas}, approximating
-the worm as a one-dimensional object with neurons locations distributed
-as in Fig.~\ref{fig:1}B. Then, given reported positions of the
-neurons (Figure \ref{fig:1}B) we can conceive a binary confusion matrix
-$\mathcal{C}^{(j)}$ so that $\mathcal{C}^{(j)}_{mn}=1$ (observed) neuron $m$ is close enough
-to (canonical) neuron $n$; i.e., if their distance is smaller than a
-tolerance $\eta$ (Figure \ref{fig:1}C) . Also, absolute certainty of neural identity can be encoded in this matrix, by imposing $\mathcal{C}^{(j)}_{mn}=1$ in for only true index $n$.
+However, our efforts to integrate information across worms are
+complicated by a major hurdle: in practice, associating recorded
+traces to neuron names is a painstaking, manual process.
+Experimenters consider the location of the neuron along with its
+pattern of activity to perform this matching, but the process is
+laborious and the results are prone to error.  Without neuron names,
+we cannot represent recordings canonically or learn about how one
+neuron influences another. This technical problem prevents the
+automatic use of hierarchical methods.
 
+We present a method for overcoming this hurdle by incorporating
+inference over permutations that match observed neurons
+\textit{(neuron 1, neuron 2, ..., neuron~$N$)} to known names
+\textit{(AVAL, AVAR, ..., SMDR)}.  Once the observed neurons have been
+mapped to canonical names, we can learn about the shared dynamical
+system. To start, we focus on a simple linear autoregressive
+model for neural dynamics,
+\begin{align}
+  \widetilde{Y}_t^{(j)} &= (W \odot A) \widetilde{Y}_{t-1}^{(j)} + \epsilon_t^{(j)},
+\end{align}
+where~$W \in \reals^{N \times N}$ is the weight matrix we wish to infer;
+$\odot$ denotes elementwise multiplication;
+$A \in \{0,1\}^{N \times N}$ is the known adjacency matrix or connectome; 
+and~$\widetilde{Y}_t^{(j)} \in \reals^N$ is the measured neural activity
+at time~$t$ in worm~$j$.  The catch is that~$\widetilde{Y}_t^{(j)}$ is
+assumed to be in canonical order; i.e. in the same order as the rows and
+columns of~$W$ and~$A$. What we actually observe is,
+\begin{align}
+  Y_t^{(j)} &= P^{(j)} \widetilde{Y}_t^{(j)},
+\end{align}
+vectors that are permuted by matrix~$P^{(j)}$. In order to learn about~$W$,
+we must also infer the permutation matrices. We assume~$\epsilon_t^{(j)} \sim \distNormal(0, \sigma^2 I)$ with known variance, and we place a Gaussian prior on~$W$.
 
-In this setup, then, we are concerned with joint posterior inference of $p(\{W,P^{(j)}\})$. Although this problem may be also addressed with MCMC, and in practice poor mixing is observed, motivating the use or alternative tools. Here, we cast this problem as an instance of the \emph{variational inference} (VI) framework \citep{Blei2017} and develop new tools the applicability of this framework to the case where the latent variables are permutation, a case that substantially deviates from the standard practice.  In section \ref{sec:VI} we detail our VI formulation and summarize our developed methods. Finally, in section \ref{sec:results} we show our findings; notably, the supremacy of our method over the naive MCMC sampler.
+The permutation matrices are constrained by side
+information. Specifically, we use neural position along the worm's
+body to constrain the possible neural identities for a given recorded
+neuron. We only allow an observed neuron to be mapped to a known
+identity if the observed location is within~$\eta$ of the expected
+location.  This is illustrated in Fig.~\ref{fig:1}B. We represent
+these constraints with the matrix~$\mathcal{C}^{(j)}$ so that
+$\mathcal{C}^{(j)}_{mn}=1$ if and only if observed neuron $m$ is
+within~$\eta$ of where canonical neuron $n$'s expected location.  An
+example is shown in Figure \ref{fig:1}C. We let~$P^{(j)}$ have a
+uniform prior over the set of matrices allowable under the given
+constraints.
 
-
+We need to perform joint posterior inference of $p(\{W,P^{(j)}\})$.
+MCMC with simple Metropolis-Hastings proposals is straightforward, but
+we found this mixed poorly in practice. Motivated by recent advances
+in automatic variational inference \citep{Blei2017}, we considered
+ways of extending this technique to permutation inference.  In section
+\ref{sec:VI} we detail our VI formulation and summarize the methods we
+developed. Then in section \ref{sec:results} we show that these
+methods outperform alternatives.
 
  \section{New methods for variational inference of latent permutations}
   \label{sec:VI}
