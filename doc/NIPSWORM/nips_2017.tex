@@ -122,11 +122,11 @@ functional connectome in this system and suggest new experiments.
   \centering
   \includegraphics[width=5.0in]{Figure1.pdf} 
   \caption{\textit{Hierarchical Bayesian framework}.  \textbf{A} We
-    are given the actual adjaency matrix $A$ from
+    are given the actual adjacency matrix $A$ from
     \citep{varshney2011structural}. The full matrix is shown (top)
     along with a zoom-in to 14 neurons (center).  We wish to infer the
     corresponding weight matrix~$W$, an example of which is shown
-    below.  \textbf{B} We also know the typial locations of the
+    below.  \textbf{B} We also know the typical locations of the
     neurons \citep{white1986structure,wormatlas}. Given observed
     locations, we constrain possible assignments to neuron identities
     within~$\eta$ of the observed location.  \textbf{C} These
@@ -176,7 +176,7 @@ model for neural dynamics,
   \widetilde{Y}_t^{(j)} &= (W \odot A) \widetilde{Y}_{t-1}^{(j)} + \epsilon_t^{(j)},
 \end{align}
 where~$W \in \reals^{N \times N}$ is the weight matrix we wish to infer;
-$\odot$ denotes elementwise multiplication;
+$\odot$ denotes element-wise multiplication;
 $A \in \{0,1\}^{N \times N}$ is the known adjacency matrix or connectome; 
 and~$\widetilde{Y}_t^{(j)} \in \reals^N$ is the measured neural activity
 at time~$t$ in worm~$j$.  The catch is that~$\widetilde{Y}_t^{(j)}$ is
@@ -281,14 +281,14 @@ polytope, the convex hull of permutation matrices, and the analog of
 the probability simplex in the discrete case. We generalize the
 standard stick-breaking construction on the simplex to stick-breaking
 of the Birkhoff polytope. We show how to consistently ``break the
-stick'' while satisfying both the row and column constrains that
+stick'' while satisfying both the row and column constraints that
 characterize a doubly stochastic matrix. For the rounding
 construction, we start with a noise distribution and force it to be
 close to permutation matrices by rounding them towards the
 extreme-points of the Birkhoff polytope (i.e. permutation
 matrices). Finally, for the Gumbel-Sinkhorn method we notice that the
 so-called \emph{Sinkhorn operator}, or infinite and successive row and
-column normalization of a matrix, is a a natural extension of the
+column normalization of a matrix, is a natural extension of the
 softmax operator. With this, we are able to conceive the
 Gumbel-Sinkhorn distribution, which approximates the sampling of a
 relevant discrete distribution. Importantly, while stick-breaking and
@@ -328,7 +328,7 @@ the latter performs the best.
   }%\todo[inline]{Gonzalo: Tell the reader what they should take away
    %from these results.  It seems like this significantly outperforms
    %Linderman et al. when there is significantly less data.  Also,
-   %with more data the differences don't neccesarily seem that
+   %with more data the differences don't necessarily seem that
    %significant.  Why is that the case?  What makes this method better
    %in some circumstances than that one?}}
    \label{table:celegans}
