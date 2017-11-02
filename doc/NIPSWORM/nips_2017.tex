@@ -208,19 +208,91 @@ ways of extending this technique to permutation inference.  In section
 developed. Then in section \ref{sec:results} we show that these
 methods outperform alternatives.
 
- \section{New methods for variational inference of latent permutations}
-  \label{sec:VI}
- Consider a latent variable model  determined by a prior over the latent $z\sim p(z)$ and a likelihood $p(y|z)$ for the observed data $y$. In the VI framework, instead of accessing the perhaps intractable posterior $p(z|y)$ one aims to find the distribution $q(z;\nu)$ among a certain variational family, parameterized by $\nu\in \mathcal{V}$, such that it minimizes its discrepancy with $p(z|y)$. Typically, one considers the KL divergence:
- \begin{equation} \nu^* = \argmin_{\nu\in\mathcal{V}} KL\left(p(z|y)\lVert q(z;\nu)\right).\end{equation}
-In turn, one can show that the above problem is equivalent to the maximization of the \emph{evidence lower bound} (ELBO):
- \begin{equation}\label{eq:elbo} \nu^* = \argmax_{\nu\in\mathcal{V}} ELBO(q(z;\nu))\equiv  E_{q(z;\nu)}(\log p(y|z)) - KL(q(z;\nu)\lVert p(z)).\end{equation}
- To maximize equation ~\eqref{eq:elbo} one usually appeals to stochastic optimization methods \citep{Kushner1987}: specifically, all the expectations involved in ~\eqref{eq:elbo} are approximated by Monte Carlo samples, and gradient descent iterations are then performed to this approximation. One critical component is the choice of the Monte Carlo approximation. Perhaps the most common choice is through the so called \emph{score function estimator}, which bases upon the identity $h(\nu) \nabla_\nu \log h(\nu) =\nabla_\nu h(\nu)$. Unfortunately, this estimator, also referred to as REINFORCE \citep{Williams1992}, cannot be applied to permutations, since it involves the evaluation and differentiation of a likelihood which is intractable for any non-trivial distribution over permutations (computing the partition function involves a summation over N! terms).
+\section{New methods for variational inference of latent permutations}
+\label{sec:VI}
+Consider a latent variable model determined by a prior over the latent
+$z \sim p(z)$ and a likelihood $p(y \given z)$ for the observed data $y$. In
+the VI framework, we approximate the intractable 
+posterior $p(z \given y)$ with the distribution~$q \in \mcQ$
+that best approximates the posterior. For tractability, we assume~$\mcQ$ 
+is indexed by a parameter~$\nu$; i.e.~$\mcQ = \{q(z; \nu): \nu \in \mcV\}$.
+The approximation is typically assessed by the Kullback-Leibler divergence between the true posterior and variational approximation,
+\begin{align}
+  \nu^* &= \argmin_{\nu \in \mcV}
+          \mathrm{KL} \left(q(z; \nu )  \, \|  \,  p(z \given y)\right).
+\end{align}
+The above problem is equivalent to maximizing the \emph{evidence lower bound} (ELBO)
+\begin{align}
+  \label{eq:elbo}
+  \mcL(\nu) \triangleq  \E_{q(z;\nu)}[\log p(y|z)]
+  - \mathrm{KL}(q(z;\nu)\, \| \,  p(z)),
+\end{align}
+with respect to~$\nu$.  We typically maximize equation~\eqref{eq:elbo}
+with stochastic optimization methods \citep{Kushner1987}:
+specifically, we approximate the expectations in~\eqref{eq:elbo} with
+Monte Carlo estimates and optimize the ELBO with stochastic gradient
+ascent. One critical component is the choice of the Monte Carlo
+approximation. Perhaps the most common choice is through the so called
+\emph{score function estimator}. Unfortunately,
+this estimator, also referred to as REINFORCE \citep{Williams1992},
+cannot be applied to permutations, since it involves the evaluation
+and differentiation of a likelihood which is intractable for any
+non-trivial distribution over permutations (computing the partition
+function involves a summation over~$N!$ terms).
  
-An appealing alternative comes from the re-parameterization trick \cite{Kingma2013}, which leads to a new gradient estimator if one can re-parameterize $z$ as a differentiable function of a noise distribution and the parameters; i.e., if for certain $f$ and $\xi\sim p(\xi)$ one has $z=f(\xi,\nu)$. In the case of discrete random variables a re-parameterization always exists and it is given by the \emph{Gumbel trick} \citep{Papandreou2011,Balog2017}, which states that one can sample from any discrete distribution by perturbing each potential with Gumbel i.i.d noise, and then finding the configuration with the maximum value. Unfortunately, the underlying $f$ to this re-parameterization is the non-differentiable $\argmax$ operator, precluding the use of gradient descent methods.
+The re-parameterization trick \cite{Kingma2013} offers an appealing
+alternatives. If~$z$ can be written as a differentiable function of a
+noise distribution and the parameters---i.e. if for certain $f$ and
+$\xi\sim p(\xi)$ one has $z=f(\xi,\nu)$---then we can write the
+expectation with respect to~$q(z)$ as an expectation with respect
+to~$p(\xi)$ and bring the gradient inside the expectation.  In the
+case of discrete random variables a re-parameterization always exists
+and it is given by the \emph{Gumbel trick}
+\citep{Papandreou2011,Balog2017}, which states that one can sample
+from any discrete distribution by perturbing each potential with
+Gumbel i.i.d noise, and then finding the configuration with the
+maximum value. Unfortunately, the underlying $f$ to this
+re-parameterization is the non-differentiable $\argmax$ operator,
+precluding the use of gradient descent methods.
 
-Recent work by \citep{Jang2016,Maddison2016} proposed a solution to this problem, by replacing the $\argmax$ by a temperature ($\tau$) dependent $\mathrm{softmax}$ approximation, which in the limit  converges to the original $\argmax$. By combining the Gumbel trick with the softmax approximation, they conceived the \emph{Concrete} or \emph{Gumbel-Softmax} distribution, and obtain explicit distribution formulae. Then, they showed one can learn on a discrete latent variable model using the re-parameterization trick and gradient descent, by replacing the original ELBO with the surrogate arising by this continuous relaxation, as long as $\tau$ is chosen in a reasonable range: not too high as it would lead to a degenerate distribution in the simplex; but also not too low, to avoid too high variances of the gradients.
+\citet{Jang2016} and \citet{Maddison2016} proposed a solution to this
+problem, replacing the $\argmax$ by a temperature-dependent softmax
+approximation, which in the limit converges to the original
+$\argmax$. By combining the Gumbel trick with the softmax
+approximation, they conceived the \emph{Concrete} or
+\emph{Gumbel-Softmax} distribution, and obtained explicit distribution
+formulae. Then, they showed how to perform variational inference in
+discrete latent variable models using the re-parameterization trick
+and gradient descent. They replaced the original ELBO with a surrogate
+appropriate for their continuous relaxation. As long as the temperature is
+chosen in a reasonable range---not too high as it would lead to a
+degenerate distribution in the simplex; but also not too low, to avoid
+too high variances of the gradients---the method works well.
 
-We developed three methods for extending the above to permutations. We name then \emph{stick-breaking}, \emph{rounding} and \emph{Gumbel-Sinkhorn} methods. We refer the reader to sections 3.1 and 3.2 of  \cite{Linderman2017} and section 4 of \cite{Anonymous2018learning} for details, respectively. Here we briefly summarize them: in all of them the primary geometric object is the Birkhoff polytope, the convex hull of permutation matrices, and analog to the probability simplex in this case. For the stick-breaking construction, we generalize to this polytope the one that exists in the simplex \citep{Linderman2015}, surmounting a new complication; of being able to consistently ``break the stick'' while satisfying both the row and column constrains that characterize a doubly stochastic matrix. For the rounding construction, we start by a noise distribution and force it to be close to permutation matrices by pulling them towards the extreme-points of the Birkhoff polytope. Finally, for the Gumbel-Sinkhorn method we notice that the so-called \emph{Sinkhorn operator}, or infinite and successive row and column normalization of a matrix, is a a natural extension of the softmax operator. With this, we are able to conceive the Gumbel-Sinkhorn distribution, which approximates the sampling of a relevant discrete distribution. Importantly, while stick-breaking and rounding yield explicit densities, Gumbel-Sinkhorn does not. However, there are ways to circumvent this difficulty, and overall we observe the latter performs the best.
+We developed three methods for extending the Gubmel-softmax method to
+permutations. We name then \emph{stick-breaking}, \emph{rounding} and
+\emph{Gumbel-Sinkhorn} methods. We refer the reader to sections 3.1
+and 3.2 of \cite{Linderman2017} and section 4 of
+\cite{Anonymous2018learning} for details, respectively. Here we
+briefly summarize them: the primary geometric object is the Birkhoff
+polytope, the convex hull of permutation matrices, and the analog of
+the probability simplex in the discrete case. We generalize the
+standard stick-breaking construction on the simplex to stick-breaking
+of the Birkhoff polytope. We show how to consistently ``break the
+stick'' while satisfying both the row and column constrains that
+characterize a doubly stochastic matrix. For the rounding
+construction, we start with a noise distribution and force it to be
+close to permutation matrices by rounding them towards the
+extreme-points of the Birkhoff polytope (i.e. permutation
+matrices). Finally, for the Gumbel-Sinkhorn method we notice that the
+so-called \emph{Sinkhorn operator}, or infinite and successive row and
+column normalization of a matrix, is a a natural extension of the
+softmax operator. With this, we are able to conceive the
+Gumbel-Sinkhorn distribution, which approximates the sampling of a
+relevant discrete distribution. Importantly, while stick-breaking and
+rounding yield explicit densities, Gumbel-Sinkhorn does not. However,
+there are ways to circumvent this difficulty, and overall we observe
+the latter performs the best.
 
 \section{Results}
 \label{sec:results}
