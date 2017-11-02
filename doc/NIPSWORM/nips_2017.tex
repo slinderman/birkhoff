@@ -297,31 +297,10 @@ the latter performs the best.
 \section{Results}
 \label{sec:results}
 
-We compared against three methods: (i) naive
-variational inference, where we do not enforce the constraint that
-$X^{(j)}$ be a permutation and instead treat each row of~$X^{(j)}$ as
-a Dirichlet distributed vector; (ii) MCMC, where we alternate between
-sampling from the conditionals of $W$ (Gaussian) and ${X^{(j)}}$, from
-which one can sample by proposing local swaps, as described in
-\cite{Diaconis2009}, and (iii) maximum a posteriori estimation (MAP).
-Our MAP algorithm alternates between the optimizing estimate of $W$ given~$\{X^{(m)}, Y^{(m)}\}$ using linear regression and finding the optimal ${X^{(j)}}$. The second step requires solving a quadratic assignment
-problem (QAP) in ${X^{(j)}}$; that is, it can be expressed as
-$\mathrm{Tr}(AXBX^\trans)$ for matrices $A,B$. We used the QAP solver
-proposed by~\citet{Vogelstein2015}.
+\begin{table}[t]
+     \caption{Accuracy in the C.elegans neural identification problem, for varying mean number of candidate neurons (10, 30, 45, 60) and number of worms.}
+   \label{table:celeganssup}
 
-
-We found that our method outperforms each
-baseline, Specifically, we show that our method outperforms alternatives when there are many possible
-candidates (Table 1) and when only a small proportion of neurons are known with
-certitude (Table 2). 
-Altogether, these results indicate our method enables a more efficient
-use of information than its alternatives. This is consistent with
-other results showing faster convergence of variational inference over
-MCMC \citep{Blei2017}, especially with simple Metropolis-Hastings
-proposals. We conjecture that MCMC could eventually obtain similar if
-not better results, if current local proposals---swapping pairs of
-labels--- were replaced by more involved ones.
-\begin{table}[h!]
    \centering
   \begin{tabular}{lllllllllll}
     & \multicolumn{2}{c}{10} & \multicolumn{2}{c}{30} &   \multicolumn{2}{c}{45} & \multicolumn{2}{c}{60} \\
@@ -338,27 +317,66 @@ labels--- were replaced by more involved ones.
  
     \bottomrule
   \end{tabular}
-   \caption{Accuracy in the C.elegans neural identification problem, for varying mean number of candidate neurons (10, 30, 45, 60) and number of worms.}
-   \label{table:celeganssup}
 \end{table}
-\begin{table}[h]
+
+
+\begin{table}[t]
+  \caption{Accuracy in inferring true neural identity for different of
+    proportion of known neurons, and two values of $\eta$.
+  }%\todo[inline]{Gonzalo: Tell the reader what they should take away
+   %from these results.  It seems like this significantly outperforms
+   %Linderman et al. when there is significantly less data.  Also,
+   %with more data the differences don't neccesarily seem that
+   %significant.  Why is that the case?  What makes this method better
+   %in some circumstances than that one?}}
+   \label{table:celegans}
    \centering
-  \begin{tabular}{lllllllll}
+   \begin{tabular}{lllllllll}
     & \multicolumn{2}{c}{40.\%} & \multicolumn{2}{c}{30.\%} & \multicolumn{2}{c}{20.\%} & \multicolumn{2}{c}{10.\%}\\
     \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
-     & $\eta=0.1$ & $\eta=0.2$ & $\eta=0.1$ & $\eta=0.2$  & $\eta=0.1$ & $\eta=0.2$  & $\eta=0.1$ & $\eta=0.2$ \\
+    & $\eta=0.1$ & $\eta=0.2$ & $\eta=0.1$ & $\eta=0.2$  & $\eta=0.1$ & $\eta=0.2$  & $\eta=0.1$ & $\eta=0.2$ \\
     \midrule 
-    Naive VI .43 & .41 & .33 & .31 & .23 & .22 & .12 & .1 \\
+    Naive VI & .43 & .41 & .33 & .31 & .23 & .22 & .12 & .1 \\
     MAP & .42 & .41  &.33 &.32& .23 & .22 & .12 & .11 \\
-     MCMC   & .85 & .80  &.52 &.46& .3 & .26 & .15 & .12 \\
+    MCMC   & .85 & .80  &.52 &.46& .3 & .26 & .15 & .12 \\
    %   \shortstack{Gumbel-Sinkhorn, no regularization (VI)} & .96 & .93 & .88 & .78 &  .69 & .52 & .39 & .21 \\
    %Rounding (VI)& \textbf{.97} & \textbf{.95} & \textbf{.90} & .84 & .75&  .\textbf{58} & \textbf{.37} & \textbf{.17} \\
     VI   & \textbf{.97} & \textbf{.96} & \textbf{.92} & \textbf{.84} & \textbf{.74} & \textbf{.58} & \textbf{.44} & \textbf{.23} \\
               \bottomrule
-  \end{tabular}
-   \caption{Accuracy in inferring true neural identity for different of proportion of known neurons, and two values of $\eta$. }%\todo[inline]{Gonzalo: Tell the reader what they should take away from these results.  It seems like this significantly outperforms Linderman et al. when there is significantly less data.  Also, with more data the differences don't neccesarily seem that significant.  Why is that the case?  What makes this method better in some circumstances than that one?}}
-   \label{table:celegans}
+   \end{tabular}
 \end{table}
+ 
+We compared against three methods: (i) na\"ive variational inference,
+where we do not enforce the constraint that $P^{(j)}$ be a permutation
+and instead treat each row of~$P^{(j)}$ as a Dirichlet distributed
+vector; (ii) MCMC, where we alternate between sampling from the
+conditionals of $W$ (Gaussian) and ${P^{(j)}}$, from which one can
+sample by proposing local swaps, as described in \cite{Diaconis2009},
+and (iii) maximum a posteriori estimation (MAP).  Our MAP algorithm
+alternates between the optimizing estimate of $W$
+given~$\{P^{(j)}, Y^{(j)}\}$ using linear regression and finding the
+optimal ${P^{(j)}}$. The second step requires solving a quadratic
+assignment problem (QAP) in ${P^{(j)}}$; that is, it can be expressed
+as $\mathrm{Tr}(APBP^\trans)$ for matrices $A,B$. We used the QAP
+solver proposed by~\citet{Vogelstein2015}.
+
+
+We found that our method outperforms these alternative
+approaches. When there are many possible candidates (Table 1) and when
+only a small proportion of neurons are known with certitude (Table 2),
+variational inference via continuous relaxation with the
+Gumbel-Sinkhorn method performs best.  Altogether, these results
+indicate our method enables a more efficient use of information than
+its alternatives. This is consistent with other results showing faster
+convergence of variational inference over MCMC \citep{Blei2017},
+especially with simple Metropolis-Hastings proposals. We conjecture
+that MCMC could eventually obtain similar if not better results, if
+current local proposals---swapping pairs of labels--- were replaced by
+more sophisticated maneuvers, but fundamentally, it seems the hard
+assignments in the MCMC algorithm lead to poor mixing.  We expect
+that the benefits of VI stem from the continuous relaxation, which
+enables soft assignments of neurons to identities. 
+
 \clearpage
 
 \bibliography{refs}
