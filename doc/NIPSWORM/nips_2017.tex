@@ -29,7 +29,7 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 
-\title{Identifying neurons in \textit{C. elegans} with continuous relaxations for Bayesian permutation inference}
+\title{Toward Bayesian permutation inference for \\identifying neurons in \textit{C. elegans}.}
 
 % The \author macro works with any number of authors. There are two
 % commands used to separate the names and addresses of multiple
@@ -87,12 +87,12 @@
   worm, providing a unique opportunity to probe this organism. We
   propose a hierarchical Bayesian framework that combines strong prior
   information with data from many experiments to estimate posteriors
-  over the functional connectivity weights. However, these attempts
-  are stifled by a major obstacle: in many cases it is not clear
+  over the functional connectivity weights. However, first we must
+  clear a significant hurdle: in many cases we are not sure
   exactly which neurons are being imaged, so to combine information
-  across experiments one must solve a matching, or permutation
+  across experiments we must solve a matching, or permutation
   inference, problem. In this work we introduce new variational
-  methods that enable the joint inference of connectivity weights and
+  methods designed for joint inference of connectivity weights and
   neural identity. Working with actual permutations would involve
   evaluating and differentiating an intractable partition function. As
   an alternative, we build upon recent continuous relaxation
@@ -163,7 +163,7 @@ we cannot represent recordings canonically or learn about how one
 neuron influences another. This technical problem prevents the
 automatic use of hierarchical methods.
 
-We present a method for overcoming this hurdle by incorporating
+We present a method that aims to overcome this hurdle by incorporating
 inference over permutations that match observed neurons
 \textit{(neuron 1, neuron 2, ..., neuron~$N$)} to known names
 \textit{(AVAL, AVAR, ..., SMDR)}.  Once the observed neurons have been
@@ -241,19 +241,19 @@ and differentiation of a likelihood which is intractable for any
 non-trivial distribution over permutations (computing the partition
 function involves a summation over~$N!$ terms).
  
-The re-parameterization trick \cite{Kingma2013} offers an appealing
+The reparameterization trick \cite{Kingma2013} offers an appealing
 alternative. If~$z$ can be written as a differentiable function of a
 noise distribution and the parameters---i.e. if for certain $f$ and
 $\xi\sim p(\xi)$ one has $z=f(\xi,\nu)$---then we can write the
 expectation with respect to~$q(z)$ as an expectation with respect
 to~$p(\xi)$ and bring the gradient inside the expectation.  In the
-case of discrete random variables a re-parameterization always exists
+case of discrete random variables a reparameterization always exists
 and it is given by the \emph{Gumbel trick}
 \citep{Papandreou2011}, which states that one can sample
 from any discrete distribution by perturbing each potential with
 Gumbel i.i.d noise, and then finding the configuration with the
 maximum value. Unfortunately, the underlying $f$ to this
-re-parameterization is the non-differentiable $\argmax$ operator,
+reparameterization is the non-differentiable $\argmax$ operator,
 precluding the use of gradient descent methods.
 
 \citet{Jang2016} and \citet{Maddison2016} proposed a solution to this
@@ -263,12 +263,12 @@ $\argmax$. By combining the Gumbel trick with the softmax
 approximation, they conceived the \emph{Concrete} or
 \emph{Gumbel-Softmax} distribution, and obtained explicit distribution
 formulae. Then, they showed how to perform variational inference in
-discrete latent variable models using the re-parameterization trick
-and gradient descent. They replaced the original ELBO with a surrogate
-appropriate for their continuous relaxation. As long as the temperature is
-chosen in a reasonable range---not too high as it would lead to a
-degenerate distribution in the simplex; but also not too low, to avoid
-too high variances of the gradients---the method works well.
+discrete latent variable models using the reparameterization trick and
+gradient descent. They replaced the original ELBO with a surrogate
+appropriate for their continuous relaxation. The method works well if 
+the temperature is chosen in a reasonable range: not too high, to avoid
+degenerate distributions on the simplex; but also not too low, to
+limit the variance the gradients.
 
 We developed three methods for extending the Gubmel-softmax method to
 permutations. We name then \emph{stick-breaking}, \emph{rounding} and
@@ -277,20 +277,20 @@ and 3.2 of \cite{Linderman2017} and section 4 of
 \cite{Anonymous2018learning} for details, respectively. Here we
 briefly summarize them: the primary geometric object is the Birkhoff
 polytope, the convex hull of permutation matrices, and the analog of
-the probability simplex in the discrete case. In the stick-breaking method, we generalize the
-standard construction on the simplex to stick-breaking
-of the Birkhoff polytope. We show how to consistently ``break the
-stick'' while satisfying both the row and column constraints that
-characterize a doubly stochastic matrix. For the rounding
-construction, we start with a noise distribution and force it to be
-close to permutation matrices by rounding them towards the
+the probability simplex in the discrete case. In the stick-breaking
+method, we generalize the standard construction on the simplex to
+stick-breaking of the Birkhoff polytope. We show how to consistently
+``break the stick'' while satisfying both the row and column
+constraints that characterize a doubly stochastic matrix. For the
+rounding construction, we start with a noise distribution and force it
+to be close to permutation matrices by rounding them towards the
 extreme-points of the Birkhoff polytope (i.e. permutation
 matrices). Finally, for the Gumbel-Sinkhorn method we notice that the
 so-called \emph{Sinkhorn operator}, or infinite and successive row and
 column normalization of a matrix, is a natural extension of the
-softmax operator. With this, we are able to conceive the
-Gumbel-Sinkhorn distribution, which approximates the sampling of a
-relevant discrete distribution. Importantly, while stick-breaking and
+softmax operator. With this, we introduce the Gumbel-Sinkhorn
+distribution, which approximates the sampling of a discrete
+distribution over permutations. Importantly, while stick-breaking and
 rounding yield explicit densities, Gumbel-Sinkhorn does not. However,
 there are ways to circumvent this difficulty, and overall we observe
 the latter performs the best.
@@ -346,8 +346,10 @@ the latter performs the best.
               \bottomrule
    \end{tabular}
 \end{table}
- 
-We compared against three methods: (i) na\"ive variational inference,
+
+We evaluated various Bayesian inference methods for the hierarchical
+model illustrated in Figure~\ref{fig:1}.
+We compared against three alternatives: (i) na\"ive variational inference,
 where we do not enforce the constraint that $P^{(j)}$ be a permutation
 and instead treat each row of~$P^{(j)}$ as a Dirichlet distributed
 vector; (ii) MCMC, where we alternate between sampling from the
@@ -368,17 +370,25 @@ only a small proportion of neurons are known with certitude (Table 2),
 variational inference via continuous relaxation with the
 Gumbel-Sinkhorn method performs best.  Altogether, these results
 indicate our method enables a more efficient use of information than
-its alternatives. This is consistent with other results showing faster
-convergence of variational inference over MCMC \citep{Blei2017},
-especially with simple Metropolis-Hastings proposals. We conjecture
-that MCMC could eventually obtain similar if not better results, if
-current local proposals---swapping pairs of labels--- were replaced by
-more sophisticated maneuvers, but fundamentally, it seems the hard
-assignments in the MCMC algorithm lead to poor mixing.  We expect
+its alternatives. We conjecture that MCMC could be improved if local
+proposals---swapping pairs of labels---were replaced by more
+sophisticated transition operators, but fundamentally, it seems the
+hard assignments in the MCMC algorithm lead to poor mixing.  We expect
 that the benefits of VI stem from the continuous relaxation, which
-enables soft assignments of neurons to identities. 
+enables soft assignments of neurons to identities.
 
-We believe our results provide promising evidence that a bayesian hierarchical approach to the study of neural dynamics on C. elegans is feasible. We note we have presented our methods in the most simplistic situation, which does not usually correspond with what it is observed in real life: first, we assume a linear dynamical system, while actual dynamics are highly nonlinear \cite{Kato2015}, and change depending on behavioral state. We propose the use of the methods developed by \cite{Linderman2016} to address the dependency of dynamics on behavioral state. Also, we assume recordings in the entire worm are available, while in reality one gets to observe only a proportion of the recordings, on each worm. Therefore, methods for marginalizing those unobserved component, as in \cite{Soudry2015} are required.
+Our results provide promising evidence that a Bayesian hierarchical
+approach to the study of neural dynamics on C. elegans is feasible. We
+note we made many simplifying assumptions that are not justified in
+practice: first, we assumed a linear dynamical system, while actual
+dynamics are highly nonlinear~\citep{Kato2015}, and change depending
+on behavioral state. Also, we assumed all neurons were observed, while
+in reality we only see about 100 neurons at a time. Therefore, methods
+for marginalizing those unobserved set of neurons. The methods
+of~\citet{Soudry2015} may help infer the weights, but reasoning about
+partial permutations requires more care. In conclusion, we have proposed
+a hierarchical Bayesian approach to the challenging neural identification
+problem, and while more work is needed, our initial results are promising.
 
 \clearpage
 
