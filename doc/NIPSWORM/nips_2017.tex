@@ -6,7 +6,7 @@
 %
 % to avoid loading the natbib package, add option nonatbib:
 % \usepackage[nonatbib]{nips_2017}
-\usepackage{nips_2017}
+%\usepackage{nips_2017}
 
 \input{preamble.tex}
 \input{preamble_math.tex}
@@ -18,7 +18,7 @@
 
 
 % to compile a camera-ready version, add the [final] option, e.g.:
-% \usepackage[final]{nips_2017}
+\usepackage[final]{nips_2017}
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -42,32 +42,27 @@
 % author name.
 
 \author{
-  David S.~Hippocampus\thanks{Use footnote for providing further
-    information about author (webpage, alternative
-    address)---\emph{not} for acknowledging funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  %% examples of more authors
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
+  Gonzalo Mena \thanks{The two authors equally contributed} \\
+  Columbia University\\
+   \And
+  Scott Linderman  $^{*}$ \\
+  Columbia University \\
   %% Address \\
   %% \texttt{email} \\
-  %% \AND
-  %% Coauthor \\
-  %% Affiliation \\
+   \AND
+  David Belanger\\
+  Google Brain \\
   %% Address \\
   %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
-  %% Address \\
-  %% \texttt{email} \\
-  %% \And
-  %% Coauthor \\
-  %% Affiliation \\
+  \And
+  Jasper Snoek\\
+  Google Brain \\
+  \And
+  John Cunningham\\
+  Columbia Univeristy \\
+   \And
+  Liam Paninski \\
+  Columbia University\\
   %% Address \\
   %% \texttt{email} \\
 }
@@ -390,8 +385,6 @@ infer the weights, but reasoning about partial permutations requires
 more care. In conclusion, we have proposed a hierarchical Bayesian
 approach to the challenging neural identification problem, and while
 more work is needed, our initial results are promising.
-
-\clearpage
 
 \bibliography{refs}
 \bibliographystyle{abbrvnat}
