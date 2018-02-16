@@ -155,12 +155,17 @@ the convex hull of the set of permutation matrices is the set of
 doubly-stochastic matrices; i.e. non-negative square matrices whose
 rows and columns sum to one. The set of doubly-stochastic matrices is
 known as the \emph{Birkhoff polytope}, and it is defined by,
+%\begin{align*}
+  %\mcB_N = \Big \{X : \qquad 
+     %      X_{m,n} &\geq 0   & &\forall \, m,n \in 1, \ldots, N; \\
+        %   \sum_{n=1}^N X_{m,n} &= 1  & &\forall \, m \in 1, \ldots, N; \\
+           %\sum_{m=1}^N X_{m,n} & =1 &  &\forall \, n \in 1, \ldots, N \Big\}.
+%\end{align*}
 \begin{align*}
-  \mcB_N = \Big \{X : \qquad 
-           X_{m,n} &\geq 0   & &\forall \, m,n \in 1, \ldots, N; \\
-           \sum_{n=1}^N X_{m,n} &= 1  & &\forall \, m \in 1, \ldots, N; \\
-           \sum_{m=1}^N X_{m,n} & =1 &  &\forall \, n \in 1, \ldots, N \Big\}.
+\nonumber \mathcal{B}_N = \{ X\in [0,1]\in\mathbb{R}^{N,N}\; X1_N =1_N, X^\top 1_N =1_N\},
 \end{align*}
+
+
 These linear row- and column-normalization constraints
 restrict~$\mcB_N$ to a~${(N-1)^2}$ dimensional subset
 of~$\reals^{N \times N}$.  Despite these constraints, we have a number
@@ -196,13 +201,12 @@ model distributions on the sphere's surface. Finally, the Placket-Luce model ena
 % While the vMF
 % distribution does have a concentration parameter, as the concentration
 % goes to infinity, the distribution converges to a point on the sphere.
-We will relax permutations to points in the Birkhoff polytope and
-derive temperature-controlled densities such that as the
-temperature goes to zero, the distribution converges to an atomic
-density on permutation matrices.  This will enable efficient variational
-inference with the reparameterization trick, which we describe next. 
+%We will relax permutations to points in the Birkhoff polytope and
+%derive temperature-controlled densities such that as the
+%temperature goes to zero, the distribution converges to an atomic
+%density on permutation matrices.  
 
-
+%Instead of accessing the actual posterior over permutations, we will approximate it by looking at the closest among a parametric family. Next, we introduce variational inference, the framework under which we conceive this approximation.
 
 \subsection{Variational inference and the reparameterization trick}
 \label{sub:repa}
