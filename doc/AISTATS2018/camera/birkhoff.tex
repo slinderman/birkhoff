@@ -78,7 +78,6 @@
 
 
 \section{Introduction}
-{\let\thefootnote\relax\footnote{$^*$These authors contributed equally.}}
 
 Permutation inference is central to many modern machine learning
 problems.  Identity management ~\citep{guibas2008identity} and
@@ -153,20 +152,19 @@ bijections, both the rows and columns of~$X$ must sum to one.  From a
 geometric perspective, the Birkhoff-von Neumann theorem states that
 the convex hull of the set of permutation matrices is the set of
 doubly-stochastic matrices; i.e. non-negative square matrices whose
-rows and columns sum to one. The set of doubly-stochastic matrices is
-known as the \emph{Birkhoff polytope}, and it is defined by,
+rows and columns sum to one. The set is called the \emph{Birkhoff
+  polytope}.  Let~$\mcB_N$ denote the Birkhoff polytope of~$N \times N$
+doubly-stochastic matrices.
 %\begin{align*}
   %\mcB_N = \Big \{X : \qquad 
      %      X_{m,n} &\geq 0   & &\forall \, m,n \in 1, \ldots, N; \\
         %   \sum_{n=1}^N X_{m,n} &= 1  & &\forall \, m \in 1, \ldots, N; \\
            %\sum_{m=1}^N X_{m,n} & =1 &  &\forall \, n \in 1, \ldots, N \Big\}.
 %\end{align*}
-\begin{align*}
-\nonumber \mathcal{B}_N = \{ X\in [0,1]\in\mathbb{R}^{N,N}\; X1_N =1_N, X^\top 1_N =1_N\},
-\end{align*}
-
-
-These linear row- and column-normalization constraints
+% \begin{align*}
+% \nonumber \mathcal{B}_N = \{ X\in [0,1]\in\mathbb{R}^{N,N}:\, X1_N =1_N, X^\top 1_N =1_N\},
+% \end{align*}
+The row- and column-normalization constraints
 restrict~$\mcB_N$ to a~${(N-1)^2}$ dimensional subset
 of~$\reals^{N \times N}$.  Despite these constraints, we have a number
 of efficient algorithms for working with these objects.  The
@@ -195,9 +193,16 @@ Fourier components~\citep{kondor2007multi, huang2009fourier}.  Perhaps
 most relevant to this work, \citet{plis2011directional} propose a
 continuous relaxation from permutation matrices to points on a
 hypersphere, and then use the von Mises-Fisher (vMF) distribution to
-model distributions on the sphere's surface. Finally, the Placket-Luce model enables Bayesian inference of ranked data
-\citep{Guiver2009bayesian}. However,this model arises from Luce axiom, a statement that brings the scenario of individualschoosing items. As here we are preoccupied with more general permutations, that assumption appears as against the grain \citep{luce2005individual}.
-
+model distributions on the sphere's surface. Finally,
+ranking problems are a special case of a matching
+problems in which the labels are the ordered set of
+integers~$\{1, \ldots, N\}$.  The Placket-Luce
+model is one model for rankings that is parameterized by a ``score''
+for each item, and it admits efficient Bayesian inference algorithms
+\citep{Guiver2009bayesian}.  
+In general matching problems, however, the output is not ordered, and
+we instead need scores for each item-label mapping. The methods presented
+here address general matching problems.
 % While the vMF
 % distribution does have a concentration parameter, as the concentration
 % goes to infinity, the distribution converges to a point on the sphere.
@@ -702,7 +707,7 @@ distance.  The latter are summarized in Table~\ref{table:BDs}.
     $\mathsf{round}(\Psi)$ (right) and their noisy, non-rounded
     versions $\Psi$ (left) at the twentieth algorithm iteration. The
     average of many samples is also shown. These averages take values in $(0,1)$, 
-    indicating that the sampling procedure is not deterministic.}
+    indicating uncertainty in the variational posterior.}
 \label{fig:elegantresults}
 \end{figure*}
 
