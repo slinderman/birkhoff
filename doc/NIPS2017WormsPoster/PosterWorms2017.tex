@@ -83,18 +83,18 @@
 		 \end{itemize}
 		 	 \textbf{Challenge}
               		\begin{itemize}
-		\item If neural identity is known for each trace, one can apply standard bayesian methodology
-		\item In practice, laborious human supervision is needed to match recorded traces to canonical neural identities (i.e. names) \end{itemize}
+		\item If neural identity is known for each trace, one can apply standard Bayesian methodology.
+		\item In practice, laborious human supervision is needed to match recorded traces to canonical neural identities (i.e. names). \end{itemize}
 
 		\textbf{Our contribution}
 	\begin{itemize}
 	\item We developed three methods for learning latent matchings. These can be used in variational inference (VI) to jointly estimate a dynamical system and the matching between traces and true neural identities.
 	\item Potentially it may serve to automatize the matching procedure.
-	\item From a statistical machine learning perspective, the relevance is that outperforms a simple MCMC sampler for permutations.
+	\item Our method outperforms standard MCMC samplers for inferring permutations.
 	\end{itemize}
 	\textbf{Future work}
 	\begin{itemize}
-	\item We used real connectome a position information. In the future we plan to use real traces.
+	\item We used real connectome and position information. In the future we plan to use real traces.
 	\item Two new levels of complexity: partially observed brain recordings, more sophisticated dynamical systems.
 	\end{itemize}
 	   
@@ -168,8 +168,8 @@ location.
 	  
 	    \begin{block}{Stick-Breaking and Rounding}
 	    \large
-	    On the stick-breaking we generalize the construction on the simplex \cite{linderman2015dependent} to
-$\mathcal{B}_N$. For the
+	    Our stick-breaking construction generalizes from the simplex \cite{linderman2015dependent} to
+the Birkhoff polytope. For the
 rounding construction, we start with a noise distribution and force it
 to be close to permutation matrices by rounding them towards the
 extreme-points of $\mathcal{B}_N$.
