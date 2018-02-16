@@ -172,9 +172,11 @@ of efficient algorithms for working with these objects.  The
 maps the positive orthant onto~$\mcB_N$ by iteratively normalizing
 the rows and columns, and the \emph{Hungarian
   algorithm}~\citep{kuhn1955hungarian, munkres1957algorithms} solves
-the minimum weight bipartite matching problem---optimizing a linear
-objective over the set of permutation matrices---in cubic time.
-
+the problem of optimizing a linear
+objective over the set of permutation matrices in cubic time.
+%solves
+%the minimum weight bipartite matching problem---optimizing a linear
+%objective over the set of permutation matrices---in cubic time.
 
 \subsection{Related Work}
 A number of previous works have considered approximate methods of
@@ -305,8 +307,8 @@ temperature-controlled softmax function,
 ${g_\tau(\psi) = \big[e^{\psi_1 / \tau}/Z, \ldots, e^{\psi_N / \tau}/Z
   \big]}$, where~${Z=\sum_{n=1}^N e^{\psi_n / \tau}}$, to obtain
 points in the simplex. As~$\tau$ goes to zero, the density
-concentrates on one-hot vectors.  We build on these ideas for
-variational permutation inference.
+concentrates on one-hot vectors.  %We build on these ideas for
+%variational permutation inference.
 
 \section{Variational permutation inference via reparameterization}
 \label{sec:permutation}
@@ -323,7 +325,7 @@ will be controlled by a temperature that concentrates the resulting
 density near permutation matrices.  The first method is a novel
 ``stick-breaking'' construction; the second rounds points toward
 permutations with the Hungarian algorithm.  We present these in turn
-and then discuss their relative merits. We provide further
+and then discuss their relative merits. We provide 
 implementation details for both methods in the supplement.
 
 \subsection{Stick-breaking transformations to the Birkhoff polytope}
@@ -427,8 +429,7 @@ function of the upper and lower bounds and is derived in
 Appendix~\ref{sec:details}.  While this map is peculiar in its
 reliance on an ordering of the elements, as discussed in
 Section~\ref{sec:considerations}, it is a novel transformation to the
-Birkhoff polytope that supports gradient-based variational
-permutation inference.
+Birkhoff polytope that supports variational inference.
 
 \subsection{Rounding toward permutation matrices}
 \label{sub:rounding}
@@ -564,9 +565,9 @@ Section~\ref{sec:synthetic}.
   mappings are invalid, i.e.~${x_{mn} \equiv 0}$, they are given an
   infinite cost in the Hungarian algorithm. This is hard to do this
   with stick breaking as it would change the computation of the upper
-  and lower bounds. (In both cases, constraints of the
-  form~$x_{mn} \equiv 1$ simply reduce the dimension of the inference
-  problem.)
+  and lower bounds. %(In both cases, constraints of the
+  %form~$x_{mn} \equiv 1$ simply reduce the dimension of the inference
+  %problem.)
   
 \item Stick-breaking introduces a dependence on ordering.  While the
   mapping is bijective, a desired distribution on the Birkhoff polytope
@@ -587,7 +588,7 @@ We are interested in two principal questions:
  (i) how well can the stick-breaking and rounding re-parameterizations
 of the Birkhoff polytope approximate the true posterior distribution
 over permutations in tractable, low-dimensional cases? and (ii)
-when do our proposed continuous relaxations offer
+when do our continuous relaxations offer
 advantages over alternative  Bayesian permutation
 inference algorithms?
 
@@ -673,7 +674,7 @@ capture complex permutation distributions.
 
 We measured the discrepancy between true posterior and an empirical
 estimate of the inferred posteriors using using the Battacharya
-distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$ (a hyperparameter) \footnote{Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.}
+distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$ (a hyperparameter) %\footnote{Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.}
 for both stick-breaking and rounding transformations, sampled the
 variational posterior, and rounded the samples to the nearest
 permutation matrix with the Hungarian algorithm. For the Mallows
@@ -745,8 +746,7 @@ worm~$j$ with~$T_j$ time steps and~$N$ neurons.  We model the neural
 activity with a linear dynamical system
 ${Y^{(j)}_t = {X^{(j)}} W {X^{(j)}}^\trans
   Y^{(j)}_{t-1}+\varepsilon^{(j)}_t}$, where~$\varepsilon_t^{(j)}$ is
-Gaussian noise.  Here, ~$X^{(j)}$ is a latent permutation of neurons
-that must be inferred for each worm in order to align the observations
+Gaussian.  Here, ~$X^{(j)}$ is a latent permutation  that must be inferred for each worm so as to align the observations
 with the shared dynamics matrix~$W$.  The hierarchical component of
 the model is that~$W$ is shared by all worms, and it encodes the
 influence of one neuron on another (the rows and columns of~$W$ are
