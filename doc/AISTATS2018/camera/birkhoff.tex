@@ -190,7 +190,9 @@ Fourier components~\citep{kondor2007multi, huang2009fourier}.  Perhaps
 most relevant to this work, \citet{plis2011directional} propose a
 continuous relaxation from permutation matrices to points on a
 hypersphere, and then use the von Mises-Fisher (vMF) distribution to
-model distributions on the sphere's surface.
+model distributions on the sphere's surface. Finally, the Placket-Luce model enables Bayesian inference of ranked data
+\citep{Guiver2009bayesian}. However,this model arises from Luce axiom, a statement that brings the scenario of individualschoosing items. As here we are preoccupied with more general permutations, that assumption appears as against the grain \citep{luce2005individual}.
+
 % While the vMF
 % distribution does have a concentration parameter, as the concentration
 % goes to infinity, the distribution converges to a point on the sphere.
@@ -662,7 +664,7 @@ capture complex permutation distributions.
 
 We measured the discrepancy between true posterior and an empirical
 estimate of the inferred posteriors using using the Battacharya
-distance (BD). We fit $q_\tau(X; \theta)$ with an annealing schedule
+distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$ (a hyperparameter) \footnote{Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.}
 for both stick-breaking and rounding transformations, sampled the
 variational posterior, and rounded the samples to the nearest
 permutation matrix with the Hungarian algorithm. For the Mallows
@@ -695,8 +697,8 @@ distance.  The latter are summarized in Table~\ref{table:BDs}.
     iterations. (e) Two samples of permutation matrices
     $\mathsf{round}(\Psi)$ (right) and their noisy, non-rounded
     versions $\Psi$ (left) at the twentieth algorithm iteration. The
-    average of many samples is also shown. Presence of grey dots
-    indicate that the sampling procedure is not deterministic.}
+    average of many samples is also shown. These averages take values in $(0,1)$, 
+    indicating that the sampling procedure is not deterministic.}
 \label{fig:elegantresults}
 \end{figure*}
 
