@@ -62,17 +62,17 @@
   algorithms may enable efficient point estimation, but fully Bayesian
   inference poses a severe challenge in this high-dimensional,
   discrete space.  To surmount this challenge, we start with the usual
-  step of relaxing a discrete set (here, of permutation matrices) to
-  its convex hull, which here is the Birkhoff polytope: the set of all
-  doubly-stochastic matrices.  We then introduce two novel
-  transformations: first, an invertible and differentiable
+  step of relaxing a discrete set to its convex hull. Specifically, the set of
+  permutation matrices is relaxed to the Birkhoff polytope: the set of
+  all doubly-stochastic matrices.  We then introduce two novel
+  transformations:  an invertible and differentiable
   stick-breaking procedure that maps unconstrained space to the
-  Birkhoff polytope; second, a map that rounds points toward the
-  vertices of the polytope.  Both transformations include a temperature
-  parameter that, in the limit, concentrates the densities on
-  permutation matrices.  We then exploit these transformations and
+  Birkhoff polytope, and a map that rounds points toward the
+  vertices of the polytope.  Both transformations include a
+  temperature parameter that, in the limit, concentrates the densities
+  on permutation matrices.  We exploit these transformations and
   reparameterization gradients to introduce variational inference over
-  permutation matrices, and we demonstrate its utility in a series of 
+  permutation matrices, and we demonstrate its utility in a series of
   experiments.
 \end{abstract}
 
@@ -107,7 +107,7 @@ The task of computing optimal point estimates of permutations under
 various loss functions has been well studied in the combinatorial
 optimization literature ~\citep{kuhn1955hungarian,
   munkres1957algorithms, lawler1963quadratic}. However, many
-probabilistic tasks, like the aforementioned neural identity inference
+probabilistic tasks, like the neural identity inference
 problem, require reasoning about the posterior distribution over
 permutation matrices.  A variety of Bayesian permutation inference
 algorithms have been proposed, leveraging sampling methods
@@ -115,8 +115,7 @@ algorithms have been proposed, leveraging sampling methods
 Fourier representations~\citep{kondor2007multi, huang2009fourier}, as
 well as convex~\citep{lim2014beyond} and
 continuous~\citep{plis2011directional} relaxations for approximating
-the posterior distribution.  Here, we address this problem from an
-alternative direction, leveraging stochastic variational
+the posterior distribution.  We propose an alternative, leveraging stochastic variational
 inference~\citep{hoffman2013stochastic} and reparameterization
 gradients~\citep{rezende2014stochastic, Kingma2014} to derive a
 scalable and efficient permutation inference algorithm.
@@ -131,7 +130,7 @@ doubly-stochastic matrices, and, in the zero-temperature limit,
 permutations, via stochastic variational inference.  In the process,
 we show how these transformations connect to recent work on discrete
 variational inference~\citep{maddison2016concrete,
-  jang2016categorical, balog2017lost}.  Sections~\ref{sec:synthetic}
+  jang2016categorical}.  Sections~\ref{sec:synthetic}
 and~\ref{sec:celegans} present a variety of experiments that
 illustrate the benefits of the proposed variational approach.
 Further details are in the supplement.
@@ -146,7 +145,7 @@ Further details are in the supplement.
 \subsection{Definitions and notation.}  A permutation is a bijective
 mapping of a set onto itself.  When this set is finite, the mapping is
 conveniently represented as a binary
-matrix~${X \in \{0,1\}^{N \times N}}$ where~${X_{m,n}=1}$ implies that
+matrix~${X \in \{0,1\}^{N \times N}}$ where entry~${x_{m,n}=1}$ implies that
 element~$m$ is mapped to element~$n$.  Since permutations are
 bijections, both the rows and columns of~$X$ must sum to one.  From a
 geometric perspective, the Birkhoff-von Neumann theorem states that
@@ -172,7 +171,7 @@ of efficient algorithms for working with these objects.  The
 maps the positive orthant onto~$\mcB_N$ by iteratively normalizing
 the rows and columns, and the \emph{Hungarian
   algorithm}~\citep{kuhn1955hungarian, munkres1957algorithms} solves
-the problem of optimizing a linear
+the minimum cost bipartite matching problem, optimizing a linear
 objective over the set of permutation matrices in cubic time.
 %solves
 %the minimum weight bipartite matching problem---optimizing a linear
@@ -217,11 +216,11 @@ here address general matching problems.
 
 \subsection{Variational inference and the reparameterization trick}
 \label{sub:repa}
-Given an intractable model with data~$y$, likelihood~$p(y \given x)$,
+Given a model with data~$y$, likelihood~$p(y \given x)$,
 and prior~$p(x)$, variational Bayesian inference algorithms aim to
 approximate the posterior distribution~$p(x \given y)$ with a more
-tractable distribution~$q(x; \theta)$, where ``tractable'' means that,
-at a minimum, we can sample~$q$ and evaluate it pointwise (including
+tractable distribution~$q(x; \theta)$, where ``tractable'' means that
+we can sample~$q$ and evaluate it pointwise (including
 its normalization constant)~\citep{Blei2017}.  We find this
 approximate distribution by searching for the parameters~$\theta$ that
 minimize the Kullback-Leibler (KL) divergence between~$q$ and the true
@@ -318,7 +317,7 @@ use on the set of~$N!$ permutations.  Instead, we develop two
 transformations to map~$O(N^2)$-dimensional random variates to points
 in or near the Birkhoff polytope.\footnote{While Gumbel-softmax does
   not immediately extend to permutation inference, the methods
-  presented herein easily extend to categorical inference.  We
+  presented herein do apply to categorical inference.  We
   explored this direction experimentally and show results in the
   supplement.}  Like the Gumbel-softmax method, these transformations
 will be controlled by a temperature that concentrates the resulting
@@ -587,7 +586,7 @@ favor the rounding based methods in practice.
 We are interested in two principal questions: 
  (i) how well can the stick-breaking and rounding re-parameterizations
 of the Birkhoff polytope approximate the true posterior distribution
-over permutations in tractable, low-dimensional cases? and (ii)
+over permutations in tractable, low-dimensional cases; and (ii)
 when do our continuous relaxations offer
 advantages over alternative  Bayesian permutation
 inference algorithms?
@@ -669,7 +668,7 @@ capture complex permutation distributions.
     which each neuron influences its synaptic neighbors.  The connectome
     (i.e. adjacency matrix) is known, but the weights are not. }
   \vspace{-1em}
-  \label{fig:connectome}
+  \label{fig:celegans}
 \end{figure*}
 
 We measured the discrepancy between true posterior and an empirical
@@ -678,8 +677,8 @@ distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$ (a hyperparameter)
 for both stick-breaking and rounding transformations, sampled the
 variational posterior, and rounded the samples to the nearest
 permutation matrix with the Hungarian algorithm. For the Mallows
-distribution, we set $\phi_0$ to the MAP estimate, also found with the
-Hungarian algorithm, and sampled using MCMC.
+distribution, we set $\phi_0$ to the MAP estimate (also found with the
+Hungarian algorithm) and sampled using MCMC.
  
 We found our method outperforms the simple Mallows distribution and
 reasonably approximates non-trivial distributions over
@@ -714,72 +713,83 @@ distance.  The latter are summarized in Table~\ref{table:BDs}.
 
 
 Finally, we consider an application motivated by the study of the
-neural dynamics in \textit{C. elegans}. This worm is a model organism
-in neuroscience as its neural network is stereotyped from animal to
-animal and its complete neural wiring diagram is
-known~\citep{varshney2011structural}.  We represent this network, or
-connectome, as a binary adjacency
-matrix~${A \in \{0,1\}^{N \times N}}$, shown in
-Fig.~\ref{fig:connectome}a. The hermaphrodite has~${N=278}$ somatic
-neurons, and (undirected) synaptic connections between neurons~$m$
-and~$n$ are denoted by~$A_{mn}=1$.
+neural dynamics in \textit{C. elegans}. This worm presents many
+advantages for scientific study. Each hermaphrodite worm has the same
+${N=302}$ neurons, and each neuron has a label, like \text{AIBL},
+\text{AVAL}, etc.  Moreover, the worm's \emph{connectome}---the
+adjacency matrix that specifies how neurons are connected---is
+well-characterized~\citep{white1986structure, varshney2011structural}.
+Yet while the adjacency matrix is known, the \emph{weights} associated
+with these connections are not.
+
+% We represent this network, or
+% connectome, as a binary adjacency
+% matrix~${A \in \{0,1\}^{N \times N}}$, shown in
+% Fig.~\ref{fig:connectome}a. The hermaphrodite has~${N=278}$ somatic
+% neurons, and (undirected) synaptic connections between neurons~$m$
+% and~$n$ are denoted by~$A_{mn}=1$.
 
 
-Modern recording technology enables simultaneous measurements of
-hundreds of these neurons simultaneously \citep{Kato2015,
-  nguyen2016whole}.  However, matching the observed neurons to nodes
-in the reference connectome is still a manual task.  Experimenters
+Modern recording technologies enable whole-brain recordings in
+\textit{C. elegans} \citep{nguyen2016whole}, presenting an opportunity
+to learn these weights.
+Fig.~\ref{fig:celegans}a and \ref{fig:celegans}b provide a cartoon illustration:
+worms are genetically altered so that their neurons fluoresce when
+active; in each frame of the movie neurons appear as dots in the image,
+and over time the intensity of these dots provides an optical read-out
+of the neural activity. 
+However, labeling neurons---i.e. finding the latent permutation that matches
+observed neurons to known labels, as in Fig.~\ref{fig:celegans}c---is still a manual task.  Experimenters
 consider the location of the neuron along with its pattern of activity
 to perform this matching, but the process is laborious and the results
-prone to error. We prototype an alternative solution, leveraging the
+are prone to error. We prototype an alternative solution, leveraging the
 location of neurons and their activity in a probabilistic model. We
-resolve neural identity by integrating different sources of
-information from the connectome, some covariates (e.g. position) and
+infer neural labels by combining 
+information from the connectome, covariates like position, and
 neural dynamics. Moreover, we combine information from many
-individuals to facilitate identity resolution.  The hierarchical
+individual worms to aid in this labeling.  The hierarchical
 nature of this problem and the plethora of prior constraints and
-observations motivates our Bayesian approach.
+observations motivate our Bayesian approach.
 
-\parhead{Probabilistic Model.}  Let~$J$ denote the number of worms
+\paragraph{Probabilistic Model.}
+%\subsection{Results}
+Let~$J$ denote the number of worms
 and~${Y^{(j)} \in \reals^{T_j \times N}}$ denote a recording of
 worm~$j$ with~$T_j$ time steps and~$N$ neurons.  We model the neural
-activity with a linear dynamical system
+activity as a linear autoregressive process
 ${Y^{(j)}_t = {X^{(j)}} W {X^{(j)}}^\trans
   Y^{(j)}_{t-1}+\varepsilon^{(j)}_t}$, where~$\varepsilon_t^{(j)}$ is
-Gaussian.  Here, ~$X^{(j)}$ is a latent permutation  that must be inferred for each worm so as to align the observations
+Gaussian.  Here, ~$X^{(j)}$ is a latent permutation that must be
+inferred for each worm in order to align the per-worm observations
 with the shared dynamics matrix~$W$.  The hierarchical component of
-the model is that~$W$ is shared by all worms, and it encodes the
-influence of one neuron on another (the rows and columns of~$W$ are
-ordered in the same way as the known connectome~$A$). The connectome
-specifies which entries of~$W$ may be non-zero: without a connection
-(${A_{mn}=0}$) the corresponding weight must be zero; if a connection
-exists (${A_{mn}=1}$), we must infer its weight.
-Fig.~\ref{fig:connectome}d shows simulated traces from a network that
-respects the connectivity of~$A$ and has random Gaussian weights.  The
-linear model is a simple start; in future work we can incorporate
-nonlinear dynamics, more informed priors on~$W$, etc.
+the model is that the unknown weight matrix~$W$ is shared by all
+worms, and it encodes the influence of one neuron on another. The rows
+and columns of~$W$ are ordered in the same way as the known
+connectome~$A \in \{0,1\}^{N \times N}$. The connectome specifies which entries of~$W$ may be
+non-zero: without a connection (${A_{mn}=0}$) the corresponding weight
+must be zero; if a connection exists (${A_{mn}=1}$), we must infer its
+weight. A cartoon example is shown in Fig.~\ref{fig:celegans}d.
+% In future work we can incorporate nonlinear dynamics and more informed priors.
 
-Our goal is to infer~$W$ and~$\{X^{(j)}\}$ given~$\{Y^{(j)}\}$ using
+Our goal is to infer~$W$ and~$\{X^{(j)}\}$ given~$\{Y^{(j)}\}$ and $A$ using
 variational permutation inference.  We place a standard Gaussian prior
 on~$W$ and a uniform prior on~$X^{(j)}$, and we use the rounding
 transformation to approximate the posterior,
-$p(W,\{X^{(j)}\} \given \{Y^{(j)}\})\propto p(W) \prod_m p(Y^{(j)}
-\given W, {X^{(j)}}) \, p({X^{(j)}}$).
+$p(W,\{X^{(j)}\} \given \{Y^{(j)}\}, A)\propto p(W \given A) \prod_j p(Y^{(j)}
+\given W, {X^{(j)}}, A) \, p({X^{(j)}}$).
 
-Finally, we use neural position along the worm's body to constrain the
-possible neural identities for a given neuron.  We use the known
-positions of each neuron~\citep{wormatlas}, approximating the worm as
-a one-dimensional object with neurons locations distributed as in
-Fig.~\ref{fig:connectome}c. Then, given reported positions of the
-neurons, we can conceive a binary \textit{constraint} matrix $C^{(j)}$
-so that $C^{(j)}_{mn}=1$ if (observed) neuron $m$ is close enough to
-(canonical) neuron $n$; i.e., if their distance is smaller than a
-tolerance $\nu$. We enforce this constraint during inference by
+Finally, we use neural position along the worm's body~\citep{wormatlas} to constrain the
+possible neural identities for a given neuron.  Given the positions of the
+neurons, we construct a binary \textit{constraint} matrix $C^{(j)}$
+so that $C^{(j)}_{mn}=1$ if observed neuron $m$ is close to
+where label $n$ is typically found. We enforce this constraint by
 zeroing corresponding entries in the parameter matrix $M$ described in
-~\ref{sub:rounding}.  This modeling choice greatly reduces the number
-parameters of the model, and facilitates inference.
+Section~\ref{sub:rounding}.  These constraints greatly reduce the number
+parameters of the model and facilitate inference.
 
-\parhead{Results.} We compared against three methods: (i) naive
+\paragraph{Results.}
+% \subsection{Results}
+We compared against three methods: (i) naive
 variational inference, where we do not enforce the constraint that
 $X^{(j)}$ be a permutation and instead treat each row of~$X^{(j)}$ as
 a Dirichlet distributed vector; (ii) MCMC, where we alternate between
@@ -800,7 +810,7 @@ better solution for a certain parameter configuration. Moreover,
 Fig.~\ref{fig:elegantresults}b and Fig.~\ref{fig:elegantresults}c show
 that our method outperforms alternatives when there are many possible
 candidates and when only a small proportion of neurons are known with
-certitude. Fig.~\ref{fig:elegantresults}c also shows that these
+certainty. Fig.~\ref{fig:elegantresults}c also shows that these
 Bayesian methods benefit from combining information across many worms.
 
 Altogether, these results indicate our method enables a more efficient
@@ -810,11 +820,11 @@ MCMC \citep{Blei2017}, especially with simple Metropolis-Hastings
 proposals. We conjecture that MCMC would eventually obtain similar if
 not better results, but the local proposals---swapping pairs of
 labels---leads to slow convergence. On the other hand,
-Fig~\ref{fig:elegantresults}a shows that our method converges much
+Fig.~\ref{fig:elegantresults}a shows that our method converges much
 more quickly while still capturing a distribution over permutations,
 as shown by the overall variance of the samples in
-Fig~\ref{fig:elegantresults}d and the individual samples in
-Fig~\ref{fig:elegantresults}e.
+Fig.~\ref{fig:elegantresults}d and the individual samples in
+Fig.~\ref{fig:elegantresults}e.
 
 \section{Conclusion}
 
