@@ -61,14 +61,13 @@
   grows factorially with dimension. Combinatorial optimization
   algorithms may enable efficient point estimation, but fully Bayesian
   inference poses a severe challenge in this high-dimensional,
-  discrete space.  To surmount this challenge, we start with the usual
-  step of relaxing a discrete set to its convex hull. Specifically, the set of
-  permutation matrices is relaxed to the Birkhoff polytope: the set of
-  all doubly-stochastic matrices.  We then introduce two novel
-  transformations:  an invertible and differentiable
-  stick-breaking procedure that maps unconstrained space to the
-  Birkhoff polytope, and a map that rounds points toward the
-  vertices of the polytope.  Both transformations include a
+  discrete space.  To surmount this challenge, we start by relaxing
+  the discrete set of permutation matrices to its convex hull the
+  Birkhoff polytope, the set of doubly-stochastic matrices.  We then
+  introduce two novel transformations: an invertible and
+  differentiable stick-breaking procedure that maps unconstrained
+  space to the Birkhoff polytope, and a map that rounds points toward
+  the vertices of the polytope.  Both transformations include a
   temperature parameter that, in the limit, concentrates the densities
   on permutation matrices.  We exploit these transformations and
   reparameterization gradients to introduce variational inference over
@@ -673,20 +672,22 @@ capture complex permutation distributions.
 
 We measured the discrepancy between true posterior and an empirical
 estimate of the inferred posteriors using using the Battacharya
-distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$ (a hyperparameter) %\footnote{Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.}
+distance (BD). We fit $q_\tau(X; \theta)$ with a fixed $\tau$
+(a hyperparameter)
+% \footnote{Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.}
 for both stick-breaking and rounding transformations, sampled the
 variational posterior, and rounded the samples to the nearest
 permutation matrix with the Hungarian algorithm. For the Mallows
 distribution, we set $\phi_0$ to the MAP estimate (also found with the
 Hungarian algorithm) and sampled using MCMC.
  
-We found our method outperforms the simple Mallows distribution and
-reasonably approximates non-trivial distributions over
-permutations. Fig~\ref{fig:synthetic} illustrates our findings,
-showing (a) sample experiment configurations; (b) examples of
-inferred, discrete, posteriors for stick breaking, rounding, and
-Mallows at various levels of noise; and (c) histogram of Battacharya
-distance.  The latter are summarized in Table~\ref{table:BDs}.
+Both methods outperform the simple Mallows distribution and reasonably
+approximate non-trivial distributions over
+permutations. Fig.~\ref{fig:synthetic} shows (a) sample experiment
+configurations; (b) examples of inferred discrete posteriors for
+stick breaking, rounding, and Mallows at increasing levels of noise; and
+(c) histogram of Battacharya distance.  The latter are summarized in
+Table~\ref{table:BDs}.
 
 
 \section{Brain dynamics of \textit{C. elegans}}
