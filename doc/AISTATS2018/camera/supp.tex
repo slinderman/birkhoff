@@ -553,11 +553,11 @@ operation, which requires solving a matching problem.
 
 We used ADAM~\citep{kingma2014adam} with learning rate 0.1 for
 optimization. For rounding, the parameter vector $V$ defined in
-\ref{sub:rounding} was constrained to lie in the interval
+3.2 was constrained to lie in the interval
 $[0.1, 0.5]$. Also, for rounding, we used ten iterations of the
 Sinkhorn-Knopp algorithm, to obtain points in the Birkhoff
 polytope. For stick-breaking the variances $\nu$ defined in
-\ref{sub:stickbreaking} were constrained between $10^{-8}$ and~$1$. In
+3.1 were constrained between $10^{-8}$ and~$1$. In
 either case, the temperature, along with maximum values for the noise
 variances were calibrated using a grid search on the interval $[10^{-2},1]$. Improvements may be obtained with the use of an annealing schedule, a direction we intend to explore in the future.
  
@@ -570,12 +570,12 @@ times its spectral radius. This choice, although not essential,
 induced a reasonably well-behaved linear dynamical system, rich in
 non-damped oscillations. We used a time window of $T=1000$ time
 samples, and added spherical standard noise at each time. All results
-in Figure \ref{fig:elegantresults} are averages over five experiment
+in Figure 4 are averages over five experiment
 simulations with different sampled matrices $W$. For results in Figure
-\ref{fig:elegantresults}b we considered either one or four worms
+4b we considered either one or four worms
 (squares and circles, respectively), and for the x-axis we used the values
 $\nu \in \{0.0075,0.01,0.02,0.04,0.05\}$. We fixed the number of known neuron
 identities to 25 (randomly chosen). For results in Figure
-\ref{fig:elegantresults}c we used four worms and considered two values
+4c we used four worms and considered two values
 for $\nu$; 0.1 (squares) and 0.05 (circles). Different x-axis values
 correspond to fixing 110, 83, 55 and 25 neuron identities.
